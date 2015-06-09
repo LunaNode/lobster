@@ -17,6 +17,11 @@ Run `go get` for each dependency (e.g. `go get code.google.com/p/gcfg`)
 Lobster also uses noVNC for some VNC interfaces (e.g. SolusVM) where the backend does not provide its own web interface.
 noVNC needs to be installed in the "novnc" subdirectory of the Lobster installation path.
 
+Database
+--------
+
+Initialize a database using schema.sql
+
 Configuration
 -------------
 
