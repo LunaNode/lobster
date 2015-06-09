@@ -2,6 +2,6 @@ Service Termination
 
 Hi {{ .Username }},
 
-Your services with Swyfte have been terminated due to an excessively negative credit balance. Please open a support ticket if you have any questions.
+Your services with Lobster have been terminated due to an excessively negative credit balance. Please open a support ticket if you have any questions.
 
 {{ template "footer.txt" . }}

@@ -4,7 +4,7 @@ Hi {{ .Username }},
 
 We have received your payment for {{ .Params.Amount | FormatCredit }} credit ({{ .Params.Gateway }}/{{ .Params.GatewayIdentifier }}), and the credit has been added to your account.
 
-Paid to: Swyfte Hosting
+Paid to: Lobster
 Payee: {{ .Username }}
 Payment time: {{ .Params.Time | FormatTime }}
 Total: {{ .Params.Amount | FormatCredit }} USD
