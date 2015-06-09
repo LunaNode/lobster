@@ -8,6 +8,8 @@ import "log"
 type Session struct {
 	Id string
 	UserId int
+	Admin bool
+	OriginalId int // user id prior to logging in as another user
 	Regenerate bool
 }
 
@@ -15,6 +17,8 @@ func (this *Session) clone() *Session {
 	return &Session{
 		Id: this.Id,
 		UserId: this.UserId,
+		Admin: this.Admin,
+		OriginalId: this.OriginalId,
 		Regenerate: this.Regenerate,
 	}
 }
@@ -23,6 +27,8 @@ func (this *Session) IsLoggedIn() bool {
 }
 func (this *Session) Reset() {
 	this.UserId = 0
+	this.Admin = false
+	this.OriginalId = 0
 }
 
 func sessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Database, session *Session)) func(w http.ResponseWriter, r *http.Request, db *Database) {
@@ -35,10 +41,10 @@ func sessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 		sessionCookie, err := r.Cookie(SESSION_COOKIE_NAME)
 		if err == nil {
 			sessionIdentifier := sessionCookie.Value
-			rows := db.Query("SELECT user_id, regenerate FROM sessions WHERE uid = ? AND active_time > DATE_SUB(NOW(), INTERVAL 1 HOUR)", sessionIdentifier)
+			rows := db.Query("SELECT user_id, admin, original_id, regenerate FROM sessions WHERE uid = ? AND active_time > DATE_SUB(NOW(), INTERVAL 1 HOUR)", sessionIdentifier)
 			if rows.Next() {
 				session = &Session{Id: sessionIdentifier}
-				rows.Scan(&session.UserId, &session.Regenerate)
+				rows.Scan(&session.UserId, &session.Admin, &session.OriginalId, &session.Regenerate)
 			} else {
 				// invalid session identifier! need to generate new session
 				log.Printf("Invalid session identifier from %s", r.RemoteAddr)
@@ -75,13 +81,13 @@ func sessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 			// note that we can't do it immediately since template has been written already
 			session.Regenerate = true
 		}
-		db.Exec("UPDATE sessions SET user_id = ?, regenerate = ?, active_time = NOW() WHERE uid = ?", session.UserId, session.Regenerate, session.Id)
+		db.Exec("UPDATE sessions SET user_id = ?, admin = ?, original_id = ?, regenerate = ?, active_time = NOW() WHERE uid = ?", session.UserId, session.Admin, session.OriginalId, session.Regenerate, session.Id)
 	}
 }
 
 func makeSession(w http.ResponseWriter, db *Database) *Session {
 	newSession := &Session{Id: generateSessionIdentifier(w)}
-	db.Exec("INSERT INTO sessions (uid, user_id, regenerate) VALUES (?, ?, ?)", newSession.Id, newSession.UserId, newSession.Regenerate)
+	db.Exec("INSERT INTO sessions (uid, user_id, admin, original_id, regenerate) VALUES (?, ?, ?, ?, ?)", newSession.Id, newSession.UserId, newSession.Admin, newSession.OriginalId, newSession.Regenerate)
 	return newSession
 }
 

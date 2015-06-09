@@ -10,6 +10,9 @@ import "time"
 type FrameParams struct {
 	Message string
 	Error bool
+	UserId int
+	Admin bool
+	OriginalId int // non-zero only if admin is logged in as another user
 	Scripts []string
 }
 type PanelFormParams struct {
@@ -24,7 +27,11 @@ func panelWrap(h PanelHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 		if !session.IsLoggedIn() {
 			http.Redirect(w, r, "/login", 303)
 		} else {
-			var frameParams FrameParams
+			var frameParams = FrameParams{
+				UserId: session.UserId,
+				Admin: session.Admin,
+				OriginalId: session.OriginalId,
+			}
 			if r.URL.Query()["message"] != nil {
 				frameParams.Message = r.URL.Query()["message"][0]
 				if strings.HasPrefix(frameParams.Message, "Error") {

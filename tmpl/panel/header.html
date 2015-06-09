@@ -31,6 +31,13 @@
 				<i class="fa fa-user fa-fw"></i> <i class="fa fa-caret-down"></i>
 			</a>
 			<ul class="dropdown-menu dropdown-user">
+				{{ if .Admin }}
+					{{ if eq .OriginalId 0 }}
+						<li><a href="/admin/dashboard"><i class="fa fa-gear fa-key"></i> Admin</a></li>
+					{{ else }}
+						<li><a href="/admin/user/{{ .UserId }}"><i class="fa fa-gear fa-key"></i> Logout of user</a></li>
+					{{ end }}
+				{{ end }}
 				<li><a href="/panel/account"><i class="fa fa-gear fa-fw"></i> Settings</a></li>
 				<li><a href="/auth/logout"><i class="fa fa-sign-out fa-fw"></i> Logout</a></li>
 			</ul>

@@ -18,11 +18,20 @@ func adminWrap(h AdminHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 			http.Redirect(w, r, "/login", 303)
 			return
 		}
+
+		// revert login as another user
+		if session.OriginalId != 0 {
+			session.UserId = session.OriginalId
+			session.OriginalId = 0
+		}
+
+		// confirm session admin and also user still admin
 		user := userDetails(db, session.UserId)
-		if !user.Admin {
+		if !user.Admin || !session.Admin {
 			http.Redirect(w, r, "/panel/dashboard", 303)
 			return
 		}
+
 		var frameParams FrameParams
 		if r.URL.Query()["message"] != nil {
 			frameParams.Message = r.URL.Query()["message"][0]
@@ -44,6 +53,38 @@ func adminUsers(w http.ResponseWriter, r *http.Request, db *Database, session *S
 	params.Frame = frameParams
 	params.Users = userList(db)
 	renderTemplate(w, "admin", "users", params)
+}
+
+type AdminUserParams struct {
+	Frame FrameParams
+	User *User
+	VirtualMachines []*VirtualMachine
+	Token string
+}
+func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Redirect(w, r, "/panel/users", 303)
+		return
+	}
+	params := AdminUserParams{}
+	params.Frame = frameParams
+	params.User = userDetails(db, int(userId))
+	params.VirtualMachines = vmList(db, int(userId))
+	params.Token = csrfGenerate(db, session)
+	renderTemplate(w, "admin", "user", params)
+}
+
+
+func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Redirect(w, r, "/panel/users", 303)
+	} else {
+		session.OriginalId = session.UserId
+		session.UserId = int(userId)
+		http.Redirect(w, r, "/panel/dashboard", 303)
+	}
 }
 
 func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {

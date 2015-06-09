@@ -161,6 +161,11 @@ func authLoginHandler(w http.ResponseWriter, r *http.Request, db *Database, sess
 	} else {
 		session.UserId = userId
 		http.Redirect(w, r, "/panel/dashboard", 303)
+
+		user := userDetails(db, userId)
+		if user != nil && user.Admin {
+			session.Admin = true
+		}
 	}
 }
 

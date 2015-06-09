@@ -171,6 +171,8 @@ func (this *Lobster) Init() {
 	// admin routes
 	this.RegisterAdminHandler("/admin/dashboard", adminDashboard, false)
 	this.RegisterAdminHandler("/admin/users", adminUsers, false)
+	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}", adminUser, false)
+	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/login", adminUserLogin, true)
 	this.RegisterAdminHandler("/admin/support", adminSupport, false)
 	this.RegisterAdminHandler("/admin/support/open/{id:[0-9]+}", adminSupport, false)
 	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}", adminSupportTicket, false)
