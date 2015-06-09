@@ -1,0 +1,22 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Create VM</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+		<p>Select a region where the virtual machine will be provisioned.</p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ range .Regions }}
+			<a href="/panel/newvm/{{ . }}" class="btn btn-primary">
+				<strong>{{ . | Title }}</strong>
+			</a>
+		{{ end }}
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

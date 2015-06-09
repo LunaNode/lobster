@@ -1,0 +1,5 @@
+[Ticket #{{ .Params.Id }}] Replied to: {{ .Params.Subject }}
+
+Your ticket (#{{ .Params.Id }} {{ .Params.Subject }}) has been updated:
+
+{{ .Params.Message }}

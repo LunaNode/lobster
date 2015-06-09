@@ -1,0 +1,5 @@
+[Ticket #{{ .Params.Id }}] {{ .Params.Subject }}
+
+A new ticket has been posted on your account: [#{{ .Params.Id }}] {{ .Params.Subject }}.
+
+{{ .Params.Message }}

@@ -1,0 +1,7 @@
+Virtual machine deleted: {{ .Params.Name }}
+
+Hi {{ .Username }},
+
+The virtual machine {{ .Params.Name }} (id={{ .Params.Id }}) has been deleted successfully.
+
+{{ template "footer.txt" . }}

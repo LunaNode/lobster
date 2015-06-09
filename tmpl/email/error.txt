@@ -1,0 +1,12 @@
+Lobster Panel Error: {{ .Params.Description }}
+
+Hi,
+
+Lobster panel encountered an error.
+
+Error: {{ .Params.Error }}
+Description: {{ .Params.Description }}
+Detail:
+{{ .Params.Detail }}
+
+This error should be resolved as soon as possible!

@@ -1,0 +1,228 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">{{ .Vm.Name }}</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ $vmId := .Vm.Id }}
+		{{ $token := .Token }}
+		<div style="float:left;">
+			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/start">
+				<div class="form-group">
+					<input type="hidden" name="token" value="{{ .Token }}" />
+					<button type="submit" class="btn btn-success">Start up</button>
+				</div>
+			</form>
+		</div>
+		<div style="float:left; padding-left:5px;">
+			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/reboot">
+				<div class="form-group">
+					<input type="hidden" name="token" value="{{ .Token }}" />
+					<button type="submit" class="btn btn-warning">Reboot</button>
+				</div>
+			</form>
+		</div>
+		<div style="float:left; padding-left:5px;">
+			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/stop">
+				<div class="form-group">
+					<input type="hidden" name="token" value="{{ .Token }}" />
+					<button type="submit" class="btn btn-warning">Shutdown</button>
+				</div>
+			</form>
+		</div>
+		{{ if .Vm.Info.CanVnc }}
+		<div style="float:left; padding-left:5px;">
+			<p><a href="/panel/vm/{{ .Vm.Id }}/vnc" target="_blank"><button type="button" class="btn btn-primary">VNC</button></a></p>
+		</div>
+		{{ end }}
+		<div style="float:left; padding-left:5px;">
+			<button class="btn btn-primary" data-toggle="modal" data-target="#modalRename">Rename</button>
+			<div class="modal" id="modalRename" tabindex="-1" role="dialog" aria-labelledby="modalRenameLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form method="POST" action="/panel/vm/{{ $vmId }}/rename">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+								<h4 class="modal-title" id="modalRenameLabel">Rename</h4>
+							</div>
+							<div class="modal-body">
+								<div class="form-group">
+								<div class="form-group">
+									<label>New name:</label>
+									<input type="text" class="form-control" name="name">
+								</div>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<div style="float:left; padding-left:5px;">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+								</div>
+								<div style="float:left; padding-left:5px;">
+									<div class="form-group">
+										<input type="hidden" name="token" value="{{ .Token }}" />
+										<button type="submit" class="btn btn-primary">Rename</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div style="float:left; padding-left:5px;">
+			{{ range .Vm.Info.Actions }}
+				{{ if or .Description .Options }}{{/* use modal */}}
+					<button class="btn {{ if .Dangerous }}btn-danger{{ else }}btn-primary{{ end }}" data-toggle="modal" data-target="#modal{{ .Action }}">
+						{{ .Name }}
+					</button>
+					<div class="modal" id="modal{{ .Action }}" tabindex="-1" role="dialog" aria-labelledby="modal{{ .Action }}Label" aria-hidden="true">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<form method="POST" action="/panel/vm/{{ $vmId }}/action/{{ .Action }}"{{ if .Dangerous }} onsubmit="return window.confirm('Are you sure you want to proceed?');"{{ end }}>
+									<div class="modal-header">
+										<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+										<h4 class="modal-title" id="modal{{ .Action }}Label">{{ .Name }}</h4>
+									</div>
+									<div class="modal-body">
+										{{ if .Description }}
+											<p>{{ .Description }}</p>
+										{{ end }}
+										{{ if .Options }}
+											<div class="form-group">
+												<select name="value">
+													{{ range $value, $desc := .Options }}
+														<option value="{{ $value }}">{{ $desc }}</option>
+													{{ end }}
+												</select>
+											</div>
+										{{ end }}
+									</div>
+									<div class="modal-footer">
+										<div style="float:left; padding-left:5px;">
+											<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+										</div>
+										<div style="float:left; padding-left:5px;">
+											<div class="form-group">
+												<input type="hidden" name="token" value="{{ $token }}" />
+												<button type="submit" class="btn {{ if .Dangerous }}btn-danger{{ else }}btn-primary{{ end }}">{{ .Name }}</button>
+											</div>
+										</div>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+				{{ else }}
+					<form method="POST" action="/panel/vm/{{ $vmId }}/action/{{ .Action }}"{{ if .Dangerous }} onsubmit="return window.confirm('Are you sure you want to proceed?');"{{ end }}>
+						<div class="form-group">
+							<input type="hidden" name="token" value="{{ $token }}" />
+							<button type="submit" class="btn {{ if .Dangerous }}btn-danger{{ else }}btn-primary{{ end }}">{{ .Name }}</button>
+						</div>
+					</form>
+				{{ end }}
+			{{ end }}
+		</div>
+		{{ if .Vm.Info.CanReimage }}
+		<div style="float:left; padding-left:5px;">
+			<button class="btn btn-danger" data-toggle="modal" data-target="#modalReimage">Re-image</button>
+			<div class="modal" id="modalReimage" tabindex="-1" role="dialog" aria-labelledby="modalReimageLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form method="POST" action="/panel/vm/{{ $vmId }}/reimage">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+								<h4 class="modal-title" id="modalReimageLabel">Re-image</h4>
+							</div>
+							<div class="modal-body">
+								<div class="form-group">
+									<label for="image">Image:</label>
+									<select name="image" id="image">
+										{{ range .Images }}
+											<option value="{{ .Id }}">{{ .Name }}</option>
+										{{ end }}
+									</select>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<div style="float:left; padding-left:5px;">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+								</div>
+								<div style="float:left; padding-left:5px;">
+									<div class="form-group">
+										<input type="hidden" name="token" value="{{ .Token }}" />
+										<button type="submit" class="btn btn-danger">Re-image</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		{{ end }}
+		<div style="float:left; padding-left:5px;">
+			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/delete" onsubmit="return window.confirm('Are you sure that you want to delete this virtual machine?');">
+				<div class="form-group">
+					<input type="hidden" name="token" value="{{ .Token }}" />
+					<button type="submit" class="btn btn-danger">Delete</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+			<tr>
+				<th>Status</th>
+				{{ if eq .Vm.Info.Status "Online" }}
+					<td><font color="green"><strong>{{ .Vm.Info.Status }}</strong></font></td>
+				{{ else if eq .Vm.Info.Status "Offline" }}
+					<td><font color="red"><strong>{{ .Vm.Info.Status }}</strong></font></td>
+				{{ else }}
+					<td><font color="blue"><strong>{{ .Vm.Info.Status }}</strong></font></td>
+				{{ end }}
+			</tr>
+			<tr>
+				<th>Hostname</th>
+				<td>{{ .Vm.Info.Hostname }}</td>
+			</tr>
+			<tr>
+				<th>External IP</th>
+				<td>{{ .Vm.Info.Ip }}</td>
+			</tr>
+			{{ if .Vm.Info.PrivateIp }}
+			<tr>
+				<th>Private IP</th>
+				<td>{{ .Vm.Info.PrivateIp }}</td>
+			</tr>
+			{{ end }}
+			{{ if .Vm.Info.LoginDetails }}
+				<tr>
+					<th>Login Details</th>
+					<td>{{ .Vm.Info.LoginDetails }}</td>
+				</tr>
+			{{ end }}
+			<tr>
+				<th>Bandwidth Used</th>
+				<td>{{ .Vm.Info.BandwidthUsed | FormatGB }} GB / {{ .Vm.Plan.Bandwidth }} GB</td>
+			</tr>
+			<tr>
+				<th>Creation Time</th>
+				<td>{{ .Vm.CreatedTime | FormatTime }}</td>
+			</tr>
+			<tr>
+				<th>Price</th>
+				<td>{{ .Vm.Plan.Price | FormatCredit }} hourly</td>
+			</tr>
+		</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

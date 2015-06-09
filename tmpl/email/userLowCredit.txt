@@ -1,0 +1,7 @@
+Low Account Balance Warning
+
+Hi {{ .Username }},
+
+Based on your current usage, you will have a negative account balance in {{ .Params.RemainingHours }} hours (your current credit is {{ .Params.Credit | FormatCredit }}, and your current hourly usage is {{ .Params.Hourly | FormatCredit }}/hour). If this is expected, then it is fine, but otherwise please make a payment to avoid suspension of your virtual machines.
+
+{{ template "footer.txt" . }}

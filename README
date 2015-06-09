@@ -1,0 +1,51 @@
+Introduction
+------------
+
+Lobster is a simple hourly billing panel for virtual machine services.
+Lobster does not manage virtual machines directly -- instead, it relies on backends that it communicates with through VM interfaces; several backends are supported.
+
+Regions
+-------
+
+Lobster allows multiple regions to be defined.
+Each region has a separate virtual machine interface, although the interface type may be the same.
+Plans are shared across regions, but images are not.
+
+Billing
+-------
+
+Lobster currently only supports a prepaid hourly billing model.
+Users pay via some payment interface, and once payment is recorded as completed, credit is added to their account.
+If a user is running out of credit, Lobster will send low credit notifications; once credit reaches zero, services are suspended, and eventually the account is terminated.
+
+There are three services billed by Lobster:
+
+* Virtual machines: have an hourly price defined in the plan
+* Image storage: billed based on a configurable price per gigabyte-hour
+* Bandwidth: users are given a bandwidth pool allocation in each region based on the sum of the plan bandwidth of their virtual machines. If a user uses more traffic across their VMs in some region than this allocation, they will be charged at a configurable price per gigabyte. Bandwidth is billed on a per-calendar-month basis, so usage and allocations are reset each month. Note that if a user only provisions a VM for one hour, then they will receive only a proportional allocation (the bandwidth specified in the plan is the monthly allocation).
+
+Backends
+--------
+
+Different backends have different features, but Lobster tries to support as much as possible. Currently these backends are supported:
+
+* OpenStack
+* SolusVM
+
+Payment gateways
+----------------
+
+Payment is generally accepted via a pay-callback system, where we direct the user to a payment gateway and then wait for a secure callback notification from the gateway that confirms payment.
+Supported gateways:
+
+* Paypal
+* Coinbase
+
+Contributing
+------------
+
+The Lobster project uses Github for coordination.
+
+URL: https://github.com/LunaNode/lobster
+
+Note that per the Apache license, any contribution you submit for inclusion in Lobster shall be under the terms of the Apache license. See Section 5 of the Apache License Version 2.0 for details.

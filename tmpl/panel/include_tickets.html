@@ -1,0 +1,22 @@
+{{ if . }}
+<table class="table table-striped">
+<tr>
+	<th>Ticket Number</th>
+	<th>Subject</th>
+	<th>Status</th>
+	<th>Last Update</th>
+	<th>Creation Time</th>
+</tr>
+{{ range . }}
+<tr>
+	<td><a href="/panel/support/{{ .Id }}">{{ .Id }}</a></td>
+	<td><a href="/panel/support/{{ .Id }}">{{ .Name }}</a></td>
+	<td>{{ .Status | Title }}</td>
+	<td>{{ .ModifyTime | FormatTime }}</td>
+	<td>{{ .Time | FormatTime }}</td>
+</tr>
+{{ end }}
+</table>
+{{ else }}
+<p>You do not have any support tickets.</p>
+{{ end }}

@@ -1,0 +1,13 @@
+Virtual machine provisioned: {{ .Params.Name }}
+
+Hi {{ .Username }},
+
+Your virtual machine {{ .Params.Name }} has been provisioned successfully. If this is your first virtual machine, here's some details:
+
+* The building process generally takes up to three minutes, depending on the template being used and the storage capacity. You can check the status by selecting the new VM from the Virtual Machines sidebar tab.
+* Once the building completes, it may take another two or three minutes for the virtual machine to finish the first boot.
+* The initial root password will be available from the virtual machine details page. You can use an SSH client like Putty or OpenSSH to connect to your VM.
+
+Open a support ticket from the panel if you have questions or experience issues.
+
+{{ template "footer.txt" . }}

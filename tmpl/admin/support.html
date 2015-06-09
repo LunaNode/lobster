@@ -1,0 +1,36 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Support</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+		<tr>
+			<th>User</th>
+			<th>Ticket Number</th>
+			<th>Subject</th>
+			<th>Status</th>
+			<th>Creation Time</th>
+			<th>Last Update</th>
+		</tr>
+		{{ range .Tickets }}
+		<tr>
+			<td><a href="/admin/user/{{ .UserId }}">{{ .UserId }}</a></td>
+			<td><a href="/admin/support/{{ .Id }}">{{ .Id }}</a></td>
+			<td><a href="/admin/support/{{ .Id }}">{{ .Name }}</a></td>
+			<td>{{ .Status | Title }}</td>
+			<td>{{ .Time | FormatTime }}</td>
+			<td>{{ .ModifyTime | FormatTime }}</td>
+		</tr>
+		{{ end }}
+		</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

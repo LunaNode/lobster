@@ -1,0 +1,35 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Paypal Payment</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<p>Click the button below to continue with payment via Paypal.</p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<form action="https://www.paypal.com/cgi-bin/webscr" method="post" id="paypal">
+			<input type="hidden" name="cmd" value="_xclick">
+			<input type="hidden" name="business" value="{{ .Business }}">
+			<input type="hidden" name="item_name" value="${{ .Amount | FormatFloat2 }} credit">
+			<input type="hidden" name="custom" value="lobster{{ .UserId }}">
+			<input type="hidden" name="currency_code" value="USD">
+			<input type="hidden" name="amount" value="{{ .Amount | FormatFloat2 }}">
+			<input type="hidden" name="no_shipping" value="1">
+			<input type="hidden" name="no_note" value="1">
+			<input type="hidden" name="notify_url" value="{{ .NotifyUrl }}">
+			<input type="hidden" name="return" value="{{ .ReturnUrl }}">
+			<input type="hidden" name="cancel_return" value="{{ .ReturnUrl }}">
+			<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_buynowCC_LG.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!">
+		</form>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

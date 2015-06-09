@@ -1,0 +1,76 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Create VM</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<style>
+label.btn.active {
+	border: 3px solid #FFA200;
+}
+label.btn {
+	border: 3px solid rgba(0, 0, 0, 0);
+	margin: 2px;
+}
+label.plan {
+	text-align: center;
+	margin: 8px;
+}
+[type='radio'] {
+	display: none;
+}
+</style>
+<div class="row">
+	<div class="col-lg-12">
+		<form method="POST" action="/panel/newvm/{{ .Region }}">
+		<input type="hidden" name="token" value="{{ .Token }}" />
+		<div class="form-group" id="div-hostname">
+			<h3>Name</h3>
+			<input id="input-hostname" type="text" class="form-control" name="name" placeholder="Server name (e.g. myvps or www.example.com)">
+		</div>
+		<div class="form-group" id="div-plan">
+			<h3>Plan</h3>
+			<div class="btn-group plan" data-toggle="buttons">
+				{{ range .Plans }}
+					<label class="btn btn-primary plan">
+						<input class="input-plan" type="radio" name="plan_id" value="{{ .Id }}">
+						<strong>{{ .Name }}</strong>
+						<br />{{ .Price | FormatCredit }} hourly
+						<br />{{ .Ram }} MB RAM
+						<br />{{ .Cpu }} vCPU
+						<br />{{ .Storage }} GB storage
+						<br />{{ .Bandwidth }} GB bandwidth
+					</label>
+				{{ end }}
+			</div>
+			<p class="help-block">A VM "plan" specifies the available memory, disk, virtual cores, and bandwidth.</p>
+		</div>
+		<div class="form-group" id="div-image">
+			<h3>Image</h3>
+			<div data-toggle="buttons">
+				<div class="btn-group btn-group-vertical" style="vertical-align: top;">
+					{{ range .PublicImages }}
+						<label class="btn btn-primary">
+							<input class="input-image" type="radio" name="image_id" value="{{ .Id }}"> {{ .Name }}
+						</label>
+					{{ end }}
+				</div>
+				<div class="btn-group btn-group-vertical" style="vertical-align: top;">
+					{{ range .UserImages }}
+						<label class="btn btn-primary">
+							<input class="input-image" type="radio" name="image_id" value="{{ .Id }}"> {{ .Name }}
+						</label>
+					{{ end }}
+				</div>
+			</div>
+		</div>
+		<button type="submit" class="btn btn-success btn-lg">Create virtual machine</button>
+		</form>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

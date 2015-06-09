@@ -1,0 +1,7 @@
+Service Suspension Notice
+
+Hi {{ .Username }},
+
+Your services with Swyfte have been suspended as you have a negative credit balance. Once you make a payment at https://www.swyfte.com/, services will automatically be unsuspended.
+
+{{ template "footer.txt" . }}

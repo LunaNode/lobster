@@ -1,0 +1,37 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Charge History</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-sm-4"><center><h3><a href="/panel/charges/{{ .Previous.Year }}/{{ .Previous.Month | MonthInteger }}">&lt;</a></h3></center></div>
+	<div class="col-sm-4"><center><h3>{{ .Month.String }}, {{ .Year }}</h3></center></div>
+	<div class="col-sm-4"><center><h3><a href="/panel/charges/{{ .Next.Year }}/{{ .Next.Month | MonthInteger }}">&gt;</a></h3></center></div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+			<tr>
+				<th>Name</th>
+				<th>Amount charged</th>
+				<th>Date</th>
+				<th>Details</th>
+			</tr>
+			{{ range .Charges }}
+			<tr>
+				<td>{{ .Name }}</td>
+				<td>{{ .Amount | FormatCredit }}</td>
+				<td>{{ .Time | FormatDate }}</td>
+				<td>{{ .Detail }}</td>
+			</tr>
+			{{ end }}
+		</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

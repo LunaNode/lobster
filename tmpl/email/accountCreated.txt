@@ -1,0 +1,7 @@
+Account created: {{ .Params.Username }}
+
+Hi,
+
+A new account has been created with username [{{ .Params.Username }}] and e-mail address [{{ .Params.Email }}] (id={{ .Params.UserId }}).
+
+{{ template "footer.txt" . }}

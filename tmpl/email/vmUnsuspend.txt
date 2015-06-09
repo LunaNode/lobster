@@ -1,0 +1,7 @@
+Virtual machine unsuspended: {{ .Params.Name }}
+
+Hi {{ .Username }},
+
+Your virtual machine {{ .Params.Name }} has been unsuspended as your credit is no longer negative.
+
+{{ template "footer.txt" . }}

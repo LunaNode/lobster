@@ -1,0 +1,18 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Virtual Machines</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+		<p><a href="/panel/newvm"><button type="button" class="btn btn-primary">Create a new virtual machine</button></a></p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{template "include_vms.html" .VirtualMachines }}
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

@@ -1,0 +1,10 @@
+	</div>
+	<script src="/assets/js/jquery.js"></script>
+	<script src="/assets/js/bootstrap.dashboard.js"></script>
+	<script src="/assets/js/metismenu.js"></script>
+	<script src="/assets/js/dashboard.js"></script>
+	{{ range .Scripts }}
+		<script src="/assets/js/{{ . }}.js"></script>
+	{{ end }}
+</body>
+</html>

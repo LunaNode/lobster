@@ -1,0 +1,11 @@
+Bandwidth overage notification
+
+Hi {{ .Username }},
+
+Based on our records, you have now used {{ .UtilPercent }}% of your monthly bandwidth pool in the {{ .Region }} region.
+
+Please note that bandwidth overage fees billed at {{ .Fee | FormatCredit }} per GB over your allocation will be charged on your account should you exceed your monthly bandwidth allocation pool.
+
+You can view your current bandwidth usage on the Lobster panel dashboard under the Bandwidth section heading.
+
+{{ template "footer.txt" . }}

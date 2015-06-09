@@ -1,0 +1,5 @@
+Failed to provision {{ .Params.Name }}
+
+The virtual machine {{ .Params.Name }} failed to provision. We are working on the issue.
+
+{{ template "footer.txt" . }}

@@ -1,0 +1,24 @@
+Dependencies
+------------
+
+Lobster depends on several Golang libraries that must be fetched:
+
+- code.google.com/p/gcfg
+- github.com/asaskevich/govalidator
+- github.com/fabioberger/coinbase-go
+- github.com/gorilla/context
+- github.com/gorilla/mux
+- github.com/gorilla/schema
+- github.com/gorilla/websocket
+- golang.org/x/crypto
+
+Run `go get` for each dependency (e.g. `go get code.google.com/p/gcfg`)
+
+Lobster also uses noVNC for some VNC interfaces (e.g. SolusVM) where the backend does not provide its own web interface.
+noVNC needs to be installed in the "novnc" subdirectory of the Lobster installation path.
+
+Configuration
+-------------
+
+Copy lobster.example.go to lobster.go and lobster.example.cfg to lobster.cfg.
+Both of these files need to be configured.

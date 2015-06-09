@@ -1,0 +1,49 @@
+{{ template "header.html" . }}
+<div class="col-md-8 col-md-offset-2" style="margin-top: 50px;">
+	<div class="well bs-component">
+		<form class="form-horizontal" method="POST" action="/auth/create">
+		<input type="hidden" name="token" value="{{ .Token }}">
+			<fieldset>
+				<legend>Sign up</legend>
+				{{ if ne .Message "" }}
+				<p><strong>{{ .Message }}</strong></p>
+				{{ end }}
+				<div class="form-group">
+					<label for="inputUsername" class="col-lg-3 control-label">Username</label>
+					<div class="col-lg-9">
+						<input type="text" name="username" class="form-control" id="inputUsername" placeholder="Username">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputPassword" class="col-lg-3 control-label">Password</label>
+					<div class="col-lg-9">
+						<input type="password" name="password" class="form-control" id="inputPassword" placeholder="Password">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputEmail" class="col-lg-3 control-label">Optional e-mail</label>
+					<div class="col-lg-9">
+						<input type="email" name="email" class="form-control" id="inputEmail" placeholder="E-mail address">
+						<span class="help-block">If an e-mail address is not provided, you will need to login to the panel to view service notifications.</span>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-lg-offset-3 col-lg-9">
+						<div class="checkbox">
+							<label>
+								<input type="checkbox" name="acceptTermsOfService" value="yes" /> I have read and agree to the <a href="/terms">Terms of Service</a>.
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-lg-10 col-lg-offset-2">
+						<button type="submit" class="btn btn-primary">Register</button>
+					</div>
+				</div>
+				<p>Already have an account? <a href="/login">Proceed to login.</a></p>
+			</fieldset>
+		</form>
+	</div>
+</div>
+{{ template "footer.html" . }}

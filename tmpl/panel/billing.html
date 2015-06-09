@@ -1,0 +1,83 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Billing</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<h3>Make Payment</h3>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<form class="form-horizontal" method="GET" action="/panel/pay">
+			<div class="form-group" id="payment_amount_div">
+				<label for="payment_amount" class="col-sm-2 control-label">Amount of credit</label>
+				<div class="col-sm-10" id="payment_amount_div">
+					<select class="form-control" name="amount" id="payment_amount">
+						<option value="5">$5.00</option>
+						<option value="10">$10.00</option>
+						<option value="15">$15.00</option>
+						<option value="20">$20.00</option>
+						<option value="25">$25.00</option>
+						<option value="30">$30.00</option>
+						<option value="50">$50.00</option>
+						<option value="75">$75.00</option>
+						<option value="100">$100.00</option>
+						<option value="150">$150.00</option>
+						<option value="200">$200.00</option>
+						<option value="300">$300.00</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label">Payment method</label>
+				<div class="col-sm-10">
+					<select class="form-control" name="gateway">
+						{{ range .PaymentMethods }}
+							<option value="{{ . }}">{{ . }}</option>
+						{{ end }}
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-offset-2 col-sm-10">
+					<button type="submit" class="btn btn-primary">Continue</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<h3>Credit Summary</h3>
+		<p>Note: recurring cost is based on currently active virtual machines and may not reflect actual spending. For detailed information, see the Charge History tab.</p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+		<tr>
+			<th>Hourly Cost</th>
+			<th>Daily Cost</th>
+			<th>Monthly Cost</th>
+			<th>Credits Remaining</th>
+			<th>Credit Status</th>
+		</tr>
+		<tr>
+			<td>{{ .CreditSummary.Hourly | FormatCredit }}</td>
+			<td>{{ .CreditSummary.Daily | FormatCredit }}</td>
+			<td>{{ .CreditSummary.Monthly | FormatCredit }}</td>
+			<td>{{ .CreditSummary.Credit | FormatCredit }}</td>
+			<td><p class="text-{{ .CreditSummary.Status }}"><strong>{{ .CreditSummary.Status | Title }}!</strong> {{ .CreditSummary.DaysRemaining }} days left until credit exhaustion.</td>
+		</tr>
+		</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

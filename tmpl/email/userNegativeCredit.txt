@@ -1,0 +1,7 @@
+Negative Account Balance Warning
+
+Hi {{ .Username }},
+
+Your account credit is currently in the negative at {{ .Params.Credit | FormatCredit }}. If this is expected, then it is fine, but otherwise please make a payment as soon as possible to avoid suspension and subsequent termination of your virtual machines.
+
+{{ template "footer.txt" . }}
