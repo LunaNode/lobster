@@ -1,0 +1,6 @@
+Lobster uses components from other open source projects.
+
+* SB Admin 2 is Copyright 2013-2015 Iron Summit Media Strategies, LLC. Code released under the Apache 2.0 license.
+* Flatly is made by Thomas Park (bootswatch.com) and released under the MIT License.
+
+Lobster has other dependencies but these are not redistributed. See INSTALL for details.
