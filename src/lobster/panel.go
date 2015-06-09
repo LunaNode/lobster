@@ -320,7 +320,7 @@ func panelPay(w http.ResponseWriter, r *http.Request, db *Database, session *Ses
 	}
 
 	user := userDetails(db, session.UserId)
-	paymentHandle(form.Gateway, w, r, frameParams, session.UserId, user.Username, form.Amount)
+	paymentHandle(form.Gateway, w, r, db, frameParams, session.UserId, user.Username, form.Amount)
 }
 
 type PanelChargesParams struct {

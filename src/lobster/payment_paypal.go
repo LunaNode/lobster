@@ -34,7 +34,7 @@ func MakePaypalPayment(lobster *Lobster, business string, returnUrl string) *Pay
 	return this
 }
 
-func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, frameParams FrameParams, userId int, username string, amount float64) {
+func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *Database, frameParams FrameParams, userId int, username string, amount float64) {
 	frameParams.Scripts = append(frameParams.Scripts, "paypal")
 	params := &PaypalTemplateParams{
 		Frame: frameParams,

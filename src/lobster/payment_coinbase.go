@@ -25,7 +25,7 @@ func MakeCoinbasePayment(lobster *Lobster, callbackSecret string, apiKey string,
 	return this
 }
 
-func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, frameParams FrameParams, userId int, username string, amount float64) {
+func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db *Database, frameParams FrameParams, userId int, username string, amount float64) {
 	if cfg.Default.Debug {
 		log.Printf("Creating Coinbase button for %s (id=%d) with amount $%.2f", username, userId, amount)
 	}
