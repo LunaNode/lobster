@@ -100,7 +100,7 @@ func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Databas
 	}
 	ticketClose(db, session.UserId, int(ticketId))
 	LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
-	redirectMessage(w, r, fmt.Sprintf("/panel/support/%d", ticketId), "This ticket has been marked closed.")
+	redirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), "This ticket has been marked closed.")
 }
 
 type AdminSupportParams struct {
@@ -240,4 +240,51 @@ func adminPlanDelete(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	}
 	planDelete(db, int(planId))
 	redirectMessage(w, r, "/admin/plans", "Plan deleted successfully.")
+}
+
+type AdminImagesParams struct {
+	Frame FrameParams
+	Images []*Image
+	Regions []string
+	Token string
+}
+func adminImages(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	params := AdminImagesParams{}
+	params.Frame = frameParams
+	params.Images = imageListAll(db)
+	params.Regions = regionList()
+	params.Token = csrfGenerate(db, session)
+	renderTemplate(w, "admin", "images", params)
+}
+
+type AdminImagesAddForm struct {
+	Name string `schema:"name"`
+	Region string `schema:"region"`
+	Identification string `schema:"identification"`
+}
+func adminImagesAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	form := new(AdminImagesAddForm)
+	err := decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, "/admin/images", 303)
+		return
+	}
+
+	imageAdd(db, form.Name, form.Region, form.Identification)
+	redirectMessage(w, r, "/admin/images", "Image added successfully.")
+}
+
+func adminImageDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		redirectMessage(w, r, "/admin/images", "Error: invalid image ID.")
+		return
+	}
+
+	err = imageDeleteForce(db, int(imageId))
+	if err != nil {
+		redirectMessage(w, r, "/admin/images", "Error: " + err.Error() + ".")
+	} else {
+		redirectMessage(w, r, "/admin/images", "Image deleted.")
+	}
 }

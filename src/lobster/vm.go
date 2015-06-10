@@ -441,7 +441,7 @@ func imageListHelper(rows *sql.Rows) []*Image {
 }
 
 func imageListAll(db *Database) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images ORDER BY name"))
+	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images ORDER BY user_id, name"))
 }
 
 func imageList(db *Database, userId int) []*Image {
@@ -454,6 +454,14 @@ func imageListRegion(db *Database, userId int, region string) []*Image {
 
 func imageGet(db *Database, userId int, imageId int) *Image {
 	images := imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
+	if len(images) == 1 {
+		return images[0]
+	} else {
+		return nil
+	}
+}
+func imageGetForce(db *Database, imageId int) *Image {
+	images := imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE id = ?", imageId))
 	if len(images) == 1 {
 		return images[0]
 	} else {
@@ -486,6 +494,10 @@ func imageFetch(db *Database, userId int, region string, name string, url string
 	}
 }
 
+func imageAdd(db *Database, name string, region string, identification string) {
+	db.Exec("INSERT INTO images (name, region, identification) VALUES (?, ?, ?)", name, region, identification)
+}
+
 func imageDelete(db *Database, userId int, imageId int) error {
 	image := imageGet(db, userId, imageId)
 	if image == nil || image.UserId != userId {
@@ -499,6 +511,20 @@ func imageDelete(db *Database, userId int, imageId int) error {
 		db.Exec("DELETE FROM images WHERE id = ?", image.Id)
 		return nil
 	}
+}
+
+func imageDeleteForce(db *Database, imageId int) error {
+	image := imageGetForce(db, imageId)
+	if image == nil {
+		return errors.New("image not found")
+	}
+
+	err := vmGetInterface(image.Region).ImageDelete(image.Identification)
+	if err != nil {
+		reportError(err, "image force deletion failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
+	}
+	db.Exec("DELETE FROM images WHERE id = ?", image.Id)
+	return nil
 }
 
 func imageInfo(db *Database, userId int, imageId int) *Image {

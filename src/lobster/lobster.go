@@ -181,6 +181,9 @@ func (this *Lobster) Init() {
 	this.RegisterAdminHandler("/admin/plans", adminPlans, false)
 	this.RegisterAdminHandler("/admin/plans/add", adminPlansAdd, false)
 	this.RegisterAdminHandler("/admin/plan/{id:[0-9]+}/delete", adminPlanDelete, true)
+	this.RegisterAdminHandler("/admin/images", adminImages, false)
+	this.RegisterAdminHandler("/admin/images/add", adminImagesAdd, false)
+	this.RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
 }
 
 func (this *Lobster) Run() {
