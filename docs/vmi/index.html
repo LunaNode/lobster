@@ -1,0 +1,59 @@
+<html>
+<head>
+	<title>Lobster - Virtual Machine Interfaces</title>
+</head>
+<body>
+	<p><a href="..">Index</a> &rarr; <a href=".">Virtual Machine Interfaces</a><lp>
+	<h1>Virtual machine interfaces</h1>
+	<p>Lobster abstracts virtual machine management to VM interfaces. These support various functions for operations like creating VMs, starting/stopping a server, and bandwidth accounting.</p>
+	<p>Virtual machine interfaces are defined in lobster.cfg.json (if you are using a different configuration filename xyz.cfg, Lobster will look in xyz.cfg.json for the interface definitions). As the file extension implies, this uses a JSON file format; also, in addition to VM interfaces, it defines payment interfaces.</p>
+	<p>The file looks something like this:</p>
+	<pre>{
+	"vm":
+	[
+		{
+			"name": "Moon",
+			"type": "openstack",
+			"url": "http://controller:35357/v2.0",
+			"username": "lobster",
+			"password": "lobster123",
+			"tenant": "Lobster",
+			"network_id": "b169ba21-5ce1-4ff8-9cb5-0e12d3e1adb4"
+		},
+		{
+			"name": "Mars",
+			"type": "solusvm",
+			"virt_type": "openvz",
+			"node_group": "1",
+			"url": "https://example.com:5656/api/admin/command.php",
+			"api_id": "123",
+			"api_key": "abcdef"
+		}
+	],
+	"payment":
+	[
+		{
+			"name": "Paypal",
+			"type": "paypal",
+			"business": "payments@example.com",
+			"return_url": "https://example.com/"
+		},
+		{
+			"name": "Bitcoin",
+			"type": "coinbase",
+			"callback_secret": "random",
+			"api_key": "123",
+			"api_secret": "abcdef"
+		}
+	]
+}</pre>
+	<p>Note that JSON is very strict; if you get errors about JSON formatting, make sure that you don't have trailing commas in the end of a dictionary or list block. If you still have errors, try a JSON validator like <a href="http://jsonlint.com/">jsonlint.com</a>.</p>
+	<h3>Supported interfaces</h3>
+	<p>Various VM management backends are supported via VM interfaces. Each has a different configuration method. In general Lobster tries to keep its services in one grouping in the backend (for example, a single user account or tenant).</p>
+	<p>The pages below describe basic configuration of the interfaces (both on the backend and in lobster.cfg.json), and also related topics like how image identification works for the interface.</p>
+	<ul>
+		<li><a href="openstack.html">OpenStack</a></li>
+		<li><a href="solusvm.html">SolusVM</a></li>
+	</ul>
+</body>
+</html>

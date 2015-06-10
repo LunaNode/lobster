@@ -1,0 +1,26 @@
+<html>
+<head>
+	<title>Lobster - SolusVM</title>
+</head>
+<body>
+	<p><a href="..">Index</a> &rarr; <a href=".">Virtual Machine Interfaces</a> &rarr; <a href="solusvm.html">SolusVM</a><lp>
+	<h1>SolusVM</h1>
+	<p>The Lobster SolusVM interface requires a single client to be created, along with an administrative API ID. The following keys are checked:</p>
+	<ul>
+		<li><b>name</b>: a label for the region</li>
+		<li><b>type</b>: set to "solusvm"</li>
+		<li><b>virt_type</b>: a SolusVM virtualization type (e.g. "kvm", "openvz")</li>
+		<li><b>node_group</b>: the target node group ID, expressed as string (e.g. "1")</li>
+		<li><b>url</b>: API access URL ("https://example.com:5656/api/admin/command.php")</li>
+		<li><b>api_id</b>: API ID</li>
+		<li><b>api_key</b>: API key</li>
+		<li><b>insecure</b>: optional; either true or false (without quotation marks since it is JSON bool), with false being default. If true, then HTTPS certificate at API URL won't be validated.</li>
+	</ul>
+
+	<h3>Images</h3>
+	<p>To register an image, use the image filename without extension. It should be the same as other software that uses API.</p>
+
+	<h3>VNC</h3>
+	<p>For virtualization types that support VNC, Lobster will provide a noVNC client that will connect from the Lobster server to the host node. This means you can lockdown the host node VNC access if desired, so that only connections made via Lobster are permitted; this is of course not necessary.</p>
+</body>
+</html>

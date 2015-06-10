@@ -1,0 +1,29 @@
+<html>
+<head>
+	<title>Lobster - OpenStack</title>
+</head>
+<body>
+	<p><a href="..">Index</a> &rarr; <a href=".">Virtual Machine Interfaces</a> &rarr; <a href="openstack.html">OpenStack</a><lp>
+	<h1>OpenStack</h1>
+	<p>The Lobster OpenStack interface requires a single tenant and associated user account to be created on OpenStack. The following keys need to then be set:</p>
+	<ul>
+		<li><b>name</b>: a label for the region</li>
+		<li><b>type</b>: set to "openstack"</li>
+		<li><b>url</b>: v2 auth URL of the keystone service</li>
+		<li><b>username</b>: keystone username to authenticate with</li>
+		<li><b>password</b>: keystone password to authenticate with</li>
+		<li><b>tenant</b>: keystone tenant name to authenticate with (note: must be tenant name, not ID)</li>
+		<li><b>network_id</b>: the UUID of the network to provision virtual machines on</li>
+	</ul>
+	<p>Note that Lobster provisions all virtual machines on the same network.</p>
+
+	<h3>Images</h3>
+	<p>To register an image, use the image UUID for the image identification.</p>
+
+	<h3>Floating IP addresses</h3>
+	<p>If floating IP addresses are available, Lobster will attempt to automatically associate one after creating a new virtual machine. The floating IPs must be available on the tenant -- Lobster will not add additional floating IPs.</p>
+
+	<h3>Passwords</h3>
+	<p>Lobster will attempt to set the password when booting VMs both via the OpenStack admin password option, and also through a cloud-init script.</p>
+</body>
+</html>
