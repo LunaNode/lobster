@@ -1,8 +1,8 @@
 package lobopenstack
 
-import "lobster"
-import "lobster/ipaddr"
-import "lobster/utils"
+import "github.com/LunaNode/lobster"
+import "github.com/LunaNode/lobster/ipaddr"
+import "github.com/LunaNode/lobster/utils"
 
 import "github.com/LunaNode/gophercloud"
 import "github.com/LunaNode/gophercloud/openstack"

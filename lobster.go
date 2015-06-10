@@ -4,7 +4,7 @@ import "github.com/gorilla/context"
 import "github.com/gorilla/mux"
 import "github.com/gorilla/schema"
 
-import "lobster/websockify"
+import "github.com/LunaNode/lobster/websockify"
 import "log"
 import "net/http"
 import "strings"

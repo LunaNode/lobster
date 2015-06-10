@@ -1,6 +1,6 @@
 package main
 
-import "lobster/websockify"
+import "github.com/LunaNode/lobster/websockify"
 
 import "fmt"
 

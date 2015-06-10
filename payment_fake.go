@@ -1,6 +1,6 @@
 package lobster
 
-import "lobster/utils"
+import "github.com/LunaNode/lobster/utils"
 
 import "net/http"
 

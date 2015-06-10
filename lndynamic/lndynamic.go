@@ -1,6 +1,6 @@
 package lndynamic
 
-import "lobster"
+import "github.com/LunaNode/lobster"
 
 import "errors"
 import "fmt"

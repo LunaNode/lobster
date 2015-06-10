@@ -1,9 +1,9 @@
 package main
 
-import "lobster"
-import "lobster/lndynamic"
-import "lobster/solusvm"
-import "lobster/lobopenstack"
+import "github.com/LunaNode/lobster"
+import "github.com/LunaNode/lobster/lndynamic"
+import "github.com/LunaNode/lobster/solusvm"
+import "github.com/LunaNode/lobster/lobopenstack"
 import "os"
 
 func main() {

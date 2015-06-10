@@ -1,10 +1,10 @@
 package main
 
-import "lobster"
-import "lobster/lndynamic"
-import "lobster/lobopenstack"
-import "lobster/solusvm"
-import "lobster/vmfake"
+import "github.com/LunaNode/lobster"
+import "github.com/LunaNode/lobster/lndynamic"
+import "github.com/LunaNode/lobster/lobopenstack"
+import "github.com/LunaNode/lobster/solusvm"
+import "github.com/LunaNode/lobster/vmfake"
 
 import "encoding/json"
 import "io/ioutil"
