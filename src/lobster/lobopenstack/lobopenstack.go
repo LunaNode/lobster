@@ -5,6 +5,8 @@ import "lobster/ipaddr"
 import "errors"
 import "log"
 import "time"
+import "strconv"
+import "strings"
 import "github.com/LunaNode/gophercloud"
 import "github.com/LunaNode/gophercloud/openstack"
 import "github.com/LunaNode/gophercloud/pagination"
@@ -12,9 +14,11 @@ import "github.com/LunaNode/gophercloud/openstack/compute/v2/flavors"
 import "github.com/LunaNode/gophercloud/openstack/compute/v2/servers"
 import "github.com/LunaNode/gophercloud/openstack/compute/v2/extensions/startstop"
 import "github.com/LunaNode/gophercloud/openstack/compute/v2/extensions/floatingip"
+import "github.com/LunaNode/gophercloud/openstack/image/v1/image"
 
 type OpenStack struct {
 	ComputeClient *gophercloud.ServiceClient
+	ImageClient *gophercloud.ServiceClient
 	networkId string
 }
 
@@ -32,6 +36,10 @@ func MakeOpenStack(identityEndpoint string, username string, password string, te
 		panic(err)
 	}
 	this.ComputeClient, err = openstack.NewComputeV2(provider, gophercloud.EndpointOpts{})
+	if err != nil {
+		panic(err)
+	}
+	this.ImageClient, err = openstack.NewImageV1(provider, gophercloud.EndpointOpts{})
 	if err != nil {
 		panic(err)
 	}
@@ -216,17 +224,48 @@ func (this *OpenStack) BandwidthAccounting(vmIdentification string) int64 {
 }
 
 func (this *OpenStack) CanImages() bool {
-	return false
+	return true
 }
 
 func (this *OpenStack) ImageFetch(url string, format string) (string, error) {
-	return "", errors.New("operation not supported")
+	opts := image.CreateOpts{
+		Name: "lobster",
+		ContainerFormat: "bare",
+		DiskFormat: format,
+		CopyFrom: url,
+	}
+	createResult := image.Create(this.ImageClient, opts)
+	image, err := createResult.Extract()
+	if err != nil {
+		return "", err
+	} else {
+		return image.ID, nil
+	}
 }
 
 func (this *OpenStack) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
-	return nil, errors.New("operation not supported")
+	osImage, err := image.Get(this.ImageClient, imageIdentification).Extract()
+	if err != nil {
+		return nil, err
+	}
+
+	image := new(lobster.ImageInfo)
+	image.Size, _ = strconv.ParseInt(osImage.Size, 10, 64)
+	if osImage.Status == "active" {
+		image.Status = lobster.ImageActive
+	} else if osImage.Status == "error" || osImage.Status == "killed" {
+		image.Status = lobster.ImageError
+	} else {
+		image.Status = lobster.ImagePending
+	}
+	return image, nil
 }
 
 func (this *OpenStack) ImageDelete(imageIdentification string) error {
-	return errors.New("operation not supported")
+	err := image.Delete(this.ImageClient, imageIdentification).ExtractErr()
+	if err != nil && !strings.Contains(err.Error(), "Image with identifier " + imageIdentification + " not found") {
+		return err
+	} else {
+		return nil
+	}
 }
