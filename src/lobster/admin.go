@@ -116,8 +116,8 @@ func adminSupport(w http.ResponseWriter, r *http.Request, db *Database, session 
 
 type AdminSupportOpenParams struct {
 	Frame FrameParams
+	User *User
 	Token string
-	UserId int
 }
 type AdminSupportOpenForm struct {
 	UserId int `schema:"user_id"`
@@ -128,6 +128,11 @@ func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, sess
 	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
 		redirectMessage(w, r, "/admin/support", "Error: invalid user ID.")
+		return
+	}
+	user := userDetails(db, int(userId))
+	if user == nil {
+		redirectMessage(w, r, "/admin/support", "Error: user not found.")
 		return
 	}
 
@@ -148,7 +153,11 @@ func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, sess
 		return
 	}
 
-	renderTemplate(w, "admin", "support_open", AdminSupportOpenParams{Frame: frameParams, Token: csrfGenerate(db, session), UserId: int(userId)})
+	params := new(AdminSupportOpenParams)
+	params.Frame = frameParams
+	params.User = user
+	params.Token = csrfGenerate(db, session)
+	renderTemplate(w, "admin", "support_open", params)
 }
 
 type AdminSupportTicketParams struct {
