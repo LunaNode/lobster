@@ -1,13 +1,13 @@
 package lobster
 
-import "net/url"
-import "net/http"
-import "unicode"
-import "strings"
-import "runtime/debug"
-import "runtime"
 import "crypto/rand"
 import "fmt"
+import "net/url"
+import "net/http"
+import "runtime/debug"
+import "runtime"
+import "strings"
+import "unicode"
 
 const MIN_USERNAME_LENGTH = 3
 const MAX_USERNAME_LENGTH = 128

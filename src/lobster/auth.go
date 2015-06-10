@@ -2,15 +2,16 @@ package lobster
 
 import "github.com/asaskevich/govalidator"
 import "golang.org/x/crypto/pbkdf2"
+
 import "crypto/rand"
 import "crypto/sha512"
 import "crypto/subtle"
 import "encoding/hex"
 import "errors"
-import "strings"
-import "net/http"
 import "fmt"
 import "log"
+import "net/http"
+import "strings"
 
 func authMakePassword(password string) string {
 	salt := make([]byte, 16)

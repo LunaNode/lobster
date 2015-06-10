@@ -1,9 +1,10 @@
 package lobster
 
 import _ "github.com/go-sql-driver/mysql"
+
 import "database/sql"
-import "net/http"
 import "log"
+import "net/http"
 
 type Database struct {
 	db *sql.DB

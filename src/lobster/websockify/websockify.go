@@ -1,13 +1,13 @@
 package websockify
 
+import "github.com/gorilla/websocket"
+
+import "crypto/rand"
+import "encoding/base64"
+import "log"
 import "net"
 import "net/http"
-import "log"
-import "crypto/rand"
 import "time"
-import "encoding/base64"
-
-import "github.com/gorilla/websocket"
 
 func newToken(l int) string {
 	alphabet := []rune("abcdefghijklmnopqrstuvwxyz0123456789")

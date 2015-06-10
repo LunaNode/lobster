@@ -2,8 +2,8 @@ package lobster
 
 import "crypto/rand"
 import "encoding/hex"
-import "net/http"
 import "log"
+import "net/http"
 
 type Session struct {
 	Id string

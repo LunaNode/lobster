@@ -1,9 +1,9 @@
 package lobster
 
-import "time"
-import "errors"
 import "database/sql"
+import "errors"
 import "log"
+import "time"
 
 type TicketMessage struct {
 	Id int

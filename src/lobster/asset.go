@@ -1,7 +1,7 @@
 package lobster
 
-import "net/http"
 import "path/filepath"
+import "net/http"
 import "os"
 
 var validAssets map[string]bool

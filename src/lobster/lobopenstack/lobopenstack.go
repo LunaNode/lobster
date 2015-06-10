@@ -2,11 +2,7 @@ package lobopenstack
 
 import "lobster"
 import "lobster/ipaddr"
-import "errors"
-import "log"
-import "time"
-import "strconv"
-import "strings"
+
 import "github.com/LunaNode/gophercloud"
 import "github.com/LunaNode/gophercloud/openstack"
 import "github.com/LunaNode/gophercloud/pagination"
@@ -15,6 +11,12 @@ import "github.com/LunaNode/gophercloud/openstack/compute/v2/servers"
 import "github.com/LunaNode/gophercloud/openstack/compute/v2/extensions/startstop"
 import "github.com/LunaNode/gophercloud/openstack/compute/v2/extensions/floatingip"
 import "github.com/LunaNode/gophercloud/openstack/image/v1/image"
+
+import "errors"
+import "log"
+import "strconv"
+import "strings"
+import "time"
 
 type OpenStack struct {
 	ComputeClient *gophercloud.ServiceClient

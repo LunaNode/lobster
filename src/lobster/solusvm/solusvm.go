@@ -1,9 +1,10 @@
 package solusvm
 
 import "lobster"
-import "strconv"
+
 import "errors"
 import "fmt"
+import "strconv"
 import "strings"
 
 type SolusVM struct {

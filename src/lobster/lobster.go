@@ -1,14 +1,15 @@
 package lobster
 
+import "github.com/gorilla/context"
 import "github.com/gorilla/mux"
 import "github.com/gorilla/schema"
-import "github.com/gorilla/context"
-import "net/http"
-import "log"
-import "time"
+
 import "lobster/websockify"
-import "sync"
+import "log"
+import "net/http"
 import "strings"
+import "sync"
+import "time"
 
 var decoder *schema.Decoder
 var cfg *Config

@@ -1,13 +1,13 @@
 package lobster
 
+import "bytes"
+import "errors"
+import "fmt"
+import "io/ioutil"
 import "net/http"
 import "net/url"
-import "fmt"
-import "errors"
 import "strconv"
-import "io/ioutil"
 import "strings"
-import "bytes"
 
 const PAYPAL_URL = "https://www.paypal.com/cgi-bin/webscr"
 const PAYPAL_CALLBACK = "/paypal_notify"

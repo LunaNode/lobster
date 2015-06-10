@@ -1,6 +1,7 @@
 package vmfake
 
 import "lobster"
+
 import "errors"
 
 type Fake struct {

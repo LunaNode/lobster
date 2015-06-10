@@ -1,11 +1,11 @@
 package lobster
 
+import "fmt"
 import "html/template"
-import "net/http"
 import "io/ioutil"
+import "net/http"
 import "strings"
 import "time"
-import "fmt"
 
 var templates map[string]*template.Template
 

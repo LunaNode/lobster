@@ -1,19 +1,19 @@
 package lndynamic
 
-import "net/url"
-import "net/http"
-import "errors"
-import "fmt"
-import "encoding/json"
-import "encoding/hex"
-import "strings"
-import "time"
+import "bytes"
 import "crypto/sha512"
 import "crypto/hmac"
 import "crypto/rand"
-import "bytes"
+import "encoding/json"
+import "encoding/hex"
+import "errors"
+import "fmt"
 import "io/ioutil"
+import "net/url"
+import "net/http"
 import "strconv"
+import "strings"
+import "time"
 
 type API struct {
 	ApiId string

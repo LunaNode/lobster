@@ -1,13 +1,14 @@
 package lobster
 
 import "github.com/jordan-wright/email"
+
 import "bytes"
 import "errors"
-import "text/template"
-import "log"
 import "fmt"
 import "io/ioutil"
+import "log"
 import "strings"
+import "text/template"
 
 type EmailParams struct {
 	Username string

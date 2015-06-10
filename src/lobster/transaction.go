@@ -1,10 +1,10 @@
 package lobster
 
-import "time"
-import "fmt"
-import "errors"
 import "database/sql"
+import "errors"
+import "fmt"
 import "log"
+import "time"
 
 type Transaction struct {
 	Id int

@@ -1,7 +1,7 @@
 package lobster
 
-import "time"
 import "fmt"
+import "time"
 
 type User struct {
 	Id int

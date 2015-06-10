@@ -1,6 +1,7 @@
 package lobster
 
 import "code.google.com/p/gcfg"
+
 import "log"
 
 type ConfigDefault struct {

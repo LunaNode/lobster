@@ -1,15 +1,15 @@
 package solusvm
 
-import "net"
-import "net/url"
-import "net/http"
-import "errors"
-import "fmt"
-import "encoding/xml"
+import "bytes"
 import "crypto/rand"
 import "crypto/tls"
-import "bytes"
+import "encoding/xml"
+import "errors"
+import "fmt"
 import "io/ioutil"
+import "net"
+import "net/http"
+import "net/url"
 import "strconv"
 import "time"
 

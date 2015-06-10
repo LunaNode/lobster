@@ -1,11 +1,11 @@
 package lobster
 
-import "time"
-import "fmt"
-import "errors"
-import "log"
 import "database/sql"
+import "errors"
+import "fmt"
+import "log"
 import "strings"
+import "time"
 
 // database objects
 

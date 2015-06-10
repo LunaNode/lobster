@@ -1,8 +1,9 @@
 package lobster
 
-import "net/http"
 import "github.com/gorilla/mux"
+
 import "fmt"
+import "net/http"
 import "strconv"
 import "strings"
 import "time"

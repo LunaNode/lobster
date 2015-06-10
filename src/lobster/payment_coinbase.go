@@ -1,14 +1,15 @@
 package lobster
 
-import "net/http"
 import "github.com/fabioberger/coinbase-go"
-import "fmt"
-import "errors"
-import "strconv"
-import "io/ioutil"
+
 import "encoding/json"
-import "strings"
+import "errors"
+import "fmt"
+import "io/ioutil"
 import "log"
+import "net/http"
+import "strconv"
+import "strings"
 
 type CoinbasePayment struct {
 	callbackSecret string
