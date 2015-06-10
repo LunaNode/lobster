@@ -10,6 +10,7 @@ type ConfigDefault struct {
 	ProxyHeader string
 	Debug bool
 	BandwidthOverageFee float64
+	StorageFee float64
 	Currency string
 }
 
@@ -56,6 +57,9 @@ func LoadConfig(cfgPath string) *Config {
 	}
 	if cfg.Default.BandwidthOverageFee == 0 {
 		log.Printf("Warning: bandwidth overage fee not set")
+	}
+	if cfg.Default.StorageFee == 0 {
+		log.Printf("Warning: storage fee not set")
 	}
 
 	return &cfg

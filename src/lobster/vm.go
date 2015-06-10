@@ -604,7 +604,8 @@ func serviceBilling(db *Database) {
 				}
 			}
 		}
-		hourlyCharge += storageBytes * 55 / 1000 / 1000 / 1000 // 55 = 1,000,000 * (0.04 / 24 / 30) is hourly price per GB
+		creditPerGBHour := int64(cfg.Default.StorageFee * BILLING_PRECISION)
+		hourlyCharge += storageBytes * creditPerGBHour / 1000 / 1000 / 1000
 
 		if hourlyCharge > 0 {
 			totalCharge := hourlyCharge * int64(hours)
