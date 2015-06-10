@@ -32,7 +32,7 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db 
 	params := &coinbase.Button{
 		Name: "Credit for " + username,
 		PriceString: fmt.Sprintf("%.2f", amount),
-		PriceCurrencyIso: "USD",
+		PriceCurrencyIso: cfg.Default.Currency,
 		Custom: fmt.Sprintf("lobster%d", userId),
 		Description: fmt.Sprintf("Credit $%.2f", amount),
 		Type: "buy_now",
@@ -86,7 +86,7 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 		return
 	}
 
-	if data.Order.TotalNative.CurrencyIso != "USD" {
+	if data.Order.TotalNative.CurrencyIso != cfg.Default.Currency {
 		reportError(errors.New(fmt.Sprintf("invalid currency %s", data.Order.TotalNative.CurrencyIso)), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return

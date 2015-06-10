@@ -10,6 +10,7 @@ type ConfigDefault struct {
 	ProxyHeader string
 	Debug bool
 	BandwidthOverageFee float64
+	Currency string
 }
 
 type ConfigSession struct {
@@ -48,5 +49,14 @@ func LoadConfig(cfgPath string) *Config {
 		log.Printf("Error while reading configuration: %s", err.Error())
 		panic(err)
 	}
+
+	// do some basic checking
+	if len(cfg.Default.Currency) != 3 {
+		log.Printf("Warning: currency is set to [%s], but currency codes should be three characters", cfg.Default.Currency)
+	}
+	if cfg.Default.BandwidthOverageFee == 0 {
+		log.Printf("Warning: bandwidth overage fee not set")
+	}
+
 	return &cfg
 }

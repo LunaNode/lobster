@@ -19,6 +19,7 @@ type PaypalTemplateParams struct {
 	UserId int
 	NotifyUrl string
 	ReturnUrl string
+	Currency string
 }
 
 type PaypalPayment struct {
@@ -43,6 +44,7 @@ func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *D
 		UserId: userId,
 		NotifyUrl: cfg.Default.UrlBase + PAYPAL_CALLBACK,
 		ReturnUrl: this.returnUrl,
+		Currency: cfg.Default.Currency,
 	}
 	renderTemplate(w, "panel", "paypal", params)
 }
@@ -100,7 +102,7 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	} else if strings.TrimSpace(strings.ToLower(myPost["receiver_email"])) != strings.TrimSpace(strings.ToLower(this.business)) {
 		reportError(errors.New(fmt.Sprintf("invalid payment with receiver_email=%s", myPost["receiver_email"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
-	} else if myPost["mc_currency"] != "USD" {
+	} else if myPost["mc_currency"] != cfg.Default.Currency {
 		reportError(errors.New(fmt.Sprintf("invalid payment with currency=%s", myPost["mc_currency"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
