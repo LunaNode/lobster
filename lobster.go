@@ -1,126 +1,246 @@
-package main
+package lobster
 
-import "lobster"
-import "lobster/lndynamic"
-import "lobster/lobopenstack"
-import "lobster/solusvm"
-import "lobster/vmfake"
+import "github.com/gorilla/context"
+import "github.com/gorilla/mux"
+import "github.com/gorilla/schema"
 
-import "encoding/json"
-import "io/ioutil"
+import "lobster/websockify"
 import "log"
-import "os"
+import "net/http"
+import "strings"
+import "sync"
+import "time"
 
-type VmConfig struct {
-	Name string `json:"name"`
+var decoder *schema.Decoder
+var cfg *Config
 
-	// one of solusvm, openstack, lndynamic, fake
-	Type string `json:"type"`
+type Lobster struct {
+	router *mux.Router
+	db *Database
 
-	// API options (used by solusvm, lndynamic)
-	ApiId string `json:"api_id"`
-	ApiKey string `json:"api_key"`
-
-	// URL (used by solusvm, openstack)
-	Url string `json:"url"`
-
-	// solusvm options
-	VirtType string `json:"virt_type"`
-	NodeGroup string `json:"node_group"`
-	Insecure bool `json:"insecure"`
-
-	// openstack options
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Tenant string `json:"tenant"`
-	NetworkId string `json:"network_id"`
-
-	// lndynamic options
-	Region string `json:"region"`
+	wsMutex sync.Mutex
+	ws *websockify.Websockify
 }
 
-type PaymentConfig struct {
-	Name string `json:"name"`
-
-	// one of paypal, coinbase, fake
-	Type string `json:"type"`
-
-	// paypal options
-	Business string `json:"business"`
-	ReturnUrl string `json:"return_url"`
-
-	// coinbase options
-	CallbackSecret string `json:"callback_secret"`
-
-	// API options (used by coinbase)
-	ApiKey string `json:"api_key"`
-	ApiSecret string `json:"api_secret"`
-}
-
-type InterfaceConfig struct {
-	Vm []*VmConfig `json:"vm"`
-	Payment []*PaymentConfig `json:"payment"`
-}
-
-func main() {
-	cfgPath := "lobster.cfg"
-	if len(os.Args) >= 2 {
-		cfgPath = os.Args[1]
-	}
-	app := lobster.MakeLobster(cfgPath)
-	app.Init()
-
-	// load interface configuration
-	interfacePath := cfgPath + ".json"
-	interfaceConfigBytes, err := ioutil.ReadFile(interfacePath)
-	if err != nil {
-		log.Fatalf("Error: failed to read interface configuration file %s: %s", interfacePath, err.Error())
-	}
-	var interfaceConfig InterfaceConfig
-	err = json.Unmarshal(interfaceConfigBytes, &interfaceConfig)
-	if err != nil {
-		log.Fatalf("Error: failed to parse interface configuration: %s", err.Error())
-	}
-
-	for _, vm := range interfaceConfig.Vm {
-		var vmi lobster.VmInterface
-		if vm.Type == "openstack" {
-			vmi = lobopenstack.MakeOpenStack(vm.Url, vm.Username, vm.Password, vm.Tenant, vm.NetworkId)
-		} else if vm.Type == "solusvm" {
-			vmi = &solusvm.SolusVM{
-				Lobster: app,
-				VirtType: vm.VirtType,
-				NodeGroup: vm.NodeGroup,
-				Api: &solusvm.API{
-					Url: vm.Url,
-					ApiId: vm.ApiId,
-					ApiKey: vm.ApiKey,
-					Insecure: vm.Insecure,
-				},
+func LobsterHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// replace proxy IP if set
+		if cfg.Default.ProxyHeader != "" {
+			actualIP := r.Header.Get(cfg.Default.ProxyHeader)
+			if actualIP != "" {
+				r.RemoteAddr = actualIP
 			}
-		} else if vm.Type == "lndynamic" {
-			vmi = lndynamic.MakeLNDynamic(vm.Region, vm.ApiId, vm.ApiKey)
-		} else if vm.Type == "fake" {
-			vmi = new(vmfake.Fake)
-		} else {
-			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
-		app.RegisterVmInterface(vm.Name, vmi)
+
+		if cfg.Default.Debug {
+			log.Printf("Request [%s] %s %s", r.RemoteAddr, r.Method, r.URL)
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}
+
+func RedirectHandler(target string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target, 302)
+	}
+}
+
+func LogAction(db *Database, userId int, ip string, name string, details string) {
+	db.Exec("INSERT INTO actions (user_id, ip, name, details) VALUES (?, ?, ?, ?)", userId, ip, name, details)
+}
+
+func MakeLobster(cfgPath string) *Lobster {
+	this := new(Lobster)
+
+	cfg = LoadConfig(cfgPath)
+	this.router = mux.NewRouter()
+	this.db = MakeDatabase()
+
+	return this
+}
+
+func (this *Lobster) RegisterPanelHandler(path string, f PanelHandlerFunc, onlyPost bool) {
+	result := this.router.HandleFunc(path, this.db.wrapHandler(sessionWrap(panelWrap(f))))
+	if onlyPost {
+		result.Methods("POST")
+	}
+}
+
+func (this *Lobster) RegisterAdminHandler(path string, f AdminHandlerFunc, onlyPost bool) {
+	result := this.router.HandleFunc(path, this.db.wrapHandler(sessionWrap(adminWrap(f))))
+	if onlyPost {
+		result.Methods("POST")
+	}
+}
+
+func (this *Lobster) RegisterHttpHandler(path string, f http.HandlerFunc, onlyPost bool) {
+	result := this.router.HandleFunc(path, f)
+	if onlyPost {
+		result.Methods("POST")
+	}
+}
+
+func (this *Lobster) RegisterVmInterface(region string, vmi VmInterface) {
+	regionInterfaces[region] = vmi
+}
+
+func (this *Lobster) RegisterPaymentInterface(method string, payInterface PaymentInterface) {
+	paymentInterfaces[method] = payInterface
+}
+
+func (this *Lobster) GetConfig() *Config {
+	return cfg
+}
+
+func (this *Lobster) GetDatabase() *Database {
+	return this.db
+}
+
+// Creates websockify instance if not already setup, initializes token, and returns URL to redirect to
+func (this *Lobster) HandleWebsockify(ipport string, password string) string {
+	this.wsMutex.Lock()
+	defer this.wsMutex.Unlock()
+
+	if this.ws == nil {
+		this.ws = &websockify.Websockify{
+			Listen: cfg.Novnc.Listen,
+		}
+		this.ws.Run()
 	}
 
-	for _, payment := range interfaceConfig.Payment {
-		var pi lobster.PaymentInterface
-		if payment.Type == "paypal" {
-			pi = lobster.MakePaypalPayment(app, payment.Business, payment.ReturnUrl)
-		} else if payment.Type == "coinbase" {
-			pi = lobster.MakeCoinbasePayment(app, payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
-		} else if payment.Type == "fake" {
-			pi = new(lobster.FakePayment)
-		} else {
-			log.Fatalf("Encountered unrecognized payment interface type %s", payment.Type)
-		}
-		app.RegisterPaymentInterface(payment.Name, pi)
-	}
+	token := this.ws.Register(ipport)
+	return strings.Replace(strings.Replace(cfg.Novnc.Url, "TOKEN", token, 1), "PASSWORD", password, 1)
+}
 
-	app.Run()
+func (this *Lobster) Init() {
+	loadTemplates()
+	loadEmail()
+	loadAssets()
+
+	decoder = schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	// splash/static routes
+	this.router.HandleFunc("/", getSplashHandler("index"))
+	this.router.HandleFunc("/about", getSplashHandler("about"))
+	this.router.HandleFunc("/pricing", getSplashHandler("pricing"))
+	this.router.HandleFunc("/contact", getSplashHandler("contact"))
+	this.router.HandleFunc("/terms", getSplashHandler("terms"))
+	this.router.HandleFunc("/privacy", getSplashHandler("privacy"))
+	this.router.HandleFunc("/login", this.db.wrapHandler(sessionWrap(getSplashFormHandler("login"))))
+	this.router.HandleFunc("/create", this.db.wrapHandler(sessionWrap(getSplashFormHandler("create"))))
+	this.router.HandleFunc("/assets/{assetPath:.*}", assetsHandler)
+	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
+
+	// auth routes
+	this.router.HandleFunc("/auth/login", this.db.wrapHandler(sessionWrap(authLoginHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/create", this.db.wrapHandler(sessionWrap(authCreateHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/logout", this.db.wrapHandler(sessionWrap(authLogoutHandler)))
+
+	// panel routes
+	this.router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))
+	this.RegisterPanelHandler("/panel/dashboard", panelDashboard, false)
+	this.RegisterPanelHandler("/panel/vms", panelVirtualMachines, false)
+	this.RegisterPanelHandler("/panel/newvm", panelNewVM, false)
+	this.RegisterPanelHandler("/panel/newvm/{region:[^/]+}", panelNewVMRegion, false)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}", panelVM, false)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/start", panelVMStart, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/stop", panelVMStop, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reboot", panelVMReboot, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/delete", panelVMDelete, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/action/{action:[^/]+}", panelVMAction, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/vnc", panelVMVnc, false)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reimage", panelVMReimage, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/rename", panelVMRename, true)
+	this.RegisterPanelHandler("/panel/billing", panelBilling, false)
+	this.RegisterPanelHandler("/panel/pay", panelPay, false)
+	this.RegisterPanelHandler("/panel/charges", panelCharges, false)
+	this.RegisterPanelHandler("/panel/charges/{year:[0-9]+}/{month:[0-9]+}", panelCharges, false)
+	this.RegisterPanelHandler("/panel/account", panelAccount, false)
+	this.RegisterPanelHandler("/panel/account/passwd", panelAccountPassword, true)
+	this.RegisterPanelHandler("/panel/images", panelImages, false)
+	this.RegisterPanelHandler("/panel/images/add", panelImageAdd, true)
+	this.RegisterPanelHandler("/panel/image/{id:[0-9]+}", panelImageDetails, false)
+	this.RegisterPanelHandler("/panel/image/{id:[0-9]+}/remove", panelImageRemove, true)
+	this.RegisterPanelHandler("/panel/support", panelSupport, false)
+	this.RegisterPanelHandler("/panel/support/open", panelSupportOpen, false)
+	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}", panelSupportTicket, false)
+	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/reply", panelSupportTicketReply, true)
+	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/close", panelSupportTicketClose, true)
+
+	// admin routes
+	this.RegisterAdminHandler("/admin/dashboard", adminDashboard, false)
+	this.RegisterAdminHandler("/admin/users", adminUsers, false)
+	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}", adminUser, false)
+	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/login", adminUserLogin, true)
+	this.RegisterAdminHandler("/admin/support", adminSupport, false)
+	this.RegisterAdminHandler("/admin/support/open/{id:[0-9]+}", adminSupportOpen, false)
+	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}", adminSupportTicket, false)
+	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}/reply", adminSupportTicketReply, true)
+	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}/close", adminSupportTicketClose, true)
+	this.RegisterAdminHandler("/admin/plans", adminPlans, false)
+	this.RegisterAdminHandler("/admin/plans/add", adminPlansAdd, false)
+	this.RegisterAdminHandler("/admin/plan/{id:[0-9]+}/delete", adminPlanDelete, true)
+	this.RegisterAdminHandler("/admin/images", adminImages, false)
+	this.RegisterAdminHandler("/admin/images/add", adminImagesAdd, false)
+	this.RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
+}
+
+func (this *Lobster) Run() {
+	// fake cron routine
+	go func() {
+		for {
+			rows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+			for rows.Next() {
+				var vmId int
+				rows.Scan(&vmId)
+				vmBilling(this.db, vmId, false)
+			}
+
+			rows = this.db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+			for rows.Next() {
+				var userId int
+				rows.Scan(&userId)
+				userBilling(this.db, userId)
+			}
+
+			serviceBilling(this.db)
+
+			// cleanup
+			this.db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+			this.db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+			this.db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
+
+			time.Sleep(time.Minute)
+		}
+	}()
+
+	// cached
+	go func() {
+		for {
+			rows := this.db.Query("SELECT id, user_id FROM images WHERE status = 'pending' ORDER BY RAND() LIMIT 3")
+			for rows.Next() {
+				var imageId, userId int
+				rows.Scan(&imageId, &userId)
+				imageInfo := imageInfo(this.db, userId, imageId)
+
+				if imageInfo != nil {
+					if imageInfo.Info.Status == ImageError {
+						this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "error", imageId)
+					} else if imageInfo.Info.Status == ImageActive {
+						this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "active", imageId)
+					}
+				}
+			}
+
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
+	httpServer := &http.Server{
+		Addr: cfg.Http.Addr,
+		Handler: LobsterHandler(context.ClearHandler(this.router)),
+	}
+	log.Fatal(httpServer.ListenAndServe())
 }
