@@ -16,33 +16,25 @@ type SolusVM struct {
 	vmBandwidth map[string]int64 // for bandwidth accounting
 }
 
-func (this *SolusVM) VmCreate(name string, plan *lobster.Plan, imageIdentification string) (string, error) {
+func (this *SolusVM) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+	name := vm.Name
 	if len(name) < 4 {
 		name += ".example.com"
 	}
 
-	vmId, password, err := this.Api.VmCreate(this.VirtType, this.NodeGroup, name, imageIdentification, plan.Ram, plan.Storage, plan.Cpu)
-	return fmt.Sprintf("%d:%s", vmId, password), err
+	vmId, password, err := this.Api.VmCreate(this.VirtType, this.NodeGroup, name, imageIdentification, vm.Plan.Ram, vm.Plan.Storage, vm.Plan.Cpu)
+	vm.SetMetadata("password", password)
+	return fmt.Sprintf("%d", vmId), err
 }
 
-func (this *SolusVM) processVmIdentification(vmIdentification string) (int, string) {
-	parts := strings.Split(vmIdentification, ":")
-	vmIdentificationInt, _ := strconv.ParseInt(parts[0], 10, 32)
-	if len(parts) == 1 {
-		return int(vmIdentificationInt), ""
-	} else {
-		return int(vmIdentificationInt), parts[1]
-	}
+func (this *SolusVM) VmDelete(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmDelete(int(vmIdentificationInt))
 }
 
-func (this *SolusVM) VmDelete(vmIdentification string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	return this.Api.VmDelete(vmIdentificationInt)
-}
-
-func (this *SolusVM) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
-	vmIdentificationInt, rootPassword := this.processVmIdentification(vmIdentification)
-	apiInfo, err := this.Api.VmInfo(vmIdentificationInt)
+func (this *SolusVM) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	apiInfo, err := this.Api.VmInfo(int(vmIdentificationInt))
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +45,7 @@ func (this *SolusVM) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
 		PrivateIp: apiInfo.InternalIps,
 		Status: strings.Title(apiInfo.State),
 		BandwidthUsed: bwUsed,
-		LoginDetails: "username: root; password: " + rootPassword,
+		LoginDetails: "username: root; password: " + vm.Metadata("password", "unknown"),
 	}
 
 	if this.VirtType == "openvz" {
@@ -71,24 +63,24 @@ func (this *SolusVM) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
 	return &info, nil
 }
 
-func (this *SolusVM) VmStart(vmIdentification string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	return this.Api.VmStart(vmIdentificationInt)
+func (this *SolusVM) VmStart(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmStart(int(vmIdentificationInt))
 }
 
-func (this *SolusVM) VmStop(vmIdentification string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	return this.Api.VmStop(vmIdentificationInt)
+func (this *SolusVM) VmStop(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmStop(int(vmIdentificationInt))
 }
 
-func (this *SolusVM) VmReboot(vmIdentification string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	return this.Api.VmReboot(vmIdentificationInt)
+func (this *SolusVM) VmReboot(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmReboot(int(vmIdentificationInt))
 }
 
-func (this *SolusVM) VmVnc(vmIdentification string) (string, error) {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	vncInfo, err := this.Api.VmVnc(vmIdentificationInt)
+func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	vncInfo, err := this.Api.VmVnc(int(vmIdentificationInt))
 	if err != nil {
 		return "", err
 	} else {
@@ -103,35 +95,35 @@ func (this *SolusVM) CanVnc() bool {
 	return true
 }
 
-func (this *SolusVM) VmAction(vmIdentification string, action string, value string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
+func (this *SolusVM) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	if action == "tuntap" {
-		return this.Api.VmTunTap(vmIdentificationInt, value == "enable")
+		return this.Api.VmTunTap(int(vmIdentificationInt), value == "enable")
 	} else {
 		return errors.New("operation not supported")
 	}
 }
 
-func (this *SolusVM) VmRename(vmIdentification string, name string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	return this.Api.VmHostname(vmIdentificationInt, name)
+func (this *SolusVM) VmRename(vm *lobster.VirtualMachine, name string) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmHostname(int(vmIdentificationInt), name)
 }
 
 func (this *SolusVM) CanRename() bool {
 	return true
 }
 
-func (this *SolusVM) VmReimage(vmIdentification string, imageIdentification string) error {
-	vmIdentificationInt, _ := this.processVmIdentification(vmIdentification)
-	return this.Api.VmReimage(vmIdentificationInt, imageIdentification)
+func (this *SolusVM) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmReimage(int(vmIdentificationInt), imageIdentification)
 }
 
 func (this *SolusVM) CanReimage() bool {
 	return true
 }
 
-func (this *SolusVM) BandwidthAccounting(vmIdentification string) int64 {
-	info, err := this.VmInfo(vmIdentification)
+func (this *SolusVM) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
+	info, err := this.VmInfo(vm)
 	if err != nil {
 		return 0
 	}
@@ -140,8 +132,8 @@ func (this *SolusVM) BandwidthAccounting(vmIdentification string) int64 {
 		this.vmBandwidth = make(map[string]int64)
 	}
 
-	currentBandwidth, ok := this.vmBandwidth[vmIdentification]
-	this.vmBandwidth[vmIdentification] = info.BandwidthUsed
+	currentBandwidth, ok := this.vmBandwidth[vm.Identification]
+	this.vmBandwidth[vm.Identification] = info.BandwidthUsed
 	if !ok {
 		return 0
 	} else {

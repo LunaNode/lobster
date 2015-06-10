@@ -1,35 +1,36 @@
 package lobster
 
 type VmInterface interface {
-	// Creates a virtual machine with the given name, plan, and image.
-	// vmIdentification != nil only if err == nil.
-	VmCreate(name string, plan *Plan, imageIdentification string) (string, error)
+	// Creates a virtual machine with the given name and plan (specified in vm object), and image.
+	// Returns vmIdentification string and optional error.
+	// Should return vmIdentification != "" only if err == nil.
+	VmCreate(vm *VirtualMachine, imageIdentification string) (string, error)
 
 	// Deletes the specified virtual machine.
-	VmDelete(vmIdentification string) error
+	VmDelete(vm *VirtualMachine) error
 
-	VmInfo(vmIdentification string) (*VmInfo, error)
+	VmInfo(vm *VirtualMachine) (*VmInfo, error)
 
-	VmStart(vmIdentification string) error
-	VmStop(vmIdentification string) error
-	VmReboot(vmIdentification string) error
+	VmStart(vm *VirtualMachine) error
+	VmStop(vm *VirtualMachine) error
+	VmReboot(vm *VirtualMachine) error
 
 	// On success, url is a link that we should redirect to.
-	VmVnc(vmIdentification string) (string, error)
+	VmVnc(vm *VirtualMachine) (string, error)
 	CanVnc() bool
 
 	// action is an element of VmInfo.Actions (although this is not guaranteed)
-	VmAction(vmIdentification string, action string, value string) error
+	VmAction(vm *VirtualMachine, action string, value string) error
 
-	VmRename(vmIdentification string, name string) error
+	VmRename(vm *VirtualMachine, name string) error
 	CanRename() bool
 
-	VmReimage(vmIdentification string, imageIdentification string) error
+	VmReimage(vm *VirtualMachine, imageIdentification string) error
 	CanReimage() bool
 
 	// returns the number of bytes transferred by the given VM since the last call
 	// if this is the first call, then BandwidthAccounting must return zero
-	BandwidthAccounting(vmIdentification string) int64
+	BandwidthAccounting(vm *VirtualMachine) int64
 
 	// Whether ImageFetch, ImageDetails, and ImageDelete are supported
 	CanImages() bool

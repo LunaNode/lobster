@@ -16,17 +16,17 @@ type Fake struct {
 	CountVnc int
 }
 
-func (this *Fake) VmCreate(name string, plan *lobster.Plan, imageIdentification string) (string, error) {
+func (this *Fake) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	this.CountCreate++
 	return "fake", nil
 }
 
-func (this *Fake) VmDelete(vmIdentification string) error {
+func (this *Fake) VmDelete(vm *lobster.VirtualMachine) error {
 	this.CountDelete++
 	return nil
 }
 
-func (this *Fake) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
+func (this *Fake) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
 	this.CountInfo++
 	return &lobster.VmInfo{
 		Ip: "127.0.0.1",
@@ -36,22 +36,22 @@ func (this *Fake) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
 	}, nil
 }
 
-func (this *Fake) VmStart(vmIdentification string) error {
+func (this *Fake) VmStart(vm *lobster.VirtualMachine) error {
 	this.CountStart++
 	return nil
 }
 
-func (this *Fake) VmStop(vmIdentification string) error {
+func (this *Fake) VmStop(vm *lobster.VirtualMachine) error {
 	this.CountStop++
 	return nil
 }
 
-func (this *Fake) VmReboot(vmIdentification string) error {
+func (this *Fake) VmReboot(vm *lobster.VirtualMachine) error {
 	this.CountReboot++
 	return nil
 }
 
-func (this *Fake) VmVnc(vmIdentification string) (string, error) {
+func (this *Fake) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	this.CountVnc++
 	return "https://lunanode.com/", nil
 }
@@ -60,11 +60,11 @@ func (this *Fake) CanVnc() bool {
 	return true
 }
 
-func (this *Fake) VmAction(vmIdentification string, action string, value string) error {
+func (this *Fake) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
 }
 
-func (this *Fake) VmRename(vmIdentification string, name string) error {
+func (this *Fake) VmRename(vm *lobster.VirtualMachine, name string) error {
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (this *Fake) CanRename() bool {
 	return true
 }
 
-func (this *Fake) VmReimage(vmIdentification string, imageIdentification string) error {
+func (this *Fake) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
 	return nil
 }
 
@@ -80,7 +80,7 @@ func (this *Fake) CanReimage() bool {
 	return true
 }
 
-func (this *Fake) BandwidthAccounting(vmIdentification string) int64 {
+func (this *Fake) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	return this.Bandwidth
 }
 

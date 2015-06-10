@@ -69,7 +69,7 @@ func userApplyCredit(db *Database, userId int, amount int64, detail string) {
 		vms := vmList(db, userId)
 		for _, vm := range vms {
 			if vm.Suspended == "auto" {
-				reportError(vmUnsuspend(db, userId, vm.Id), "failed to unsuspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
+				reportError(vm.Unsuspend(), "failed to unsuspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
 				mailWrap(db, userId, "vmUnsuspend", VmUnsuspendEmail{Name: vm.Name}, false)
 			}
 		}
@@ -241,14 +241,14 @@ func userBilling(db *Database, userId int) {
 				// terminte the account
 				vms := vmList(db, userId)
 				for _, vm := range vms {
-					reportError(vmDelete(db, userId, vm.Id), "failed to delete VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
+					reportError(vm.Delete(userId), "failed to delete VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
 				}
 				mailWrap(db, userId, "userTerminate", nil, false)
 			} else {
 				// suspend
 				vms := vmList(db, userId)
 				for _, vm := range vms {
-					reportError(vmSuspend(db, userId, vm.Id, true), "failed to suspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
+					reportError(vm.Suspend(true), "failed to suspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
 				}
 				mailWrap(db, userId, "userSuspend", nil, false)
 			}

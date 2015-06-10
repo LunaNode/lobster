@@ -2,6 +2,7 @@ package lobster
 
 import "github.com/gorilla/mux"
 
+import "errors"
 import "fmt"
 import "net/http"
 import "strconv"
@@ -146,11 +147,12 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
-	vm := vmInfo(db, session.UserId, int(vmId))
+	vm := vmGetUser(db, session.UserId, int(vmId))
 	if vm == nil {
 		redirectMessage(w, r, "/panel/vms", "Error: VM not found.")
 		return
 	}
+	vm.LoadInfo()
 
 	params := PanelVMParams{}
 	params.Frame = frameParams
@@ -161,88 +163,94 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 }
 
 // virtual machine actions
-func panelVMStart(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelVMProcess(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) (*VirtualMachine, error) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		return nil, errors.New("invalid VM ID")
 	}
-	err = vmStart(db, session.UserId, int(vmId))
+	vm := vmGetUser(db, session.UserId, int(vmId))
+	if vm == nil {
+		return nil, errors.New("VM does not exist")
+	}
+	return vm, nil
+}
+
+func panelVMStart(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
+	}
+	err = vm.Start()
+	if err != nil {
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
-		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Start VM", fmt.Sprintf("VM ID: %d", vmId))
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "VM started successfully.")
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Start VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "VM started successfully.")
 	}
 }
 func panelVMStop(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
 	}
-	err = vmStop(db, session.UserId, int(vmId))
+	err = vm.Stop()
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
-		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Stop VM", fmt.Sprintf("VM ID: %d", vmId))
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "VM stopped successfully.")
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Stop VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "VM stopped successfully.")
 	}
 }
 func panelVMReboot(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
 	}
-	err = vmReboot(db, session.UserId, int(vmId))
+	err = vm.Reboot()
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
-		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Reboot VM", fmt.Sprintf("VM ID: %d", vmId))
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "VM rebooted successfully.")
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Reboot VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "VM rebooted successfully.")
 	}
 }
 func panelVMDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
 	}
-	err = vmDelete(db, session.UserId, int(vmId))
+	err = vm.Delete(session.UserId)
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
-		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Delete VM", fmt.Sprintf("VM ID: %d", vmId))
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Delete VM", fmt.Sprintf("VM ID: %d", vm.Id))
 		redirectMessage(w, r, "/panel/vms", "VM deleted successfully.")
 	}
 }
 func panelVMAction(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
-	action := mux.Vars(r)["action"]
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
 	}
 
-	err = vmAction(db, session.UserId, int(vmId), action, r.PostFormValue("value"))
+	action := mux.Vars(r)["action"]
+	err = vm.Action(action, r.PostFormValue("value"))
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
-		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "VM action", fmt.Sprintf("VM ID: %d; Action: %s", vmId, action))
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Action [" + action + "] applied successfully.")
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "VM action", fmt.Sprintf("VM ID: %d; Action: %s", vm.Id, action))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Action [" + action + "] applied successfully.")
 	}
 }
 
 func panelVMVnc(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
 	}
-	url, err := vmVnc(db, session.UserId, int(vmId))
+	url, err := vm.Vnc()
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
 		renderTemplate(w, "panel", "vnc", url)
 	}
@@ -275,18 +283,16 @@ func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, sessio
 }
 
 func panelVMRename(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
-		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
-		return
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
 	}
-
-	err = vmRename(db, session.UserId, int(vmId), r.PostFormValue("name"))
+	err = vm.Rename(r.PostFormValue("name"))
 	if err != nil {
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "Error: " + err.Error() + ".")
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
 	} else {
-		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Rename VM", fmt.Sprintf("VM ID: %d; Name: %d", vmId, r.PostFormValue("name")))
-		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), "VM renamed successfully.")
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Rename VM", fmt.Sprintf("VM ID: %d; Name: %d", vm.Id, r.PostFormValue("name")))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "VM renamed successfully.")
 	}
 }
 

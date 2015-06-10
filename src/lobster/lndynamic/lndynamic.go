@@ -25,7 +25,7 @@ func MakeLNDynamic(region string, apiId string, apiKey string) *LNDynamic {
 	return this
 }
 
-func (this *LNDynamic) VmCreate(name string, plan *lobster.Plan, imageIdentification string) (string, error) {
+func (this *LNDynamic) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	plans, err := this.api.PlanList()
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func (this *LNDynamic) VmCreate(name string, plan *lobster.Plan, imageIdentifica
 		ram, _ := strconv.ParseInt(apiPlan.Ram, 10, 32)
 		storage, _ := strconv.ParseInt(apiPlan.Storage, 10, 32)
 
-		if int(cpu) == plan.Cpu && int(ram) == plan.Ram && int(storage) == plan.Storage {
+		if int(cpu) == vm.Plan.Cpu && int(ram) == vm.Plan.Ram && int(storage) == vm.Plan.Storage {
 			matchPlan = apiPlan
 			break
 		}
@@ -49,17 +49,17 @@ func (this *LNDynamic) VmCreate(name string, plan *lobster.Plan, imageIdentifica
 
 	planIdentification, _ := strconv.ParseInt(matchPlan.Id, 10, 32)
 	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
-	vmId, err := this.api.VmCreateImage(this.region, name, int(planIdentification), int(imageIdentificationInt))
+	vmId, err := this.api.VmCreateImage(this.region, vm.Name, int(planIdentification), int(imageIdentificationInt))
 	return fmt.Sprintf("%d", vmId), err
 }
 
-func (this *LNDynamic) VmDelete(vmIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmDelete(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.api.VmDelete(int(vmIdentificationInt))
 }
 
-func (this *LNDynamic) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	apiInfo, err := this.api.VmInfo(int(vmIdentificationInt))
 	if err != nil {
 		return nil, err
@@ -77,23 +77,23 @@ func (this *LNDynamic) VmInfo(vmIdentification string) (*lobster.VmInfo, error) 
 	return &info, nil
 }
 
-func (this *LNDynamic) VmStart(vmIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmStart(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.api.VmStart(int(vmIdentificationInt))
 }
 
-func (this *LNDynamic) VmStop(vmIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmStop(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.api.VmStop(int(vmIdentificationInt))
 }
 
-func (this *LNDynamic) VmReboot(vmIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmReboot(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.api.VmReboot(int(vmIdentificationInt))
 }
 
-func (this *LNDynamic) VmVnc(vmIdentification string) (string, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmVnc(vm *lobster.VirtualMachine) (string, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.api.VmVnc(int(vmIdentificationInt))
 }
 
@@ -101,11 +101,11 @@ func (this *LNDynamic) CanVnc() bool {
 	return true
 }
 
-func (this *LNDynamic) VmAction(vmIdentification string, action string, value string) error {
+func (this *LNDynamic) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
 }
 
-func (this *LNDynamic) VmRename(vmIdentification string, name string) error {
+func (this *LNDynamic) VmRename(vm *lobster.VirtualMachine, name string) error {
 	return errors.New("operation not supported")
 }
 
@@ -113,8 +113,8 @@ func (this *LNDynamic) CanRename() bool {
 	return false
 }
 
-func (this *LNDynamic) VmReimage(vmIdentification string, imageIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vmIdentification, 10, 32)
+func (this *LNDynamic) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
 	return this.api.VmReimage(int(vmIdentificationInt), int(imageIdentificationInt))
 }
@@ -123,8 +123,8 @@ func (this *LNDynamic) CanReimage() bool {
 	return true
 }
 
-func (this *LNDynamic) BandwidthAccounting(vmIdentification string) int64 {
-	info, err := this.VmInfo(vmIdentification)
+func (this *LNDynamic) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
+	info, err := this.VmInfo(vm)
 	if err != nil {
 		return 0
 	}
@@ -133,8 +133,8 @@ func (this *LNDynamic) BandwidthAccounting(vmIdentification string) int64 {
 		this.vmBandwidth = make(map[string]int64)
 	}
 
-	currentBandwidth, ok := this.vmBandwidth[vmIdentification]
-	this.vmBandwidth[vmIdentification] = info.BandwidthUsed
+	currentBandwidth, ok := this.vmBandwidth[vm.Identification]
+	this.vmBandwidth[vm.Identification] = info.BandwidthUsed
 	if !ok || currentBandwidth < info.BandwidthUsed {
 		return 0
 	} else {

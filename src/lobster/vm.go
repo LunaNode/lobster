@@ -24,6 +24,7 @@ type VirtualMachine struct {
 	Plan Plan
 
 	Info *VmInfo
+	db *Database
 }
 
 type Image struct {
@@ -90,10 +91,10 @@ var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
 
 const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, vms.status, vms.task_pending, vms.external_ip, vms.private_ip, vms.time_created, vms.suspended, vms.plan_id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage, plans.bandwidth FROM vms, plans WHERE vms.plan_id = plans.id"
 
-func vmListHelper(rows *sql.Rows) []*VirtualMachine {
+func vmListHelper(db *Database, rows *sql.Rows) []*VirtualMachine {
 	vms := make([]*VirtualMachine, 0)
 	for rows.Next() {
-		vm := VirtualMachine{}
+		vm := VirtualMachine{db: db}
 		rows.Scan(&vm.Id, &vm.UserId, &vm.Region, &vm.Name, &vm.Identification, &vm.Status, &vm.TaskPending, &vm.ExternalIP, &vm.PrivateIP, &vm.CreatedTime, &vm.Suspended, &vm.Plan.Id, &vm.Plan.Name, &vm.Plan.Price, &vm.Plan.Ram, &vm.Plan.Cpu, &vm.Plan.Storage, &vm.Plan.Bandwidth)
 		vms = append(vms, &vm)
 	}
@@ -101,15 +102,15 @@ func vmListHelper(rows *sql.Rows) []*VirtualMachine {
 }
 
 func vmList(db *Database, userId int) []*VirtualMachine {
-	return vmListHelper(db.Query(VM_QUERY + " AND vms.user_id = ? ORDER BY id DESC", userId))
+	return vmListHelper(db, db.Query(VM_QUERY + " AND vms.user_id = ? ORDER BY id DESC", userId))
 }
 
 func vmListRegion(db *Database, userId int, region string) []*VirtualMachine {
-	return vmListHelper(db.Query(VM_QUERY + " AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
+	return vmListHelper(db, db.Query(VM_QUERY + " AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
 }
 
 func vmGet(db *Database, vmId int) *VirtualMachine {
-	vms := vmListHelper(db.Query(VM_QUERY + " AND vms.id = ? ORDER BY id DESC", vmId))
+	vms := vmListHelper(db, db.Query(VM_QUERY + " AND vms.id = ? ORDER BY id DESC", vmId))
 	if len(vms) == 1 {
 		return vms[0]
 	} else {
@@ -118,7 +119,7 @@ func vmGet(db *Database, vmId int) *VirtualMachine {
 }
 
 func vmGetUser(db *Database, userId int, vmId int) *VirtualMachine {
-	vms := vmListHelper(db.Query(VM_QUERY + " AND vms.id = ? AND vms.user_id = ? ORDER BY id DESC", vmId, userId))
+	vms := vmListHelper(db, db.Query(VM_QUERY + " AND vms.id = ? AND vms.user_id = ? ORDER BY id DESC", vmId, userId))
 	if len(vms) == 1 {
 		return vms[0]
 	} else {
@@ -196,9 +197,9 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	checkErr(err)
 
 	go func() {
-		vmIdentification, err := vmGetInterface(image.Region).VmCreate(name, plan, image.Identification)
+		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vmGet(db, int(vmId)), image.Identification)
 		if err != nil {
-			reportError(err, "vm creation failed (image)", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
+			reportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
 			mailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: int(vmId), Name: name}, true)
 			return
@@ -211,18 +212,20 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	return int(vmId), nil
 }
 
-func vmInfo(db *Database, userId int, vmId int) *VirtualMachine {
-	vm := vmGetUser(db, userId, vmId)
-	if vm == nil {
-		return nil
-	} else if vm.Identification == "" || vm.Status != "active" {
-		vm.Info = &VmInfo{Ip: "Pending", PrivateIp: "Pending", Status: strings.Title(vm.Status), Hostname: vm.Name}
-		return vm
+func (vm *VirtualMachine) LoadInfo() {
+	if vm.Info != nil {
+		return
 	}
+
+	if vm.Identification == "" || vm.Status != "active" {
+		vm.Info = &VmInfo{Ip: "Pending", PrivateIp: "Pending", Status: strings.Title(vm.Status), Hostname: vm.Name}
+		return
+	}
+
 	vmi := vmGetInterface(vm.Region)
 
 	var err error
-	vm.Info, err = vmi.VmInfo(vm.Identification)
+	vm.Info, err = vmi.VmInfo(vm)
 	if err != nil {
 		reportError(err, "vmInfo failed", fmt.Sprintf("vm_id=%d, identification=%s", vm.Id, vm.Identification))
 		vm.Info = new(VmInfo)
@@ -238,7 +241,7 @@ func vmInfo(db *Database, userId int, vmId int) *VirtualMachine {
 			vm.Info.PrivateIp = "Pending"
 		}
 	} else {
-		db.Exec("UPDATE vms SET external_ip = ?, private_ip = ? WHERE id = ?", vm.Info.Ip, vm.Info.PrivateIp, vm.Id)
+		vm.db.Exec("UPDATE vms SET external_ip = ?, private_ip = ? WHERE id = ?", vm.Info.Ip, vm.Info.PrivateIp, vm.Id)
 	}
 	if vm.Info.Status == "" {
 		vm.Info.Status = "Unknown"
@@ -246,16 +249,11 @@ func vmInfo(db *Database, userId int, vmId int) *VirtualMachine {
 
 	vm.Info.CanVnc = vmi.CanVnc()
 	vm.Info.CanReimage = vmi.CanReimage()
-
-	return vm
 }
 
 // Attempt to apply function on the provided VM.
-func vmDo(db *Database, userId int, vmId int, f func(vm *VirtualMachine) error) error {
-	vm := vmGetUser(db, userId, vmId)
-	if vm == nil {
-		return errors.New("invalid VM instance")
-	} else if vm.Identification == "" || vm.Status != "active" {
+func (vm *VirtualMachine) do(f func(vm *VirtualMachine) error) error {
+	if vm.Identification == "" || vm.Status != "active" {
 		return errors.New("VM is not ready yet")
 	} else if vm.Suspended != "no" {
 		if vm.Suspended == "auto" {
@@ -271,41 +269,35 @@ func vmDo(db *Database, userId int, vmId int, f func(vm *VirtualMachine) error) 
 
 	return f(vm)
 }
-func vmStart(db *Database, userId int, vmId int) error {
-	log.Printf("vmStart(%d, %d)", userId, vmId)
-	return vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
-		return vmGetInterface(vm.Region).VmStart(vm.Identification)
-	})
+func (vm *VirtualMachine) Start() error {
+	log.Printf("vmStart(%d)", vm.Id)
+	return vm.do(vmGetInterface(vm.Region).VmStart)
 }
-func vmStop(db *Database, userId int, vmId int) error {
-	log.Printf("vmStop(%d, %d)", userId, vmId)
-	return vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
-		return vmGetInterface(vm.Region).VmStop(vm.Identification)
-	})
+func (vm *VirtualMachine) Stop() error {
+	log.Printf("vmStop(%d)", vm.Id)
+	return vm.do(vmGetInterface(vm.Region).VmStop)
 }
-func vmReboot(db *Database, userId int, vmId int) error {
-	log.Printf("vmReboot(%d, %d)", userId, vmId)
-	return vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
-		return vmGetInterface(vm.Region).VmReboot(vm.Identification)
-	})
+func (vm *VirtualMachine) Reboot() error {
+	log.Printf("vmReboot(%d)", vm.Id)
+	return vm.do(vmGetInterface(vm.Region).VmReboot)
 }
-func vmAction(db *Database, userId int, vmId int, action string, value string) error {
-	log.Printf("vmAction(%d, %d, %s, %s)", userId, vmId, action, value)
-	return vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
-		return vmGetInterface(vm.Region).VmAction(vm.Identification, action, value)
+func (vm *VirtualMachine) Action(action string, value string) error {
+	log.Printf("vmAction(%d, %s, %s)", vm.Id, action, value)
+	return vm.do(func(vm *VirtualMachine) error {
+		return vmGetInterface(vm.Region).VmAction(vm, action, value)
 	})
 }
 
-func vmVnc(db *Database, userId int, vmId int) (string, error) {
-	log.Printf("vmVnc(%d, %d)", userId, vmId)
+func (vm *VirtualMachine) Vnc() (string, error) {
+	log.Printf("vmVnc(%d)", vm.Id)
 	var url string
-	err := vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
+	err := vm.do(func(vm *VirtualMachine) error {
 		vmi := vmGetInterface(vm.Region)
 		if !vmi.CanVnc() {
 			return errors.New("VNC not supported on this VM")
 		}
 
-		urlTry, err := vmi.VmVnc(vm.Identification)
+		urlTry, err := vmi.VmVnc(vm)
 		if err != nil {
 			reportError(err, "failed to retrieve VNC URL", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
 			return err
@@ -326,77 +318,104 @@ func vmReimage(db *Database, userId int, vmId int, imageId int) error {
 		return errors.New("specified image is not ready")
 	}
 
+	vm := vmGetUser(db, userId, vmId)
+	if vm == nil {
+		return errors.New("invalid VM ID")
+	}
+
 	log.Printf("vmReimage(%d, %d, %d)", userId, vmId, imageId)
-	return vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
+	return vm.do(func(vm *VirtualMachine) error {
 		vmi := vmGetInterface(vm.Region)
 		if vmi.CanReimage() {
-			return vmGetInterface(vm.Region).VmReimage(vm.Identification, image.Identification)
+			return vmGetInterface(vm.Region).VmReimage(vm, image.Identification)
 		} else {
 			return errors.New("re-image is not supported on this VM")
 		}
 	})
 }
 
-func vmRename(db *Database, userId int, vmId int, name string) error {
+func (vm *VirtualMachine) Rename(name string) error {
 	// validate name
 	err := vmNameOk(name)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("vmRename(%d, %d, %s)", userId, vmId, name)
+	log.Printf("vmRename(%d, %s)", vm.Id, name)
 
-	return vmDo(db, userId, vmId, func(vm *VirtualMachine) error {
-		db.Exec("UPDATE vms SET name = ? WHERE id = ?", name, vm.Id)
+	return vm.do(func(vm *VirtualMachine) error {
+		vm.db.Exec("UPDATE vms SET name = ? WHERE id = ?", name, vm.Id)
 
 		// don't worry about back-end errors, but try to rename anyway
 		vmi := vmGetInterface(vm.Region)
 		if vmi.CanRename() {
-			reportError(vmGetInterface(vm.Region).VmRename(vm.Identification, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
+			reportError(vmGetInterface(vm.Region).VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
 		}
 		return nil
 	})
 }
 
-func vmDelete(db *Database, userId int, vmId int) error {
-	vm := vmGetUser(db, userId, vmId)
-	if vm == nil {
+func (vm *VirtualMachine) Delete(userId int) error {
+	if vm.UserId != userId {
 		return errors.New("invalid VM instance")
 	} else if vm.Status == "provisioning" {
 		return errors.New("VM is not ready yet")
 	}
 
-	log.Printf("vmDelete(%d, %d)", userId, vmId)
+	log.Printf("vmDelete(%d, %d)", userId, vm.Id)
 
 	if vm.Identification != "" {
 		go func() {
-			reportError(vmGetInterface(vm.Region).VmDelete(vm.Identification), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
+			reportError(vmGetInterface(vm.Region).VmDelete(vm), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
 		}()
 	}
 
-	vmBilling(db, vm.Id, true)
-	vmUpdateAdditionalBandwidth(db, vm)
-	db.Exec("DELETE FROM vms WHERE id = ?", vm.Id)
-	mailWrap(db, userId, "vmDeleted", VmDeletedEmail{Id: vm.Id, Name: vm.Name}, true)
+	vmBilling(vm.db, vm.Id, true)
+	vmUpdateAdditionalBandwidth(vm.db, vm)
+	vm.db.Exec("DELETE FROM vms WHERE id = ?", vm.Id)
+	mailWrap(vm.db, userId, "vmDeleted", VmDeletedEmail{Id: vm.Id, Name: vm.Name}, true)
 	return nil
 }
 
-func vmSuspend(db *Database, userId int, vmId int, auto bool) error {
-	err := vmStop(db, userId, vmId)
+func (vm *VirtualMachine) Suspend(auto bool) error {
+	err := vm.Stop()
 	if err != nil {
 		return err
 	}
 	if auto {
-		db.Exec("UPDATE vms SET suspended = 'auto' WHERE id = ? AND suspended = 'no'", vmId)
+		vm.db.Exec("UPDATE vms SET suspended = 'auto' WHERE id = ? AND suspended = 'no'", vm.Id)
 	} else {
-		db.Exec("UPDATE vms SET suspended = 'manual' WHERE id = ?", vmId)
+		vm.db.Exec("UPDATE vms SET suspended = 'manual' WHERE id = ?", vm.Id)
 	}
 	return nil
 }
 
-func vmUnsuspend(db *Database, userId int, vmId int) error {
-	db.Exec("UPDATE vms SET suspended = 'no' WHERE id = ?", vmId)
-	return vmStart(db, userId, vmId)
+func (vm *VirtualMachine) Unsuspend() error {
+	vm.db.Exec("UPDATE vms SET suspended = 'no' WHERE id = ?", vm.Id)
+	return vm.Start()
+}
+
+func (vm *VirtualMachine) SetMetadata(k string, v string) {
+	rows := vm.db.Query("SELECT id FROM vm_metadata WHERE vm_id = ? AND k = ?", vm.Id, k)
+	if rows.Next() {
+		var rowId int
+		rows.Scan(&rowId)
+		vm.db.Exec("UPDATE vm_metadata SET v = ? WHERE id = ?", rowId)
+	} else {
+		vm.db.Exec("INSERT INTO vm_metadata (vm_id, k, v) VALUES (?, ?, ?)", vm.Id, k, v)
+	}
+}
+
+// Returns the metadata value if set, or d (default) otherwise.
+func (vm *VirtualMachine) Metadata(k string, d string) string {
+	rows := vm.db.Query("SELECT v FROM vm_metadata WHERE vm_id = ? AND k = ?", vm.Id, k)
+	if rows.Next() {
+		var v string
+		rows.Scan(&v)
+		return v
+	} else {
+		return d
+	}
 }
 
 func planListHelper(rows *sql.Rows) []*Plan {
@@ -604,7 +623,7 @@ func vmBilling(db *Database, vmId int, ceiling bool) {
 	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? HOUR) WHERE id = ?", hours, vmId)
 
 	// also bill for bandwidth usage
-	newBytesUsed := vmGetInterface(vm.Region).BandwidthAccounting(vm.Identification)
+	newBytesUsed := vmGetInterface(vm.Region).BandwidthAccounting(vm)
 	if newBytesUsed > 0 {
 		rows := db.Query("SELECT id FROM region_bandwidth WHERE user_id = ? AND region = ?", vm.UserId, vm.Region)
 

@@ -48,10 +48,10 @@ func MakeOpenStack(identityEndpoint string, username string, password string, te
 	return this
 }
 
-func (this *OpenStack) VmCreate(name string, plan *lobster.Plan, imageIdentification string) (string, error) {
+func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	flavorOpts := flavors.ListOpts{
-		MinDisk: plan.Storage,
-		MinRAM: plan.Ram,
+		MinDisk: vm.Plan.Storage,
+		MinRAM: vm.Plan.Ram,
 	}
 	flavorPager := flavors.ListDetail(this.ComputeClient, flavorOpts)
 	var matchFlavor *flavors.Flavor
@@ -62,7 +62,7 @@ func (this *OpenStack) VmCreate(name string, plan *lobster.Plan, imageIdentifica
 		}
 
 		for _, flavor := range flavorList {
-			if flavor.Disk == plan.Storage && flavor.RAM == plan.Ram && flavor.VCPUs == plan.Cpu {
+			if flavor.Disk == vm.Plan.Storage && flavor.RAM == vm.Plan.Ram && flavor.VCPUs == vm.Plan.Cpu {
 				matchFlavor = &flavor
 				return false, nil
 			}
@@ -76,7 +76,7 @@ func (this *OpenStack) VmCreate(name string, plan *lobster.Plan, imageIdentifica
 	}
 
 	opts := servers.CreateOpts{
-		Name: name,
+		Name: vm.Name,
 		ImageRef: imageIdentification,
 		FlavorRef: matchFlavor.ID,
 		Networks: []servers.Network{servers.Network{UUID: this.networkId}},
@@ -130,12 +130,12 @@ func (this *OpenStack) VmCreate(name string, plan *lobster.Plan, imageIdentifica
 	return server.ID, nil
 }
 
-func (this *OpenStack) VmDelete(vmIdentification string) error {
-	return servers.Delete(this.ComputeClient, vmIdentification).ExtractErr()
+func (this *OpenStack) VmDelete(vm *lobster.VirtualMachine) error {
+	return servers.Delete(this.ComputeClient, vm.Identification).ExtractErr()
 }
 
-func (this *OpenStack) VmInfo(vmIdentification string) (*lobster.VmInfo, error) {
-	server, err := servers.Get(this.ComputeClient, vmIdentification).Extract()
+func (this *OpenStack) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
+	server, err := servers.Get(this.ComputeClient, vm.Identification).Extract()
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (this *OpenStack) VmInfo(vmIdentification string) (*lobster.VmInfo, error) 
 		Hostname: server.Name,
 	}
 
-	servers.ListAddresses(this.ComputeClient, vmIdentification).EachPage(func(page pagination.Page) (bool, error) {
+	servers.ListAddresses(this.ComputeClient, vm.Identification).EachPage(func(page pagination.Page) (bool, error) {
 		addresses, err := servers.ExtractAddresses(page)
 		if err != nil {
 			return false, err
@@ -173,35 +173,35 @@ func (this *OpenStack) VmInfo(vmIdentification string) (*lobster.VmInfo, error) 
 	return &info, nil
 }
 
-func (this *OpenStack) VmStart(vmIdentification string) error {
-	return startstop.Start(this.ComputeClient, vmIdentification).ExtractErr()
+func (this *OpenStack) VmStart(vm *lobster.VirtualMachine) error {
+	return startstop.Start(this.ComputeClient, vm.Identification).ExtractErr()
 }
 
-func (this *OpenStack) VmStop(vmIdentification string) error {
-	return startstop.Stop(this.ComputeClient, vmIdentification).ExtractErr()
+func (this *OpenStack) VmStop(vm *lobster.VirtualMachine) error {
+	return startstop.Stop(this.ComputeClient, vm.Identification).ExtractErr()
 }
 
-func (this *OpenStack) VmReboot(vmIdentification string) error {
-	return servers.Reboot(this.ComputeClient, vmIdentification, servers.SoftReboot).ExtractErr()
+func (this *OpenStack) VmReboot(vm *lobster.VirtualMachine) error {
+	return servers.Reboot(this.ComputeClient, vm.Identification, servers.SoftReboot).ExtractErr()
 }
 
-func (this *OpenStack) VmVnc(vmIdentification string) (string, error) {
-	return servers.Vnc(this.ComputeClient, vmIdentification, servers.NoVnc).Extract()
+func (this *OpenStack) VmVnc(vm *lobster.VirtualMachine) (string, error) {
+	return servers.Vnc(this.ComputeClient, vm.Identification, servers.NoVnc).Extract()
 }
 
 func (this *OpenStack) CanVnc() bool {
 	return true
 }
 
-func (this *OpenStack) VmAction(vmIdentification string, action string, value string) error {
+func (this *OpenStack) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
 }
 
-func (this *OpenStack) VmRename(vmIdentification string, name string) error {
+func (this *OpenStack) VmRename(vm *lobster.VirtualMachine, name string) error {
 	opts := servers.UpdateOpts{
 		Name: name,
 	}
-	_, err := servers.Update(this.ComputeClient, vmIdentification, opts).Extract()
+	_, err := servers.Update(this.ComputeClient, vm.Identification, opts).Extract()
 	return err
 }
 
@@ -209,11 +209,11 @@ func (this *OpenStack) CanRename() bool {
 	return true
 }
 
-func (this *OpenStack) VmReimage(vmIdentification string, imageIdentification string) error {
+func (this *OpenStack) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
 	opts := servers.RebuildOpts{
 		ImageID: imageIdentification,
 	}
-	_, err := servers.Rebuild(this.ComputeClient, vmIdentification, opts).Extract()
+	_, err := servers.Rebuild(this.ComputeClient, vm.Identification, opts).Extract()
 	return err
 }
 
@@ -221,7 +221,7 @@ func (this *OpenStack) CanReimage() bool {
 	return true
 }
 
-func (this *OpenStack) BandwidthAccounting(vmIdentification string) int64 {
+func (this *OpenStack) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	return 0
 }
 
