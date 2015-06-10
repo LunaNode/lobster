@@ -1,0 +1,39 @@
+{
+	"vm":
+	[
+		{
+			"name": "Moon",
+			"type": "openstack",
+			"url": "http://controller:35357/v2.0",
+			"username": "lobster",
+			"password": "lobster123",
+			"tenant": "Lobster",
+			"networkid": "b169ba21-5ce1-4ff8-9cb5-0e12d3e1adb4"
+		},
+		{
+			"name": "Mars",
+			"type": "solusvm",
+			"virt_type": "openvz",
+			"node_group": "1",
+			"url": "https://example.com:5656/api/admin/command.php",
+			"api_id": "123",
+			"api_key": "abcdef"
+		}
+	],
+	"payment":
+	[
+		{
+			"name": "Paypal",
+			"type": "paypal",
+			"business": "payments@example.com",
+			"return_url": "https://example.com/"
+		},
+		{
+			"name": "Bitcoin",
+			"type": "coinbase",
+			"callback_secret": "random",
+			"api_key": "123",
+			"api_secret": "abcdef"
+		}
+	]
+}

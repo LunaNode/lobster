@@ -26,5 +26,5 @@ Initialize a database using schema.sql
 Configuration
 -------------
 
-Copy lobster.example.go to lobster.go and lobster.example.cfg to lobster.cfg.
+Copy lobster.example.cfg to lobster.cfg and lobster.example.cfg.json to lobster.cfg.json
 Both of these files need to be configured.
