@@ -8,7 +8,7 @@
 			"username": "lobster",
 			"password": "lobster123",
 			"tenant": "Lobster",
-			"networkid": "b169ba21-5ce1-4ff8-9cb5-0e12d3e1adb4"
+			"network_id": "b169ba21-5ce1-4ff8-9cb5-0e12d3e1adb4"
 		},
 		{
 			"name": "Mars",
