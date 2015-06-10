@@ -1,5 +1,7 @@
 package lobster
 
+import "lobster/utils"
+
 const TEST_BANDWIDTH = 1000
 
 var testTables []string = []string{"users", "region_bandwidth", "vms", "plans", "charges"}
@@ -29,7 +31,7 @@ func TestReset() *Database {
 
 // Creates user and returns user id.
 func TestUser(db *Database) int {
-	result := db.Exec("INSERT INTO users (username, password, credit) VALUES (?, '', 1000000)", uid(8))
+	result := db.Exec("INSERT INTO users (username, password, credit) VALUES (?, '', 1000000)", utils.Uid(8))
 	userId, _ := result.LastInsertId()
 	return int(userId)
 }

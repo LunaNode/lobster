@@ -1,6 +1,5 @@
 package lobster
 
-import "crypto/rand"
 import "fmt"
 import "net/url"
 import "net/http"
@@ -71,20 +70,6 @@ func errorHandler(w http.ResponseWriter, r *http.Request, report bool) {
 			http.Error(w, "Encountered error.", http.StatusInternalServerError)
 		}
 	}
-}
-
-func uid(l int) string {
-	alphabet := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	bytes := make([]byte, l)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		panic(err)
-	}
-	str := make([]rune, len(bytes))
-	for i := range bytes {
-		str[i] = alphabet[int(bytes[i]) % len(alphabet)]
-	}
-	return string(str)
 }
 
 func gigaToBytes(x int) int64 {

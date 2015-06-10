@@ -2,6 +2,7 @@ package lobopenstack
 
 import "lobster"
 import "lobster/ipaddr"
+import "lobster/utils"
 
 import "github.com/LunaNode/gophercloud"
 import "github.com/LunaNode/gophercloud/openstack"
@@ -75,11 +76,14 @@ func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 		return "", errors.New("plan not available in this region")
 	}
 
+	password := utils.Uid(16)
 	opts := servers.CreateOpts{
 		Name: vm.Name,
 		ImageRef: imageIdentification,
 		FlavorRef: matchFlavor.ID,
 		Networks: []servers.Network{servers.Network{UUID: this.networkId}},
+		AdminPass: password,
+		UserData: []byte("#cloud-config\npassword: " + password + "\nchpasswd: { expire: False }\nssh_pwauth: True\n"),
 	}
 	createResult := servers.Create(this.ComputeClient, opts)
 	server, err := createResult.Extract()
@@ -127,6 +131,7 @@ func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 		}
 	}()
 
+	vm.SetMetadata("password", password)
 	return server.ID, nil
 }
 
@@ -150,6 +155,7 @@ func (this *OpenStack) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, erro
 	info := lobster.VmInfo{
 		Status: status,
 		Hostname: server.Name,
+		LoginDetails: "password: " + vm.Metadata("password", "unknown"),
 	}
 
 	servers.ListAddresses(this.ComputeClient, vm.Identification).EachPage(func(page pagination.Page) (bool, error) {
