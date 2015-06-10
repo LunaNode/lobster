@@ -65,17 +65,21 @@ type AdminUserParams struct {
 func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/users", 303)
+		redirectMessage(w, r, "/admin/users", "Error: invalid user ID.")
+		return
+	}
+	user := userDetails(db, int(userId))
+	if user == nil {
+		redirectMessage(w, r, "/admin/users", "Error: user not found.")
 		return
 	}
 	params := AdminUserParams{}
 	params.Frame = frameParams
-	params.User = userDetails(db, int(userId))
+	params.User = user
 	params.VirtualMachines = vmList(db, int(userId))
 	params.Token = csrfGenerate(db, session)
 	renderTemplate(w, "admin", "user", params)
 }
-
 
 func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
@@ -91,7 +95,7 @@ func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, sessio
 func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/support", 303)
+		redirectMessage(w, r, "/admin/support", "Error: invalid ticket ID.")
 		return
 	}
 	ticketClose(db, session.UserId, int(ticketId))
@@ -123,7 +127,7 @@ type AdminSupportOpenForm struct {
 func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/admin/support", 303)
+		redirectMessage(w, r, "/admin/support", "Error: invalid user ID.")
 		return
 	}
 
@@ -155,12 +159,12 @@ type AdminSupportTicketParams struct {
 func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/admin/support", 303)
+		redirectMessage(w, r, "/admin/support", "Error: invalid ticket ID.")
 		return
 	}
 	ticket := ticketDetails(db, session.UserId, int(ticketId), true)
 	if ticket == nil {
-		http.Redirect(w, r, "/admin/support", 303)
+		redirectMessage(w, r, "/admin/support", "Error: ticket not found.")
 		return
 	}
 
@@ -177,7 +181,7 @@ type AdminSupportTicketReplyForm struct {
 func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/admin/support", 303)
+		redirectMessage(w, r, "/admin/support", "Error: invalid ticket ID.")
 		return
 	}
 	form := new(AdminSupportTicketReplyForm)
@@ -193,4 +197,47 @@ func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Databas
 	} else {
 		http.Redirect(w, r, fmt.Sprintf("/admin/support/%d", ticketId), 303)
 	}
+}
+
+type AdminPlansParams struct {
+	Frame FrameParams
+	Plans []*Plan
+	Token string
+}
+func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	params := AdminPlansParams{}
+	params.Frame = frameParams
+	params.Plans = planList(db)
+	params.Token = csrfGenerate(db, session)
+	renderTemplate(w, "admin", "plans", params)
+}
+
+type AdminPlansAddForm struct {
+	Name string `schema:"name"`
+	Price float64 `schema:"price"`
+	Ram int `schema:"ram"`
+	Cpu int `schema:"cpu"`
+	Storage int `schema:"storage"`
+	Bandwidth int `schema:"bandwidth"`
+}
+func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	form := new(AdminPlansAddForm)
+	err := decoder.Decode(form, r.PostForm)
+	if err != nil {
+		redirectMessage(w, r, "/admin/plans", "Error: " + err.Error() + ".")
+		return
+	}
+
+	planCreate(db, form.Name, int64(form.Price * BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth)
+	redirectMessage(w, r, "/admin/plans", "Plan created successfully.")
+}
+
+func adminPlanDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	planId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		redirectMessage(w, r, "/admin/plans", "Error: invalid plan ID.")
+		return
+	}
+	planDelete(db, int(planId))
+	redirectMessage(w, r, "/admin/plans", "Plan deleted successfully.")
 }

@@ -422,6 +422,14 @@ func planGet(db *Database, planId int) *Plan {
 	}
 }
 
+func planCreate(db *Database, name string, price int64, ram int, cpu int, storage int, bandwidth int) {
+	db.Exec("INSERT INTO plans (name, price, ram, cpu, storage, bandwidth) VALUES (?, ?, ?, ?, ?, ?)", name, price, ram, cpu, storage, bandwidth)
+}
+
+func planDelete(db *Database, planId int) {
+	db.Exec("DELETE FROM plans WHERE id = ?", planId)
+}
+
 func imageListHelper(rows *sql.Rows) []*Image {
 	images := make([]*Image, 0)
 	for rows.Next() {

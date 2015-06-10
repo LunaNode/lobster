@@ -143,12 +143,12 @@ type PanelVMParams struct {
 func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 	vm := vmInfo(db, session.UserId, int(vmId))
 	if vm == nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: VM not found.")
 		return
 	}
 
@@ -164,7 +164,7 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 func panelVMStart(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 	err = vmStart(db, session.UserId, int(vmId))
@@ -178,7 +178,7 @@ func panelVMStart(w http.ResponseWriter, r *http.Request, db *Database, session 
 func panelVMStop(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 	err = vmStop(db, session.UserId, int(vmId))
@@ -192,7 +192,7 @@ func panelVMStop(w http.ResponseWriter, r *http.Request, db *Database, session *
 func panelVMReboot(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 	err = vmReboot(db, session.UserId, int(vmId))
@@ -206,7 +206,7 @@ func panelVMReboot(w http.ResponseWriter, r *http.Request, db *Database, session
 func panelVMDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 	err = vmDelete(db, session.UserId, int(vmId))
@@ -221,7 +221,7 @@ func panelVMAction(w http.ResponseWriter, r *http.Request, db *Database, session
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	action := mux.Vars(r)["action"]
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 
@@ -237,7 +237,7 @@ func panelVMAction(w http.ResponseWriter, r *http.Request, db *Database, session
 func panelVMVnc(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 	url, err := vmVnc(db, session.UserId, int(vmId))
@@ -254,7 +254,7 @@ type VMReimageForm struct {
 func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 
@@ -277,7 +277,7 @@ func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, sessio
 func panelVMRename(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/vms", 303)
+		redirectMessage(w, r, "/panel/vms", "Error: invalid VM ID.")
 		return
 	}
 
@@ -438,7 +438,7 @@ func panelImageAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 func panelImageRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/images", 303)
+		redirectMessage(w, r, "/panel/images", "Error: invalid image ID.")
 		return
 	}
 
@@ -458,12 +458,12 @@ type PanelImageDetailsParams struct {
 func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/images", 303)
+		redirectMessage(w, r, "/panel/images", "Error: invalid image ID.")
 		return
 	}
 	image := imageInfo(db, session.UserId, int(imageId))
 	if image == nil {
-		http.Redirect(w, r, "/panel/images", 303)
+		redirectMessage(w, r, "/panel/images", "Error: image not found.")
 		return
 	}
 
@@ -518,12 +518,12 @@ type PanelSupportTicketParams struct {
 func panelSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/support", 303)
+		redirectMessage(w, r, "/panel/support", "Error: invalid ticket ID.")
 		return
 	}
 	ticket := ticketDetails(db, session.UserId, int(ticketId), false)
 	if ticket == nil {
-		http.Redirect(w, r, "/panel/support", 303)
+		redirectMessage(w, r, "/panel/support", "Error: ticket not found.")
 		return
 	}
 
@@ -540,7 +540,7 @@ type SupportTicketReplyForm struct {
 func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/support", 303)
+		redirectMessage(w, r, "/panel/support", "Error: invalid ticket ID.")
 		return
 	}
 	form := new(SupportTicketReplyForm)
@@ -562,7 +562,7 @@ func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Databas
 func panelSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/support", 303)
+		redirectMessage(w, r, "/panel/support", "Error: invalid ticket ID.")
 		return
 	}
 	ticketClose(db, session.UserId, int(ticketId))
