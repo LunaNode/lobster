@@ -5,13 +5,13 @@ import "lobster/ipaddr"
 import "errors"
 import "log"
 import "time"
-import "github.com/rackspace/gophercloud"
-import "github.com/rackspace/gophercloud/openstack"
-import "github.com/rackspace/gophercloud/pagination"
-import "github.com/rackspace/gophercloud/openstack/compute/v2/flavors"
-import "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
-import "github.com/rackspace/gophercloud/openstack/compute/v2/extensions/startstop"
-import "github.com/rackspace/gophercloud/openstack/compute/v2/extensions/floatingip"
+import "github.com/LunaNode/gophercloud"
+import "github.com/LunaNode/gophercloud/openstack"
+import "github.com/LunaNode/gophercloud/pagination"
+import "github.com/LunaNode/gophercloud/openstack/compute/v2/flavors"
+import "github.com/LunaNode/gophercloud/openstack/compute/v2/servers"
+import "github.com/LunaNode/gophercloud/openstack/compute/v2/extensions/startstop"
+import "github.com/LunaNode/gophercloud/openstack/compute/v2/extensions/floatingip"
 
 type OpenStack struct {
 	ComputeClient *gophercloud.ServiceClient
@@ -176,7 +176,7 @@ func (this *OpenStack) VmReboot(vmIdentification string) error {
 }
 
 func (this *OpenStack) VmVnc(vmIdentification string) (string, error) {
-	return "", nil
+	return servers.Vnc(this.ComputeClient, vmIdentification, servers.NoVnc).Extract()
 }
 
 func (this *OpenStack) CanVnc() bool {
