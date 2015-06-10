@@ -198,7 +198,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	go func() {
 		vmIdentification, err := vmGetInterface(image.Region).VmCreate(name, plan, image.Identification)
 		if err != nil {
-			reportError(err, "vm creation failed (image)", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%d", name, plan.Id, image.Identification))
+			reportError(err, "vm creation failed (image)", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
 			mailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: int(vmId), Name: name}, true)
 			return
@@ -224,7 +224,7 @@ func vmInfo(db *Database, userId int, vmId int) *VirtualMachine {
 	var err error
 	vm.Info, err = vmi.VmInfo(vm.Identification)
 	if err != nil {
-		reportError(err, "vmInfo failed", fmt.Sprintf("vm_id=%d, identification=%d", vm.Id, vm.Identification))
+		reportError(err, "vmInfo failed", fmt.Sprintf("vm_id=%d, identification=%s", vm.Id, vm.Identification))
 		vm.Info = new(VmInfo)
 	}
 
@@ -307,7 +307,7 @@ func vmVnc(db *Database, userId int, vmId int) (string, error) {
 
 		urlTry, err := vmi.VmVnc(vm.Identification)
 		if err != nil {
-			reportError(err, "failed to retrieve VNC URL", fmt.Sprintf("vm_id=%d, vm_identification=%d", vm.Id, vm.Identification))
+			reportError(err, "failed to retrieve VNC URL", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
 			return err
 		} else {
 			url = urlTry
@@ -370,7 +370,7 @@ func vmDelete(db *Database, userId int, vmId int) error {
 
 	if vm.Identification != "" {
 		go func() {
-			reportError(vmGetInterface(vm.Region).VmDelete(vm.Identification), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%d", vm.Id, vm.Identification))
+			reportError(vmGetInterface(vm.Region).VmDelete(vm.Identification), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
 		}()
 	}
 
@@ -501,7 +501,7 @@ func imageInfo(db *Database, userId int, imageId int) *Image {
 	var err error
 	image.Info, err = vmGetInterface(image.Region).ImageInfo(image.Identification)
 	if err != nil {
-		reportError(err, "imageInfo failed", fmt.Sprintf("image_id=%d, identification=%d", image.Id, image.Identification))
+		reportError(err, "imageInfo failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
 		image.Info = new(ImageInfo)
 	}
 	return image
