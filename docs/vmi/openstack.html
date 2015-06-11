@@ -20,6 +20,9 @@
 	<h3>Images</h3>
 	<p>To register an image, use the image UUID for the image identification.</p>
 
+	<h3>Plans</h3>
+	<p>When provisioning virtual machines, Lobster will attempt to match the storage with a flavor's root disk capacity, along with memory and virtual CPU counts. If no matching flavor is found, then a plan not found error will be raised.</p>
+
 	<h3>Floating IP addresses</h3>
 	<p>If floating IP addresses are available, Lobster will attempt to automatically associate one after creating a new virtual machine. The floating IPs must be available on the tenant -- Lobster will not add additional floating IPs.</p>
 
