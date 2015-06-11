@@ -13,6 +13,8 @@ type ConfigDefault struct {
 	BandwidthOverageFee float64
 	StorageFee float64
 	Currency string
+	BillingInterval int
+	BillingVmMinimum int
 }
 
 type ConfigSession struct {
@@ -61,6 +63,14 @@ func LoadConfig(cfgPath string) *Config {
 	}
 	if cfg.Default.StorageFee == 0 {
 		log.Printf("Warning: storage fee not set")
+	}
+	if cfg.Default.BillingInterval == 0 {
+		log.Printf("Warning: billing interval not set, defaulting to 60 minutes")
+		cfg.Default.BillingInterval = 60
+	}
+	if cfg.Default.BillingVmMinimum < 1 {
+		log.Printf("Warning: minimum VM billing intervals less than 1, setting to 1")
+		cfg.Default.BillingVmMinimum = 1
 	}
 
 	return &cfg

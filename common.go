@@ -26,7 +26,12 @@ const API_MAX_REQUEST_LENGTH = 32 * 1024
 // billing constants
 const BILLING_PRECISION = 1000000 // credit is in units of 1/BILLING_PRECISION -dollars
 const BILLING_DISPLAY_DECIMALS = 3
-const MINIMUM_CREDIT = BILLING_PRECISION
+const MINIMUM_CREDIT = BILLING_PRECISION // minimum credit to do things like create VMs
+
+// how frequently to bill virtual machines in hours
+//   note that this is NOT the billing granularity, which is set in configuration file
+//   instead, this determines how often to apply VM charges and do bandwidth accounting
+const BILLING_VM_FREQUENCY = 1
 
 func checkErr(err error) {
 	if err != nil {

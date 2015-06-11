@@ -237,7 +237,7 @@ func (this *Lobster) Run() {
 
 func (this *Lobster) cron() {
 	defer errorHandler(nil, nil, true)
-	rows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+	rows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL ? HOUR)", BILLING_VM_FREQUENCY)
 	for rows.Next() {
 		var vmId int
 		rows.Scan(&vmId)
