@@ -31,8 +31,7 @@ func TestBillingBandwidth(t *testing.T) {
 	testForceUserBilling(db, userId)
 	expectedCharge := int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION) * gbUsage
 	if !testVerifyCharge(db, userId, "bw-test", expectedCharge) {
-		t.Errorf("Overage of %d GB, but didn't bill according to overage fee", gbUsage)
-		return
+		t.Fatalf("Overage of %d GB, but didn't bill according to overage fee", gbUsage)
 	}
 
 	// make sure we can increase both used and allocated without charging again
@@ -40,8 +39,7 @@ func TestBillingBandwidth(t *testing.T) {
 	db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ?, bandwidth_additional = bandwidth_additional + ? WHERE id = ?", gigaToBytes(gigaIncrease), gigaToBytes(gigaIncrease), regionBandwidthId)
 	testForceUserBilling(db, userId)
 	if !testVerifyCharge(db, userId, "bw-test", expectedCharge) {
-		t.Error("Billed when used/allocated increased by same amount")
-		return
+		t.Fatal("Billed when used/allocated increased by same amount")
 	}
 
 	// begin testing proportional billing
@@ -55,16 +53,14 @@ func TestBillingBandwidth(t *testing.T) {
 	db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ? WHERE id = ?", gigaToBytes(TEST_BANDWIDTH / 2), regionBandwidthId)
 	testForceUserBilling(db, userId)
 	if !testVerifyChargeApprox(db, userId, "bw-test", expectedCharge * 9 / 10, expectedCharge * 11 / 10) {
-		t.Error("User charged despite proportional virtual machine")
-		return
+		t.Fatal("User charged despite proportional virtual machine")
 	}
 
 	db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ? WHERE id = ?", gigaToBytes(TEST_BANDWIDTH / 2), regionBandwidthId)
 	expectedCharge += int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION) * TEST_BANDWIDTH / 2
 	testForceUserBilling(db, userId)
 	if !testVerifyChargeApprox(db, userId, "bw-test", expectedCharge * 9 / 10, expectedCharge * 11 / 10) {
-		t.Error("User charged differently than expected with proportional virtual machine")
-		return
+		t.Fatal("User charged differently than expected with proportional virtual machine")
 	}
 
 	// vm provisioned before beginning of the month should add this month's bandwidth only
@@ -75,7 +71,6 @@ func TestBillingBandwidth(t *testing.T) {
 	expectedCharge += int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION) * TEST_BANDWIDTH
 	testForceUserBilling(db, userId)
 	if !testVerifyChargeApprox(db, userId, "bw-test", expectedCharge * 9 / 10, expectedCharge * 11 / 10) {
-		t.Error("User charged differently than expected with long time ago virtual machine")
-		return
+		t.Fatal("User charged differently than expected with long time ago virtual machine")
 	}
 }
