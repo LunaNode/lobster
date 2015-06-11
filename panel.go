@@ -364,12 +364,14 @@ func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session 
 type PanelAccountParams struct {
 	Frame FrameParams
 	User *User
+	Keys []*ApiKey
 	Token string
 }
 func panelAccount(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelAccountParams{}
 	params.Frame = frameParams
 	params.User = userDetails(db, session.UserId)
+	params.Keys = apiList(db, session.UserId)
 	params.Token = csrfGenerate(db, session)
 	renderTemplate(w, "panel", "account", params)
 }
@@ -395,6 +397,21 @@ func panelAccountPassword(w http.ResponseWriter, r *http.Request, db *Database, 
 	} else {
 		redirectMessage(w, r, "/panel/account", "Password changed successfully.")
 	}
+}
+
+func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	key := apiCreate(db, session.UserId, r.PostFormValue("label"))
+	redirectMessage(w, r, "/panel/account", fmt.Sprintf("API key added successfully. The API ID is [%s] and the secret key is [%s].", key.ApiId, key.ApiKey))
+}
+
+func panelApiRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		redirectMessage(w, r, "/panel/account", "Error: invalid ID number.")
+		return
+	}
+	apiDelete(db, session.UserId, int(id))
+	redirectMessage(w, r, "/panel/account", "API key deleted successfully.")
 }
 
 type PanelImagesParams struct {

@@ -1,12 +1,14 @@
 package lobster
 
 import "github.com/LunaNode/lobster/api"
+import "github.com/LunaNode/lobster/utils"
 
 import "github.com/gorilla/mux"
 
 import "crypto/hmac"
 import "crypto/sha512"
 import "crypto/subtle"
+import "database/sql"
 import "encoding/hex"
 import "encoding/json"
 import "errors"
@@ -15,6 +17,56 @@ import "io"
 import "net/http"
 import "strconv"
 import "strings"
+import "time"
+
+type ApiKey struct {
+	Id int
+	Label string
+	UserId int
+	ApiId string
+	CreatedTime time.Time
+	Nonce int64
+
+	// only set on apiCreate
+	ApiKey string
+}
+
+func apiListHelper(rows *sql.Rows) []*ApiKey {
+	var keys []*ApiKey
+	for rows.Next() {
+		var key ApiKey
+		rows.Scan(&key.Id, &key.Label, &key.UserId, &key.ApiId, &key.CreatedTime, &key.Nonce)
+		keys = append(keys, &key)
+	}
+	return keys
+}
+
+func apiList(db *Database, userId int) []*ApiKey {
+	return apiListHelper(db.Query("SELECT id, label, user_id, api_id, time_created, nonce FROM api_keys WHERE user_id = ? ORDER BY label", userId))
+}
+
+func apiGet(db *Database, userId int, id int) *ApiKey {
+	keys := apiListHelper(db.Query("SELECT id, label, user_id, api_id, time_created, nonce FROM api_keys WHERE user_id = ? AND id = ?", userId, id))
+	if len(keys) == 1 {
+		return keys[0]
+	} else {
+		return nil
+	}
+}
+
+func apiCreate(db *Database, userId int, label string) *ApiKey {
+	apiId := utils.Uid(16)
+	apiKey := utils.Uid(128)
+	result := db.Exec("INSERT INTO api_keys (label, user_id, api_id, api_key) VALUES (?, ?, ?, ?)", label, userId, apiId, apiKey)
+	id, _ := result.LastInsertId()
+	key := apiGet(db, userId, int(id))
+	key.ApiKey = apiKey
+	return key
+}
+
+func apiDelete(db *Database, userId int, id int) {
+	db.Exec("DELETE FROM api_keys WHERE user_id = ? AND id = ?", userId, id)
+}
 
 type APIHandlerFunc func(http.ResponseWriter, *http.Request, *Database, int, []byte)
 

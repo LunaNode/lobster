@@ -169,6 +169,8 @@ func (this *Lobster) Init() {
 	this.RegisterPanelHandler("/panel/charges/{year:[0-9]+}/{month:[0-9]+}", panelCharges, false)
 	this.RegisterPanelHandler("/panel/account", panelAccount, false)
 	this.RegisterPanelHandler("/panel/account/passwd", panelAccountPassword, true)
+	this.RegisterPanelHandler("/panel/api/add", panelApiAdd, true)
+	this.RegisterPanelHandler("/panel/api/{id:[0-9]+}/remove", panelApiRemove, true)
 	this.RegisterPanelHandler("/panel/images", panelImages, false)
 	this.RegisterPanelHandler("/panel/images/add", panelImageAdd, true)
 	this.RegisterPanelHandler("/panel/image/{id:[0-9]+}", panelImageDetails, false)
