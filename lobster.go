@@ -67,6 +67,10 @@ func (this *Lobster) RegisterPanelHandler(path string, f PanelHandlerFunc, onlyP
 	}
 }
 
+func (this *Lobster) RegisterAPIHandler(path string, f APIHandlerFunc, method string) {
+	this.router.HandleFunc(path, this.db.wrapHandler(apiWrap(f))).Methods(method)
+}
+
 func (this *Lobster) RegisterAdminHandler(path string, f AdminHandlerFunc, onlyPost bool) {
 	result := this.router.HandleFunc(path, this.db.wrapHandler(sessionWrap(adminWrap(f))))
 	if onlyPost {
@@ -82,10 +86,16 @@ func (this *Lobster) RegisterHttpHandler(path string, f http.HandlerFunc, onlyPo
 }
 
 func (this *Lobster) RegisterVmInterface(region string, vmi VmInterface) {
+	if regionInterfaces[region] != nil {
+		log.Fatalf("Duplicate VM interface for region %s", region)
+	}
 	regionInterfaces[region] = vmi
 }
 
 func (this *Lobster) RegisterPaymentInterface(method string, payInterface PaymentInterface) {
+	if paymentInterfaces[method] != nil {
+		log.Fatalf("Duplicate payment interface for method %s", method)
+	}
 	paymentInterfaces[method] = payInterface
 }
 
@@ -168,6 +178,15 @@ func (this *Lobster) Init() {
 	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}", panelSupportTicket, false)
 	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/reply", panelSupportTicketReply, true)
 	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/close", panelSupportTicketClose, true)
+
+	// api routes
+	this.RegisterAPIHandler("/api/vms", apiVMList, "GET")
+	this.RegisterAPIHandler("/api/vms", apiVMCreate, "POST")
+	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}", apiVMInfo, "GET")
+	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}/action", apiVMAction, "POST")
+	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}/reimage", apiVMReimage, "POST")
+	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}", apiVMDelete, "DELETE")
+	this.RegisterAPIHandler("/api/plans", apiPlanList, "GET")
 
 	// admin routes
 	this.RegisterAdminHandler("/admin/dashboard", adminDashboard, false)

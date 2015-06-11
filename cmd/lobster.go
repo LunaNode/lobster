@@ -5,6 +5,7 @@ import "github.com/LunaNode/lobster/lndynamic"
 import "github.com/LunaNode/lobster/lobopenstack"
 import "github.com/LunaNode/lobster/solusvm"
 import "github.com/LunaNode/lobster/vmfake"
+import "github.com/LunaNode/lobster/vmlobster"
 
 import "encoding/json"
 import "io/ioutil"
@@ -98,6 +99,8 @@ func main() {
 					Insecure: vm.Insecure,
 				},
 			}
+		} else if vm.Type == "lobster" {
+			vmi = vmlobster.MakeLobster(vm.Url, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "lndynamic" {
 			vmi = lndynamic.MakeLNDynamic(vm.Region, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "fake" {

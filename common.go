@@ -21,6 +21,8 @@ const TIME_FORMAT = "2 January 2006 15:04:05 MST"
 const DATE_FORMAT = "2 January 2006"
 const MYSQL_TIME_FORMAT = "2006-01-02 15:04:05"
 
+const API_MAX_REQUEST_LENGTH = 32 * 1024
+
 // billing constants
 const BILLING_PRECISION = 1000000 // credit is in units of 1/BILLING_PRECISION -dollars
 const BILLING_DISPLAY_DECIMALS = 3

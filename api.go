@@ -1,0 +1,300 @@
+package lobster
+
+import "github.com/LunaNode/lobster/api"
+
+import "github.com/gorilla/mux"
+
+import "crypto/hmac"
+import "crypto/sha512"
+import "crypto/subtle"
+import "encoding/hex"
+import "encoding/json"
+import "errors"
+import "fmt"
+import "io"
+import "net/http"
+import "strconv"
+import "strings"
+
+type APIHandlerFunc func(http.ResponseWriter, *http.Request, *Database, int, []byte)
+
+func apiCheck(db *Database, path string, authorization string, request []byte) (int, error) {
+	authParts := strings.Split(authorization, ":")
+	if len(authParts) != 4 {
+		return 0, errors.New(fmt.Sprintf("bad authorization: expected 4 semicolon-delimited parts, only found %d", len(authParts)))
+	}
+
+	apiId := authParts[0]
+	apiPartialKey := authParts[1]
+	nonce, _ := strconv.ParseInt(authParts[2], 10, 64)
+	signature, _ := hex.DecodeString(authParts[3])
+
+	if len(apiId) != 16 || len(apiPartialKey) != 64 || len(signature) != 64 {
+		return 0, errors.New("bad authorization: id, partial key, or signature has bad length; or signature not hex-encoded")
+	}
+
+	rows := db.Query("SELECT user_id, api_key FROM api_keys WHERE api_id = ? AND nonce < ?", apiId, nonce)
+	if !rows.Next() {
+		return 0, errors.New("authentication failure")
+	}
+
+	var userId int
+	var actualKey string
+	rows.Scan(&userId, &actualKey)
+
+	// determine expected signature, hmac_{apikey}(path|nonce|request)
+	mac := hmac.New(sha512.New, []byte(actualKey))
+	toSign := fmt.Sprintf("%s|%d|%s", path, nonce, string(request))
+	mac.Write([]byte(toSign))
+	expectedSignature := mac.Sum(nil)
+
+	partialGood := subtle.ConstantTimeCompare([]byte(actualKey)[:64], []byte(apiPartialKey)) == 1
+	signatureGood := hmac.Equal(signature, expectedSignature)
+
+	if partialGood && signatureGood {
+		db.Exec("UPDATE api_keys SET nonce = GREATEST(nonce, ?) WHERE api_id = ?", nonce, apiId)
+		return userId, nil
+	} else {
+		return 0, errors.New("authentication failure")
+	}
+}
+
+func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Database) {
+	return func(w http.ResponseWriter, r *http.Request, db *Database) {
+		authorization := r.Header.Get("Authorization")
+		if authorization == "" {
+			http.Error(w, "Missing Authorization header", 401)
+			return
+		}
+
+		authParts := strings.Split(authorization, " ")
+		if len(authParts) != 2 || authParts[0] != "lobster" {
+			http.Error(w, "Authorization header must take the form 'lobster authdata'", 400)
+			return
+		}
+
+		apiPath := strings.Split(r.URL.Path, "/api/")[1]
+		buf := make([]byte, API_MAX_REQUEST_LENGTH + 1)
+		n, err := r.Body.Read(buf)
+		if err != nil && err != io.EOF {
+			http.Error(w, "Failed to read request body", 400)
+			return
+		} else if n > API_MAX_REQUEST_LENGTH {
+			http.Error(w, fmt.Sprintf("Request body too long (max is %d)", API_MAX_REQUEST_LENGTH), 400)
+			return
+		}
+		request := buf[:n]
+
+		userId, err := apiCheck(db, apiPath, authParts[1], request)
+		if err != nil {
+			http.Error(w, err.Error(), 401)
+			return
+		}
+
+		h(w, r, db, userId, request)
+	}
+}
+
+func apiResponse(w http.ResponseWriter, code int, v interface{}) {
+	w.WriteHeader(code)
+	if v != nil {
+		bytes, err := json.Marshal(v)
+		checkErr(err)
+		w.Write(bytes)
+	}
+}
+
+func copyVM(src *VirtualMachine, dst *api.VirtualMachine) {
+	dst.Id = src.Id
+	dst.PlanId = src.Plan.Id
+	dst.Region = src.Region
+	dst.Name = src.Name
+	dst.Status = src.Status
+	dst.TaskPending = src.TaskPending
+	dst.ExternalIP = src.ExternalIP
+	dst.PrivateIP = src.PrivateIP
+	dst.CreatedTime = src.CreatedTime.Unix()
+}
+
+func copyVMDetails(src *VmInfo, dst *api.VirtualMachineDetails) {
+	dst.Ip = src.Ip
+	dst.PrivateIp = src.PrivateIp
+	dst.Status = src.Status
+	dst.Hostname = src.Hostname
+	dst.BandwidthUsed = src.BandwidthUsed
+	dst.LoginDetails = src.LoginDetails
+	dst.Details = src.Details
+	dst.CanVnc = src.CanVnc
+	dst.CanReimage = src.CanReimage
+	for _, srcAction := range src.Actions {
+		dstAction := new(api.VirtualMachineAction)
+		dstAction.Action = srcAction.Action
+		dstAction.Name = srcAction.Name
+		dstAction.Options = srcAction.Options
+		dstAction.Description = srcAction.Description
+		dstAction.Dangerous = srcAction.Dangerous
+		dst.Actions = append(dst.Actions, dstAction)
+	}
+}
+
+func copyPlan(src *Plan, dst *api.Plan) {
+	dst.Id = src.Id
+	dst.Name = src.Name
+	dst.Price = src.Price
+	dst.Ram = src.Ram
+	dst.Cpu = src.Cpu
+	dst.Storage = src.Storage
+	dst.Bandwidth = src.Bandwidth
+}
+
+func apiVMList(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	var response api.VMListResponse
+	for _, vm := range vmList(db, userId) {
+		vmCopy := new(api.VirtualMachine)
+		copyVM(vm, vmCopy)
+		response.VirtualMachines = append(response.VirtualMachines, vmCopy)
+	}
+	apiResponse(w, 200, &response)
+}
+
+func apiVMCreate(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	var request api.VMCreateRequest
+
+	err := json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	vmId, err := vmCreate(db, userId, request.Name, request.PlanId, request.ImageId)
+	if err != nil {
+		http.Error(w, "Create failed: " + err.Error(), 400)
+		return
+	} else {
+		apiResponse(w, 201, api.VMCreateResponse{Id: vmId})
+	}
+}
+
+func apiVMInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+	vm.LoadInfo()
+
+	var response api.VMInfoResponse
+	response.VirtualMachine = new(api.VirtualMachine)
+	response.Details = new(api.VirtualMachineDetails)
+	copyVM(vm, response.VirtualMachine)
+	copyVMDetails(vm.Info, response.Details)
+	apiResponse(w, 201, response)
+}
+
+func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	var request api.VMActionRequest
+	err = json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	err = nil
+	var response interface{}
+	if request.Action == "start" {
+		err = vm.Start()
+	} else if request.Action == "stop" {
+		err = vm.Stop()
+	} else if request.Action == "reboot" {
+		err = vm.Reboot()
+	} else if request.Action == "vnc" {
+		var url string
+		url, err = vm.Vnc()
+		if err == nil {
+			response = api.VMVncResponse{Url: url}
+		}
+	} else if request.Action == "rename" {
+		err = vm.Rename(request.Value)
+	} else {
+		err = vm.Action(request.Action, request.Value)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 200, response)
+	}
+}
+
+func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	var request api.VMReimageRequest
+	err = json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	err = vmReimage(db, userId, vm.Id, request.ImageId)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 200, nil)
+	}
+}
+
+func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	err = vm.Delete(userId)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 204, nil)
+	}
+}
+
+func apiPlanList(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	var response api.PlanListResponse
+	for _, plan := range planList(db) {
+		planCopy := new(api.Plan)
+		copyPlan(plan, planCopy)
+		response.Plans = append(response.Plans, planCopy)
+	}
+	apiResponse(w, 200, &response)
+}
