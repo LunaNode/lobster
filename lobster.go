@@ -210,49 +210,14 @@ func (this *Lobster) Run() {
 	// fake cron routine
 	go func() {
 		for {
-			rows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
-			for rows.Next() {
-				var vmId int
-				rows.Scan(&vmId)
-				vmBilling(this.db, vmId, false)
-			}
-
-			rows = this.db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
-			for rows.Next() {
-				var userId int
-				rows.Scan(&userId)
-				userBilling(this.db, userId)
-			}
-
-			serviceBilling(this.db)
-
-			// cleanup
-			this.db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
-			this.db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
-			this.db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
-
+			this.cron()
 			time.Sleep(time.Minute)
 		}
 	}()
 
-	// cached
 	go func() {
 		for {
-			rows := this.db.Query("SELECT id, user_id FROM images WHERE status = 'pending' ORDER BY RAND() LIMIT 3")
-			for rows.Next() {
-				var imageId, userId int
-				rows.Scan(&imageId, &userId)
-				imageInfo := imageInfo(this.db, userId, imageId)
-
-				if imageInfo != nil {
-					if imageInfo.Info.Status == ImageError {
-						this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "error", imageId)
-					} else if imageInfo.Info.Status == ImageActive {
-						this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "active", imageId)
-					}
-				}
-			}
-
+			this.cached()
 			time.Sleep(5 * time.Second)
 		}
 	}()
@@ -262,4 +227,46 @@ func (this *Lobster) Run() {
 		Handler: LobsterHandler(context.ClearHandler(this.router)),
 	}
 	log.Fatal(httpServer.ListenAndServe())
+}
+
+func (this *Lobster) cron() {
+	defer errorHandler(nil, nil, true)
+	rows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+	for rows.Next() {
+		var vmId int
+		rows.Scan(&vmId)
+		vmBilling(this.db, vmId, false)
+	}
+
+	rows = this.db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+	for rows.Next() {
+		var userId int
+		rows.Scan(&userId)
+		userBilling(this.db, userId)
+	}
+
+	serviceBilling(this.db)
+
+	// cleanup
+	this.db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+	this.db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+	this.db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
+}
+
+func (this *Lobster) cached() {
+	defer errorHandler(nil, nil, true)
+	rows := this.db.Query("SELECT id, user_id FROM images WHERE status = 'pending' ORDER BY RAND() LIMIT 3")
+	for rows.Next() {
+		var imageId, userId int
+		rows.Scan(&imageId, &userId)
+		imageInfo := imageInfo(this.db, userId, imageId)
+
+		if imageInfo != nil {
+			if imageInfo.Info.Status == ImageError {
+				this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "error", imageId)
+			} else if imageInfo.Info.Status == ImageActive {
+				this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "active", imageId)
+			}
+		}
+	}
 }

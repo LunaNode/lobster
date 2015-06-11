@@ -197,6 +197,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	checkErr(err)
 
 	go func() {
+		defer errorHandler(nil, nil, true)
 		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vmGet(db, int(vmId)), image.Identification)
 		if err != nil {
 			reportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
