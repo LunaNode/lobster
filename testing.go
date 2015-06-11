@@ -4,7 +4,7 @@ import "github.com/LunaNode/lobster/utils"
 
 const TEST_BANDWIDTH = 1000
 
-var testTables []string = []string{"users", "region_bandwidth", "vms", "plans", "charges", "sessions", "form_tokens"}
+var testTables []string = []string{"users", "region_bandwidth", "vms", "plans", "charges", "sessions", "form_tokens", "antiflood"}
 
 func TestReset() *Database {
 	cfg = &Config{
