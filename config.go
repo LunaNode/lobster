@@ -10,11 +10,16 @@ type ConfigDefault struct {
 	FromEmail string
 	ProxyHeader string
 	Debug bool
+}
+
+type ConfigBilling struct {
 	BandwidthOverageFee float64
 	StorageFee float64
 	Currency string
 	BillingInterval int
 	BillingVmMinimum int
+	DepositMinimum float64
+	DepositMaximum float64
 }
 
 type ConfigSession struct {
@@ -40,6 +45,7 @@ type ConfigNovnc struct {
 
 type Config struct {
 	Default ConfigDefault
+	Billing ConfigBilling
 	Session ConfigSession
 	Database ConfigDatabase
 	Http ConfigHttp
@@ -55,22 +61,22 @@ func LoadConfig(cfgPath string) *Config {
 	}
 
 	// do some basic checking
-	if len(cfg.Default.Currency) != 3 {
-		log.Printf("Warning: currency is set to [%s], but currency codes should be three characters", cfg.Default.Currency)
+	if len(cfg.Billing.Currency) != 3 {
+		log.Printf("Warning: currency is set to [%s], but currency codes should be three characters", cfg.Billing.Currency)
 	}
-	if cfg.Default.BandwidthOverageFee == 0 {
+	if cfg.Billing.BandwidthOverageFee == 0 {
 		log.Printf("Warning: bandwidth overage fee not set")
 	}
-	if cfg.Default.StorageFee == 0 {
+	if cfg.Billing.StorageFee == 0 {
 		log.Printf("Warning: storage fee not set")
 	}
-	if cfg.Default.BillingInterval == 0 {
+	if cfg.Billing.BillingInterval == 0 {
 		log.Printf("Warning: billing interval not set, defaulting to 60 minutes")
-		cfg.Default.BillingInterval = 60
+		cfg.Billing.BillingInterval = 60
 	}
-	if cfg.Default.BillingVmMinimum < 1 {
+	if cfg.Billing.BillingVmMinimum < 1 {
 		log.Printf("Warning: minimum VM billing intervals less than 1, setting to 1")
-		cfg.Default.BillingVmMinimum = 1
+		cfg.Billing.BillingVmMinimum = 1
 	}
 
 	return &cfg

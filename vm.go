@@ -606,19 +606,19 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 
 	var minutes int
 	rows.Scan(&minutes)
-	intervals := minutes / cfg.Default.BillingInterval
+	intervals := minutes / cfg.Billing.BillingInterval
 	if terminating {
 		intervals++
 
 		// enforce minimum billing intervals if needed
-		if cfg.Default.BillingVmMinimum > 1 {
+		if cfg.Billing.BillingVmMinimum > 1 {
 			rows = db.Query("SELECT TIMESTAMPDIFF(MINUTE, time_created, time_billed) FROM vms WHERE id = ?", vmId)
 			if rows.Next() {
 				var alreadyBilledMinutes int
 				rows.Scan(&alreadyBilledMinutes)
-				alreadyBilledIntervals := alreadyBilledMinutes / cfg.Default.BillingInterval
-				if alreadyBilledIntervals + intervals < cfg.Default.BillingVmMinimum {
-					intervals = cfg.Default.BillingVmMinimum - alreadyBilledIntervals
+				alreadyBilledIntervals := alreadyBilledMinutes / cfg.Billing.BillingInterval
+				if alreadyBilledIntervals + intervals < cfg.Billing.BillingVmMinimum {
+					intervals = cfg.Billing.BillingVmMinimum - alreadyBilledIntervals
 				}
 			}
 		}
@@ -637,7 +637,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 
 	amount := int64(intervals) * int64(vm.Plan.Price)
 	userApplyCharge(db, vm.UserId, vm.Name, "Plan: " + vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
-	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? MINUTE) WHERE id = ?", intervals * cfg.Default.BillingInterval, vmId)
+	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? MINUTE) WHERE id = ?", intervals * cfg.Billing.BillingInterval, vmId)
 
 	// also bill for bandwidth usage
 	newBytesUsed := vmGetInterface(vm.Region).BandwidthAccounting(vm)
@@ -674,7 +674,7 @@ func serviceBilling(db *Database) {
 				}
 			}
 		}
-		creditPerGBHour := int64(cfg.Default.StorageFee * BILLING_PRECISION)
+		creditPerGBHour := int64(cfg.Billing.StorageFee * BILLING_PRECISION)
 		hourlyCharge += storageBytes * creditPerGBHour / 1000 / 1000 / 1000
 
 		if hourlyCharge > 0 {

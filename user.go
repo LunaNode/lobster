@@ -180,7 +180,7 @@ func userBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary
 
 func userBilling(db *Database, userId int) {
 	// bill/notify for bandwidth usage
-	creditPerGB := int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION)
+	creditPerGB := int64(cfg.Billing.BandwidthOverageFee * BILLING_PRECISION)
 
 	for region, summary := range userBandwidthSummary(db, userId) {
 		if summary.Used > gigaToBytes(200) {
@@ -193,7 +193,7 @@ func userBilling(db *Database, userId int) {
 			if summary.Used > summary.Allocated + gigaToBytes(50) {
 				gbOver := int((summary.Used - summary.Allocated - summary.Billed) / 1024 / 1024 / 1024)
 				if gbOver > 0 {
-					userApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Default.BandwidthOverageFee), "bw-" + region, creditPerGB * int64(gbOver))
+					userApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-" + region, creditPerGB * int64(gbOver))
 					db.Exec("UPDATE region_bandwidth SET bandwidth_billed = bandwidth_billed + ? WHERE user_id = ? AND region = ?", gigaToBytes(gbOver), userId, region)
 				}
 			}

@@ -321,11 +321,6 @@ func panelPay(w http.ResponseWriter, r *http.Request, db *Database, session *Ses
 		return
 	}
 
-	if form.Amount < 5 || form.Amount > 300 {
-		redirectMessage(w, r, "/panel/billing", "Error: amount must be between $5.00 and $300.00.")
-		return
-	}
-
 	user := userDetails(db, session.UserId)
 	paymentHandle(form.Gateway, w, r, db, frameParams, session.UserId, user.Username, form.Amount)
 }

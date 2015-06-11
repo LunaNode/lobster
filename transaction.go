@@ -54,7 +54,9 @@ func transactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	}
 
 	// verify amount
-	if amount < BILLING_PRECISION / 10 * 49 { // minimum payment is $5.00 USD; we relax it a bit here
+	depositMinimum := int64(cfg.Billing.DepositMinimum * BILLING_PRECISION)
+	depositMaximum := int64(cfg.Billing.DepositMaximum * BILLING_PRECISION)
+	if amount < depositMinimum || amount > depositMaximum {
 		reportError(errors.New(fmt.Sprintf("invalid payment of %d cents", amount * 100 / BILLING_PRECISION)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
 		return
 	}

@@ -10,6 +10,8 @@ func TestReset() *Database {
 	cfg = &Config{
 		Default: ConfigDefault{
 			Debug: true,
+		},
+		Billing: ConfigBilling{
 			BandwidthOverageFee: 0.003,
 		},
 		Database: ConfigDatabase{

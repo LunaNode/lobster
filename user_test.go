@@ -29,7 +29,7 @@ func TestBillingBandwidth(t *testing.T) {
 	result := db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_used) VALUES (?, 'test', ?)", userId, gbUsage * 1024 * 1024 * 1024)
 	regionBandwidthId, _ := result.LastInsertId()
 	testForceUserBilling(db, userId)
-	expectedCharge := int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION) * gbUsage
+	expectedCharge := int64(cfg.Billing.BandwidthOverageFee * BILLING_PRECISION) * gbUsage
 	if !testVerifyCharge(db, userId, "bw-test", expectedCharge) {
 		t.Fatalf("Overage of %d GB, but didn't bill according to overage fee", gbUsage)
 	}
@@ -57,7 +57,7 @@ func TestBillingBandwidth(t *testing.T) {
 	}
 
 	db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ? WHERE id = ?", gigaToBytes(TEST_BANDWIDTH / 2), regionBandwidthId)
-	expectedCharge += int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION) * TEST_BANDWIDTH / 2
+	expectedCharge += int64(cfg.Billing.BandwidthOverageFee * BILLING_PRECISION) * TEST_BANDWIDTH / 2
 	testForceUserBilling(db, userId)
 	if !testVerifyChargeApprox(db, userId, "bw-test", expectedCharge * 9 / 10, expectedCharge * 11 / 10) {
 		t.Fatal("User charged differently than expected with proportional virtual machine")
@@ -68,7 +68,7 @@ func TestBillingBandwidth(t *testing.T) {
 	lastMonth := monthStart.AddDate(0, -1, 0)
 	db.Exec("UPDATE vms SET time_created = ? WHERE id = ?", lastMonth.Format(MYSQL_TIME_FORMAT), anotherVmId)
 	db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ? WHERE id = ?", gigaToBytes(TEST_BANDWIDTH * 2), regionBandwidthId)
-	expectedCharge += int64(cfg.Default.BandwidthOverageFee * BILLING_PRECISION) * TEST_BANDWIDTH
+	expectedCharge += int64(cfg.Billing.BandwidthOverageFee * BILLING_PRECISION) * TEST_BANDWIDTH
 	testForceUserBilling(db, userId)
 	if !testVerifyChargeApprox(db, userId, "bw-test", expectedCharge * 9 / 10, expectedCharge * 11 / 10) {
 		t.Fatal("User charged differently than expected with long time ago virtual machine")
