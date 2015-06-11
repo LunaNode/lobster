@@ -15,14 +15,14 @@ import "os"
 type VmConfig struct {
 	Name string `json:"name"`
 
-	// one of solusvm, openstack, lndynamic, fake
+	// one of solusvm, openstack, lobster, lndynamic, fake
 	Type string `json:"type"`
 
-	// API options (used by solusvm, lndynamic)
+	// API options (used by solusvm, lobster, lndynamic)
 	ApiId string `json:"api_id"`
 	ApiKey string `json:"api_key"`
 
-	// URL (used by solusvm, openstack)
+	// URL (used by solusvm, lobster, openstack)
 	Url string `json:"url"`
 
 	// solusvm options
@@ -36,7 +36,7 @@ type VmConfig struct {
 	Tenant string `json:"tenant"`
 	NetworkId string `json:"network_id"`
 
-	// lndynamic options
+	// region option (used by lobster, lndynamic)
 	Region string `json:"region"`
 }
 
@@ -100,7 +100,7 @@ func main() {
 				},
 			}
 		} else if vm.Type == "lobster" {
-			vmi = vmlobster.MakeLobster(vm.Url, vm.ApiId, vm.ApiKey)
+			vmi = vmlobster.MakeLobster(vm.Region, vm.Url, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "lndynamic" {
 			vmi = lndynamic.MakeLNDynamic(vm.Region, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "fake" {

@@ -184,10 +184,14 @@ func (this *Lobster) Init() {
 	// api routes
 	this.RegisterAPIHandler("/api/vms", apiVMList, "GET")
 	this.RegisterAPIHandler("/api/vms", apiVMCreate, "POST")
-	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}", apiVMInfo, "GET")
-	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}/action", apiVMAction, "POST")
-	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}/reimage", apiVMReimage, "POST")
-	this.RegisterAPIHandler("/api/vm/{id:[0-9]+}", apiVMDelete, "DELETE")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMInfo, "GET")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/action", apiVMAction, "POST")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/reimage", apiVMReimage, "POST")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMDelete, "DELETE")
+	this.RegisterAPIHandler("/api/images", apiImageList, "GET")
+	this.RegisterAPIHandler("/api/images", apiImageFetch, "POST")
+	this.RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageInfo, "GET")
+	this.RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageDelete, "DELETE")
 	this.RegisterAPIHandler("/api/plans", apiPlanList, "GET")
 
 	// admin routes

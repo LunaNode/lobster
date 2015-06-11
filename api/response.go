@@ -34,14 +34,27 @@ type VirtualMachineDetails struct {
 	CanReimage bool `json:"can_reimage"`
 }
 
+type Image struct {
+	Id int `json:"id"`
+	Region string `json:"region"`
+	Name string `json:"name"`
+	Status string `json:"status"`
+}
+
+type ImageDetails struct {
+	Size int64 `json:"size"`
+	Status string `json:"status"`
+	Details map[string]string `json:"details"`
+}
+
 type Plan struct {
-	Id int
-	Name string
-	Price int64
-	Ram int
-	Cpu int
-	Storage int
-	Bandwidth int
+	Id int `json:"id"`
+	Name string `json:"name"`
+	Price int64 `json:"price"`
+	Ram int `json:"ram"`
+	Cpu int `json:"cpu"`
+	Storage int `json:"storage"`
+	Bandwidth int `json:"bandwidth"`
 }
 
 // responses
@@ -61,6 +74,19 @@ type VMInfoResponse struct {
 
 type VMVncResponse struct {
 	Url string `json:"url"`
+}
+
+type ImageListResponse struct {
+	Images []*Image `json:"images"`
+}
+
+type ImageFetchResponse struct {
+	Id int `json:"id"`
+}
+
+type ImageInfoResponse struct {
+	Image *Image `json:"image"`
+	Details *ImageDetails `json:"details"`
 }
 
 type PlanListResponse struct {

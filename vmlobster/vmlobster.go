@@ -2,19 +2,22 @@ package vmlobster
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/api"
+import "github.com/LunaNode/lobster/utils"
 
 import "errors"
 import "fmt"
 import "strconv"
 
 type Lobster struct {
+	region string
 	client *api.Client
 	canVnc bool
 	canReimage bool
 }
 
-func MakeLobster(url string, apiId string, apiKey string) *Lobster {
+func MakeLobster(region string, url string, apiId string, apiKey string) *Lobster {
 	this := new(Lobster)
+	this.region = region
 	this.client = &api.Client{
 		Url: url,
 		ApiId: apiId,
@@ -150,17 +153,44 @@ func (this *Lobster) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 }
 
 func (this *Lobster) CanImages() bool {
-	return false
+	return true
 }
 
 func (this *Lobster) ImageFetch(url string, format string) (string, error) {
-	return "", errors.New("operation not supported")
+	// backend name doesn't matter, so we create with random string
+	imageIdentification, err := this.client.ImageFetch(this.region, utils.Uid(16), url, format)
+	if err != nil {
+		return "", err
+	} else {
+		return fmt.Sprintf("%d", imageIdentification), nil
+	}
 }
 
 func (this *Lobster) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
-	return nil, errors.New("operation not supporteduu")
+	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
+	apiInfoResponse, err := this.client.ImageInfo(int(imageIdentificationInt))
+	if err != nil {
+		return nil, err
+	}
+
+	apiInfo := apiInfoResponse.Details
+	info := lobster.ImageInfo{
+		Size: apiInfo.Size,
+		Details: apiInfo.Details,
+	}
+
+	if apiInfo.Status == "pending" {
+		info.Status = lobster.ImagePending
+	} else if apiInfo.Status == "active" {
+		info.Status = lobster.ImageActive
+	} else if apiInfo.Status == "error" {
+		info.Status = lobster.ImageError
+	}
+
+	return &info, nil
 }
 
 func (this *Lobster) ImageDelete(imageIdentification string) error {
-	return errors.New("operation not supported")
+	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
+	return this.client.ImageDelete(int(imageIdentificationInt))
 }

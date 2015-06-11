@@ -14,3 +14,10 @@ type VMActionRequest struct {
 type VMReimageRequest struct {
 	ImageId int `json:"image_id"`
 }
+
+type ImageFetchRequest struct {
+	Region string `json:"region"`
+	Name string `json:"name"`
+	Url string `json:"url"`
+	Format string `json:"format"`
+}

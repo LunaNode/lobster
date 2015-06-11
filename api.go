@@ -189,6 +189,26 @@ func copyVMDetails(src *VmInfo, dst *api.VirtualMachineDetails) {
 	}
 }
 
+func copyImage(src *Image, dst *api.Image) {
+	dst.Id = src.Id
+	dst.Region = src.Region
+	dst.Name = src.Name
+	dst.Status = src.Status
+}
+
+func copyImageDetails(src *ImageInfo, dst *api.ImageDetails) {
+	dst.Size = src.Size
+	dst.Details = src.Details
+	dst.Status = "unknown"
+	if src.Status == ImagePending {
+		dst.Status = "pending"
+	} else if src.Status == ImageActive {
+		dst.Status = "active"
+	} else if src.Status == ImageError {
+		dst.Status = "error"
+	}
+}
+
 func copyPlan(src *Plan, dst *api.Plan) {
 	dst.Id = src.Id
 	dst.Name = src.Name
@@ -334,6 +354,69 @@ func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	}
 
 	err = vm.Delete(userId)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 204, nil)
+	}
+}
+
+func apiImageList(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	var response api.ImageListResponse
+	for _, image := range imageList(db, userId) {
+		imageCopy := new(api.Image)
+		copyImage(image, imageCopy)
+		response.Images = append(response.Images, imageCopy)
+	}
+	apiResponse(w, 200, &response)
+}
+
+func apiImageFetch(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	var request api.ImageFetchRequest
+
+	err := json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	imageId, err := imageFetch(db, userId, request.Region, request.Name, request.Url, request.Format)
+	if err != nil {
+		http.Error(w, "Fetch failed: " + err.Error(), 400)
+		return
+	} else {
+		apiResponse(w, 201, api.ImageFetchResponse{Id: imageId})
+	}
+}
+
+func apiImageInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid image ID", 400)
+		return
+	}
+	image := imageInfo(db, userId, int(imageId))
+	if image == nil {
+		http.Error(w, "No image with that ID", 404)
+		return
+	}
+
+	var response api.ImageInfoResponse
+	response.Image = new(api.Image)
+	response.Details = new(api.ImageDetails)
+	copyImage(image, response.Image)
+	copyImageDetails(image.Info, response.Details)
+	apiResponse(w, 201, response)
+}
+
+func apiImageDelete(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid image ID", 400)
+		return
+	}
+
+	err = imageDelete(db, userId, int(imageId))
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 	} else {

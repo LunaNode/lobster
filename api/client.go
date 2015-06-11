@@ -92,7 +92,7 @@ func (this *Client) VmCreate(name string, planId int, imageId int) (int, error) 
 
 func (this *Client) VmInfo(vmId int) (*VMInfoResponse, error) {
 	var response VMInfoResponse
-	err := this.request("GET", fmt.Sprintf("vm/%d", vmId), nil, &response)
+	err := this.request("GET", fmt.Sprintf("vms/%d", vmId), nil, &response)
 	if err != nil {
 		return nil, err
 	} else {
@@ -105,7 +105,7 @@ func (this *Client) VmAction(vmId int, action string, value string) error {
 		Action: action,
 		Value : value,
 	}
-	return this.request("POST", fmt.Sprintf("vm/%d/action", vmId), request, nil)
+	return this.request("POST", fmt.Sprintf("vms/%d/action", vmId), request, nil)
 }
 
 func (this *Client) VmVnc(vmId int) (string, error) {
@@ -113,7 +113,7 @@ func (this *Client) VmVnc(vmId int) (string, error) {
 		Action: "vnc",
 	}
 	var response VMVncResponse
-	err := this.request("POST", fmt.Sprintf("vm/%d/action", vmId), request, &response)
+	err := this.request("POST", fmt.Sprintf("vms/%d/action", vmId), request, &response)
 	if err != nil {
 		return "", err
 	} else {
@@ -125,11 +125,41 @@ func (this *Client) VmReimage(vmId int, imageId int) error {
 	request := VMReimageRequest{
 		ImageId: imageId,
 	}
-	return this.request("POST", fmt.Sprintf("vm/%d/reimage", vmId), request, nil)
+	return this.request("POST", fmt.Sprintf("vms/%d/reimage", vmId), request, nil)
 }
 
 func (this *Client) VmDelete(vmId int) error {
-	return this.request("DELETE", fmt.Sprintf("vm/%d", vmId), nil, nil)
+	return this.request("DELETE", fmt.Sprintf("vms/%d", vmId), nil, nil)
+}
+
+func (this *Client) ImageFetch(region string, name string, url string, format string) (int, error) {
+	request := ImageFetchRequest{
+		Region: region,
+		Name: name,
+		Url: url,
+		Format: format,
+	}
+	var response ImageFetchResponse
+	err := this.request("POST", "images", request, &response)
+	if err != nil {
+		return 0, err
+	} else {
+		return response.Id, nil
+	}
+}
+
+func (this *Client) ImageInfo(imageId int) (*ImageInfoResponse, error) {
+	var response ImageInfoResponse
+	err := this.request("GET", fmt.Sprintf("images/%d", imageId), nil, &response)
+	if err != nil {
+		return nil, err
+	} else {
+		return &response, nil
+	}
+}
+
+func (this *Client) ImageDelete(imageId int) error {
+	return this.request("DELETE", fmt.Sprintf("images/%d", imageId), nil, nil)
 }
 
 func (this *Client) PlanList() ([]*Plan, error) {
