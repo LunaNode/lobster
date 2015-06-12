@@ -191,6 +191,7 @@ func copyVMDetails(src *VmInfo, dst *api.VirtualMachineDetails) {
 	dst.Details = src.Details
 	dst.CanVnc = src.CanVnc
 	dst.CanReimage = src.CanReimage
+	dst.CanAddresses = src.CanAddresses
 	for _, srcAction := range src.Actions {
 		dstAction := new(api.VirtualMachineAction)
 		dstAction.Action = srcAction.Action
@@ -200,6 +201,13 @@ func copyVMDetails(src *VmInfo, dst *api.VirtualMachineDetails) {
 		dstAction.Dangerous = srcAction.Dangerous
 		dst.Actions = append(dst.Actions, dstAction)
 	}
+}
+
+func copyAddress(src *IpAddress, dst *api.IpAddress) {
+	dst.Ip = src.Ip
+	dst.PrivateIp = src.PrivateIp
+	dst.CanRdns = src.CanRdns
+	dst.Hostname = src.Hostname
 }
 
 func copyImage(src *Image, dst *api.Image) {
@@ -371,6 +379,105 @@ func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId in
 		http.Error(w, err.Error(), 400)
 	} else {
 		apiResponse(w, 204, nil)
+	}
+}
+
+func apiVMAddresses(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+	err = vm.LoadAddresses()
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	}
+
+	var response api.VMAddressesResponse
+	for _, address := range vm.Addresses {
+		addressCopy := new(api.IpAddress)
+		copyAddress(address, addressCopy)
+		response.Addresses = append(response.Addresses, addressCopy)
+	}
+	apiResponse(w, 200, &response)
+}
+
+func apiVMAddressAdd(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	err = vm.AddAddress()
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 200, nil)
+	}
+}
+
+func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	var request api.VMAddressRemoveRequest
+	err = json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	err = vm.RemoveAddress(request.Ip, request.PrivateIp)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 200, nil)
+	}
+}
+
+func apiVMAddressRdns(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	var request api.VMAddressRdnsRequest
+	err = json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	err = vm.SetRdns(mux.Vars(r)["ip"], request.Hostname)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 200, nil)
 	}
 }
 

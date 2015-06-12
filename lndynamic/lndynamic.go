@@ -123,6 +123,26 @@ func (this *LNDynamic) CanReimage() bool {
 	return true
 }
 
+func (this *LNDynamic) CanAddresses() bool {
+	return false
+}
+
+func (this *LNDynamic) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
+	return nil, errors.New("operation not supported")
+}
+
+func (this *LNDynamic) VmAddAddress(vm *lobster.VirtualMachine) error {
+	return errors.New("operation not supported")
+}
+
+func (this *LNDynamic) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, privateip string) error {
+	return errors.New("operation not supported")
+}
+
+func (this *LNDynamic) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname string) error {
+	return errors.New("operation not supported")
+}
+
 func (this *LNDynamic) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	info, err := this.VmInfo(vm)
 	if err != nil {

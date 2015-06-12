@@ -24,6 +24,7 @@ type VirtualMachine struct {
 	Plan Plan
 
 	Info *VmInfo
+	Addresses []*IpAddress
 	db *Database
 }
 
@@ -63,6 +64,15 @@ type VmInfo struct {
 	// these fields are filled in by lobster, VM interface should not set
 	CanVnc bool
 	CanReimage bool
+	CanAddresses bool
+}
+
+type IpAddress struct {
+	Ip string
+	PrivateIp string // blank means N/A
+
+	CanRdns bool
+	Hostname string // current rDNS setting, always blank if CanRdns is false
 }
 
 type ImageStatus int
@@ -250,6 +260,7 @@ func (vm *VirtualMachine) LoadInfo() {
 
 	vm.Info.CanVnc = vmi.CanVnc()
 	vm.Info.CanReimage = vmi.CanReimage()
+	vm.Info.CanAddresses = vmi.CanAddresses()
 }
 
 // Attempt to apply function on the provided VM.
@@ -356,6 +367,41 @@ func (vm *VirtualMachine) Rename(name string) error {
 	})
 }
 
+func (vm *VirtualMachine) LoadAddresses() error {
+	if vm.Addresses != nil {
+		return nil
+	} else if vm.Identification == "" || vm.Status != "active" {
+		return errors.New("VM is not ready yet")
+	}
+
+	vmi := vmGetInterface(vm.Region)
+	var err error
+	vm.Addresses, err = vmi.VmAddresses(vm)
+	return err
+}
+
+func (vm *VirtualMachine) AddAddress() error {
+	err := vm.LoadAddresses()
+	if err != nil {
+		return err
+	} else if len(vm.Addresses) >= cfg.Vm.MaximumIps {
+		return errors.New(fmt.Sprintf("this VM already has the maximum of %d IP addresses", cfg.Vm.MaximumIps))
+	}
+	return vm.do(vmGetInterface(vm.Region).VmAddAddress)
+}
+
+func (vm *VirtualMachine) RemoveAddress(ip string, privateip string) error {
+	return vm.do(func(vm *VirtualMachine) error {
+		return vmGetInterface(vm.Region).VmRemoveAddress(vm, ip, privateip)
+	})
+}
+
+func (vm *VirtualMachine) SetRdns(ip string, hostname string) error {
+	return vm.do(func(vm *VirtualMachine) error {
+		return vmGetInterface(vm.Region).VmSetRdns(vm, ip, hostname)
+	})
+}
+
 func (vm *VirtualMachine) Delete(userId int) error {
 	if vm.UserId != userId {
 		return errors.New("invalid VM instance")
@@ -401,7 +447,7 @@ func (vm *VirtualMachine) SetMetadata(k string, v string) {
 	if rows.Next() {
 		var rowId int
 		rows.Scan(&rowId)
-		vm.db.Exec("UPDATE vm_metadata SET v = ? WHERE id = ?", rowId)
+		vm.db.Exec("UPDATE vm_metadata SET v = ? WHERE id = ?", v, rowId)
 	} else {
 		vm.db.Exec("INSERT INTO vm_metadata (vm_id, k, v) VALUES (?, ?, ?)", vm.Id, k, v)
 	}

@@ -12,11 +12,14 @@ function vmPerform(method, target, params, expect, f, quiet, button) {
 	}
 
 	$.get('/panel/csrftoken', function(token) {
+		if(params) {
+			params = JSON.stringify(params);
+		}
 		$.ajax({
 			method: method,
 			url: "/api/vms/" + $("#js_id").html() + target,
 			headers: {'Authorization': 'session ' + token},
-			data: JSON.stringify(params),
+			data: params,
 			dataType: expect,
 			success: function(data) {
 				f(data);
@@ -29,7 +32,7 @@ function vmPerform(method, target, params, expect, f, quiet, button) {
 			error: function(xhr, textStatus, errorThrown) {
 				if(!quiet) {
 					if(xhr.responseText) {
-						messageUpdate('error', 'failed to complete API call: ' + xhr.responseText);
+						messageUpdate('error', xhr.responseText);
 					} else {
 						messageUpdate('error', 'failed to complete API call: ' + textStatus + ' (' + errorThrown + ').');
 					}
@@ -79,7 +82,7 @@ function vmStatusUpdate(ttl) {
 		} else if(status == 'Offline') {
 			statusColor = 'red';
 		}
-		$("#vm_status").html('<font color="' + statusColor + '"><strong>' + data.details.status + '</strong></font>');
+		$("#vm_status").html('<font color="' + escapehtml(statusColor) + '"><strong>' + escapehtml(data.details.status) + '</strong></font>');
 	}, true);
 
 	if(ttl && ttl > 0) {
@@ -88,43 +91,75 @@ function vmStatusUpdate(ttl) {
 }
 
 function reloadAddresses() {
-	$('#addresses').html('<center><img src="/assets/img/loading.gif"></center>');
-	vmPerform('ips', function(data) {
-		$.get("/panel/csrftoken", function(token) {
-			h = '<table class="table table-striped">\
-					<tr>\
-						<th>External IP</th>\
-						<th>Private IP</th>\
-						<th>Action</th>\
-					</tr>';
-			for(var x in data['ips']) {
-				ip = data['ips'][x];
+	$('#vm_addresses_table').html('<center><img src="/assets/img/loading.gif"></center>');
+	vmPerform('GET', '/ips', null, 'json', function(data) {
+		if(data['addresses']) {
+			showPrivate = data['addresses'][0].private_ip;
+			showHostname = data['addresses'][0].hostname != '.' && data['addresses'][0].can_rdns;
+
+			h = '<table class="table table-striped">';
+			h += '<tr>';
+			h += '<th>External IP</th>';
+			if(showPrivate) h += '<th>Private IP</th>';
+			if(showHostname) h += '<th>Hostname</th>';
+			h += '<th>Action</th>';
+			h += '</tr>';
+
+			for(var x in data['addresses']) {
+				ip = data['addresses'][x];
 				h += '<tr>';
-				if(ip.external_ip) {
-					h += '<td>' + ip.external_ip + '</td>';
+				if(ip.ip) {
+					h += '<td>' + escapehtml(ip.ip) + '</td>';
 				} else {
 					h += '<td>None</td>';
 				}
-				if(ip.private_ip) {
-					h += '<td>' + ip.private_ip + '</td>';
-				} else {
-					h += '<td>N/A</td>';
+				if(showPrivate) {
+					if(ip.private_ip) {
+						h += '<td>' + escapehtml(ip.private_ip) + '</td>';
+					} else {
+						h += '<td>N/A</td>';
+					}
 				}
-				h += '<td><form method="POST" action="vm.php?tab=vm_ips">';
-				h += '<input type="hidden" name="private_ip" value="' + private_ip + '">';
-				h += '<input type="hidden" name="floating_ip" value="' + floating_ip + '">';
-				h += '<input type="hidden" name="vm_id" value="' + $("#js_id").html() + '">';
-				h += '<input type="hidden" name="token" value="' + token + '" />';
-				h += '<button type="submit" class="btn btn-danger" name="action" value="delete_ip">Remove</button>';
-				if(data['ips'][private_ip]) {
-					h += ' <button type="submit" class="btn btn-warning" name="action" value="delete_floatingip">De-associate floating IP</button>';
-				} else {
-					h += ' <button type="submit" class="btn btn-success" name="action" value="add_floatingip">Associate floating IP</button>';
+				if(showHostname) h += '<td>' + escapehtml(ip.hostname) + '</td>';
+				h += '<td>';
+				if(ip.can_rdns) {
+					h += ' <button type="button" class="btn btn-primary" onclick="showSetRdns(\'' + escapehtml(ip.ip) + '\', \'' + escapehtml(ip.hostname) + '\');">Set rDNS</button>';
 				}
-				h += '</form></td></tr>';
+				h += ' <button type="button" class="btn btn-danger ladda-button" data-style="expand-right" data-size="l" onclick="addressRemove(this, \'' + escapehtml(ip.ip) + '\', \'' + escapehtml(ip.private_ip) + '\');">Remove</button>';
+				h += '</td>';
+				h += '</tr>';
 			}
 			h += '</table>';
-			$('#vm_ips_table').html(h);
-		}, 'text');
+			$('#vm_addresses_table').html(h);
+		} else {
+			$('#vm_addresses_table').html('<strong>This VM does not have any IP addresses.</strong>');
+		}
 	}, true);
 }
+
+function addressAdd(button) {
+	vmPerform('POST', '/ips/add', null, 'text', reloadAddresses, false, button);
+}
+
+function addressRemove(button, ip, privateIp) {
+	vmPerform('POST', '/ips/remove', {'ip': ip, 'private_ip': privateIp}, 'text', reloadAddresses, false, button);
+}
+
+function showSetRdns(ip, hostname) {
+	$('#modal_rdns_ip').text(ip);
+	$('#modal_rdns_hostname').val(hostname);
+	$('#modal_rdns_form').attr('action', '/panel/vms/' + $("#js_id").html() + '/ips/' + escapehtml(ip) + '/rdns');
+	$('#modalRdns').modal('show');
+}
+
+function setRdns(button) {
+	vmPerform('POST', '/ips/' + $('#modal_rdns_ip').html() + '/rdns', {'hostname': $('#modal_rdns_hostname').val()}, 'text', function(){}, false, button);
+	$('#modalRdns').modal('hide');
+	reloadAddresses();
+}
+
+$('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+	if((e.target + "").split("#")[1] == 'vm_addresses') {
+		reloadAddresses();
+	}
+});

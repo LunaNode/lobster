@@ -122,6 +122,59 @@ func (this *SolusVM) CanReimage() bool {
 	return true
 }
 
+func (this *SolusVM) CanAddresses() bool {
+	return true
+}
+
+func (this *SolusVM) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	apiInfo, err := this.Api.VmInfo(int(vmIdentificationInt))
+	if err != nil {
+		return nil, err
+	}
+
+	var addresses []*lobster.IpAddress
+	for _, addrString := range strings.Split(apiInfo.Ips, ",") {
+		addrString = strings.TrimSpace(addrString)
+		if addrString != "" {
+			addresses = append(addresses, &lobster.IpAddress{
+				Ip: addrString,
+			})
+		}
+	}
+	return addresses, nil
+}
+
+func (this *SolusVM) VmAddAddress(vm *lobster.VirtualMachine) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmAddAddress(int(vmIdentificationInt))
+}
+
+func (this *SolusVM) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, privateip string) error {
+	// verify ip is on the virtual machine
+	addresses, err := this.VmAddresses(vm)
+	if err != nil {
+		return err
+	}
+	found := false
+	for _, address := range addresses {
+		if address.Ip == ip {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return errors.New("invalid IP address")
+	}
+
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.Api.VmRemoveAddress(int(vmIdentificationInt), ip)
+}
+
+func (this *SolusVM) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname string) error {
+	return errors.New("operation not supported")
+}
+
 func (this *SolusVM) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	info, err := this.VmInfo(vm)
 	if err != nil {

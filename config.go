@@ -12,6 +12,10 @@ type ConfigDefault struct {
 	Debug bool
 }
 
+type ConfigVm struct {
+	MaximumIps int
+}
+
 type ConfigBilling struct {
 	BandwidthOverageFee float64
 	StorageFee float64
@@ -45,6 +49,7 @@ type ConfigNovnc struct {
 
 type Config struct {
 	Default ConfigDefault
+	Vm ConfigVm
 	Billing ConfigBilling
 	Session ConfigSession
 	Database ConfigDatabase

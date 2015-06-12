@@ -25,6 +25,7 @@ type APIVmVncResponse struct {
 type APIVmInfoResponse struct {
 	XMLName xml.Name `xml:"root"`
 	Ip string `xml:"mainipaddress"`
+	Ips string `xml:"ipaddresses"`
 	InternalIps string `xml:"internalips"`
 	State string `xml:"state"`
 	Bandwidth string `xml:"bandwidth"`

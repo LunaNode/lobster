@@ -132,6 +132,35 @@ func (this *Client) VmDelete(vmId int) error {
 	return this.request("DELETE", fmt.Sprintf("vms/%d", vmId), nil, nil)
 }
 
+func (this *Client) VmAddresses(vmId int) ([]*IpAddress, error) {
+	var response VMAddressesResponse
+	err := this.request("GET", fmt.Sprintf("vms/%d/ips", vmId), nil, &response)
+	if err != nil {
+		return nil, err
+	} else {
+		return response.Addresses, nil
+	}
+}
+
+func (this *Client) VmAddressAdd(vmId int) error {
+	return this.request("POST", fmt.Sprintf("vms/%d/ips/add", vmId), nil, nil)
+}
+
+func (this *Client) VmAddressRemove(vmId int, ip string, privateip string) error {
+	request := VMAddressRemoveRequest{
+		Ip: ip,
+		PrivateIp: privateip,
+	}
+	return this.request("POST", fmt.Sprintf("vms/%d/ips/remove", vmId), request, nil)
+}
+
+func (this *Client) VmAddressRdns(vmId int, ip string, hostname string) error {
+	request := VMAddressRdnsRequest{
+		Hostname: hostname,
+	}
+	return this.request("POST", fmt.Sprintf("vms/%d/ips/%s/rdns", vmId, ip), request, nil)
+}
+
 func (this *Client) ImageFetch(region string, name string, url string, format string) (int, error) {
 	request := ImageFetchRequest{
 		Region: region,

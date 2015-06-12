@@ -143,6 +143,44 @@ func (this *Lobster) CanReimage() bool {
 	return this.canReimage
 }
 
+func (this *Lobster) CanAddresses() bool {
+	return true
+}
+
+func (this *Lobster) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
+	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	apiAddresses, err := this.client.VmAddresses(int(vmIdentification))
+	if err != nil {
+		return nil, err
+	}
+
+	var addresses []*lobster.IpAddress
+	for _, srcAddress := range apiAddresses {
+		dstAddress := new(lobster.IpAddress)
+		dstAddress.Ip = srcAddress.Ip
+		dstAddress.PrivateIp = srcAddress.PrivateIp
+		dstAddress.CanRdns = srcAddress.CanRdns
+		dstAddress.Hostname = srcAddress.Hostname
+		addresses = append(addresses, dstAddress)
+	}
+	return addresses, nil
+}
+
+func (this *Lobster) VmAddAddress(vm *lobster.VirtualMachine) error {
+	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.client.VmAddressAdd(int(vmIdentification))
+}
+
+func (this *Lobster) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, privateip string) error {
+	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.client.VmAddressRemove(int(vmIdentification), ip, privateip)
+}
+
+func (this *Lobster) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname string) error {
+	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	return this.client.VmAddressRdns(int(vmIdentification), ip, hostname)
+}
+
 func (this *Lobster) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	info, err := this.VmInfo(vm)
 	if err == nil {

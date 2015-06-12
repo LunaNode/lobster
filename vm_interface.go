@@ -28,6 +28,12 @@ type VmInterface interface {
 	VmReimage(vm *VirtualMachine, imageIdentification string) error
 	CanReimage() bool
 
+	CanAddresses() bool
+	VmAddresses(vm *VirtualMachine) ([]*IpAddress, error)
+	VmAddAddress(vm *VirtualMachine) error
+	VmRemoveAddress(vm *VirtualMachine, ip string, privateip string) error
+	VmSetRdns(vm *VirtualMachine, ip string, hostname string) error
+
 	// returns the number of bytes transferred by the given VM since the last call
 	// if this is the first call, then BandwidthAccounting must return zero
 	BandwidthAccounting(vm *VirtualMachine) int64

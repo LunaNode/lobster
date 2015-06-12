@@ -219,3 +219,13 @@ func (this *API) VmInfo(vmIdentification int) (*APIVmInfoResponse, error) {
 	err := this.request("vserver-infoall", params, &response)
 	return &response, err
 }
+
+func (this *API) VmAddAddress(vmIdentification int) error {
+	return this.vmAction(vmIdentification, "vserver-addip", nil)
+}
+
+func (this *API) VmRemoveAddress(vmIdentification int, ip string) error {
+	params := make(map[string]string)
+	params["ipaddr"] = ip
+	return this.vmAction(vmIdentification, "vserver-delip", params)
+}

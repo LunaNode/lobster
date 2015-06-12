@@ -5,7 +5,11 @@ import "github.com/gorilla/mux"
 import "github.com/gorilla/schema"
 
 import "github.com/LunaNode/lobster/websockify"
+
+import crand "crypto/rand"
+import "encoding/binary"
 import "log"
+import "math/rand"
 import "net/http"
 import "strings"
 import "sync"
@@ -189,6 +193,10 @@ func (this *Lobster) Init() {
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/action", apiVMAction, "POST")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/reimage", apiVMReimage, "POST")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMDelete, "DELETE")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips", apiVMAddresses, "GET")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/add", apiVMAddressAdd, "POST")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/remove", apiVMAddressRemove, "POST") // use POST instead of DELETE since we need both public/private ip
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/{ip:[^/]+}/rdns", apiVMAddressRdns, "POST")
 	this.RegisterAPIHandler("/api/images", apiImageList, "GET")
 	this.RegisterAPIHandler("/api/images", apiImageFetch, "POST")
 	this.RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageInfo, "GET")
@@ -213,6 +221,17 @@ func (this *Lobster) Init() {
 	this.RegisterAdminHandler("/admin/images", adminImages, false)
 	this.RegisterAdminHandler("/admin/images/add", adminImagesAdd, false)
 	this.RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
+
+	// seed math/rand via crypt/rand in case interfaces want to use it for non-secure randomness source
+	// (math/rand is much faster)
+	seedBytes := make([]byte, 8)
+	_, err := crand.Read(seedBytes)
+	if err != nil {
+		log.Printf("Warning: failed to seed math/rand: %s", err.Error())
+	} else {
+		seed, _ := binary.Varint(seedBytes)
+		rand.Seed(seed)
+	}
 }
 
 func (this *Lobster) Run() {
