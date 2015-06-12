@@ -102,6 +102,14 @@
 				</div>
 			</div>
 		</div>
+		<div style="float:left; padding-left:5px;">
+			<form method="POST" action="/admin/user/{{ .User.Id }}/disable" onsubmit="return window.confirm('Are you sure you want to disable this user account?');">
+				<div class="form-group">
+					<input type="hidden" name="token" value="{{ .Token }}" />
+					<button type="submit" class="btn btn-danger">Disable</button>
+				</div>
+			</form>
+		</div>
 	</div>
 </div>
 <div class="row">

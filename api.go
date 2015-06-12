@@ -85,7 +85,7 @@ func apiCheck(db *Database, path string, authorization string, request []byte) (
 		return 0, errors.New("bad authorization: id, partial key, or signature has bad length; or signature not hex-encoded")
 	}
 
-	rows := db.Query("SELECT user_id, api_key FROM api_keys WHERE api_id = ? AND nonce < ?", apiId, nonce)
+	rows := db.Query("SELECT api_keys.user_id, api_keys.api_key FROM users, api_keys WHERE api_keys.api_id = ? AND api_keys.nonce < ? AND api_keys.user_id = users.id AND users.status != 'disabled'", apiId, nonce)
 	if !rows.Next() {
 		return 0, errors.New("authentication failure")
 	}

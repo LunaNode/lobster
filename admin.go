@@ -114,6 +114,16 @@ func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Credit applied successfully.")
 }
 
+func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		redirectMessage(w, r, "/admin/users", "Error: invalid user ID.")
+	} else {
+		db.Exec("UPDATE users SET status = 'disabled' WHERE id = ?", userId)
+		redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Account disabled successfully.")
+	}
+}
+
 func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {

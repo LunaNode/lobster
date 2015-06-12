@@ -85,7 +85,7 @@ func authLogin(db *Database, ip string, username string, password string) (int, 
 		return 0, errors.New("try again later")
 	}
 
-	rows := db.Query("SELECT id, password FROM users WHERE username = ?", username)
+	rows := db.Query("SELECT id, password FROM users WHERE username = ? AND status != 'disabled'", username)
 	if !rows.Next() {
 		log.Printf("Authentication failure on user=%s: bad username (%s)", username, ip)
 		antifloodAction(db, ip, "authCheck")
