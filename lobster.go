@@ -199,6 +199,7 @@ func (this *Lobster) Init() {
 	this.RegisterAdminHandler("/admin/users", adminUsers, false)
 	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}", adminUser, false)
 	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/login", adminUserLogin, true)
+	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/credit", adminUserCredit, true)
 	this.RegisterAdminHandler("/admin/support", adminSupport, false)
 	this.RegisterAdminHandler("/admin/support/open/{id:[0-9]+}", adminSupportOpen, false)
 	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}", adminSupportTicket, false)

@@ -84,12 +84,34 @@ func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Se
 func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {
-		http.Redirect(w, r, "/panel/users", 303)
+		redirectMessage(w, r, "/admin/users", "Error: invalid user ID.")
 	} else {
 		session.OriginalId = session.UserId
 		session.UserId = int(userId)
 		http.Redirect(w, r, "/panel/dashboard", 303)
 	}
+}
+
+type AdminUserCreditForm struct {
+	Credit float64 `schema:"credit"`
+	Description string `schema:"description"`
+}
+func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		redirectMessage(w, r, "/admin/users", "Error: invalid user ID.")
+		return
+	}
+	form := new(AdminUserCreditForm)
+	err = decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("/admin/user/%d", userId), 303)
+		return
+	}
+
+	creditInt := int64(form.Credit * BILLING_PRECISION)
+	userApplyCredit(db, int(userId), creditInt, form.Description)
+	redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Credit applied successfully.")
 }
 
 func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
