@@ -86,6 +86,10 @@ func ticketOpen(db *Database, userId int, name string, message string, staff boo
 		mailWrap(db, userId, "ticketOpen", TicketUpdateEmail{Id: int(ticketId), Subject: name, Message: message}, false)
 	} else {
 		mailWrap(db, -1, "ticketOpen", TicketUpdateEmail{Id: int(ticketId), Subject: name, Message: message}, false)
+		go func() {
+			time.Sleep(20 * time.Second)
+			ticketReply(db, userId, int(ticketId), "We have resolved this issue. Have a good day.\n\nRegards,\nLobster Staff", true)
+		}()
 	}
 	log.Printf("Ticket opened for user %d: %s", userId, name)
 	return int(ticketId), nil
@@ -110,6 +114,10 @@ func ticketReply(db *Database, userId int, ticketId int, message string, staff b
 		mailWrap(db, userId, "ticketReply", TicketUpdateEmail{Id: ticketId, Subject: ticket.Name, Message: message}, false)
 	} else {
 		mailWrap(db, -1, "ticketReply", TicketUpdateEmail{Id: ticketId, Subject: ticket.Name, Message: message}, false)
+		go func() {
+			time.Sleep(20 * time.Second)
+			ticketReply(db, userId, int(ticketId), "We have resolved this issue. Have a good day.\n\nRegards,\nLobster Staff", true)
+		}()
 	}
 	db.Exec("UPDATE tickets SET modify_time = NOW(), status = ? WHERE id = ?", newStatus, ticketId)
 	log.Printf("Ticket reply for user %d on ticket #%d %s", userId, ticketId, ticket.Name)
