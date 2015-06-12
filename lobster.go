@@ -144,6 +144,7 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/login", this.db.wrapHandler(sessionWrap(getSplashFormHandler("login"))))
 	this.router.HandleFunc("/create", this.db.wrapHandler(sessionWrap(getSplashFormHandler("create"))))
 	this.router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
+	this.router.Handle("/docs/{path:.*}", http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs/"))))
 	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
 
 	// auth routes
