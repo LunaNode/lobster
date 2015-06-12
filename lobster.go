@@ -130,7 +130,6 @@ func (this *Lobster) HandleWebsockify(ipport string, password string) string {
 func (this *Lobster) Init() {
 	loadTemplates()
 	loadEmail()
-	loadAssets()
 
 	decoder = schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
@@ -144,7 +143,7 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/privacy", getSplashHandler("privacy"))
 	this.router.HandleFunc("/login", this.db.wrapHandler(sessionWrap(getSplashFormHandler("login"))))
 	this.router.HandleFunc("/create", this.db.wrapHandler(sessionWrap(getSplashFormHandler("create"))))
-	this.router.HandleFunc("/assets/{assetPath:.*}", assetsHandler)
+	this.router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
 
 	// auth routes
