@@ -15,6 +15,7 @@ import "errors"
 import "fmt"
 import "io"
 import "net/http"
+import "net/url"
 import "strconv"
 import "strings"
 import "time"
@@ -120,7 +121,7 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 		}
 
 		authParts := strings.Split(authorization, " ")
-		if len(authParts) != 2 || authParts[0] != "lobster" {
+		if (len(authParts) != 2 || authParts[0] != "lobster") && authParts[0] != "session" {
 			http.Error(w, "Authorization header must take the form 'lobster authdata'", 400)
 			return
 		}
@@ -137,13 +138,25 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 		}
 		request := buf[:n]
 
-		userId, err := apiCheck(db, apiPath, authParts[1], request)
-		if err != nil {
-			http.Error(w, err.Error(), 401)
-			return
+		if authParts[0] == "lobster" {
+			userId, err := apiCheck(db, apiPath, authParts[1], request)
+			if err != nil {
+				http.Error(w, err.Error(), 401)
+				return
+			}
+			h(w, r, db, userId, request)
+		} else if authParts[0] == "session" {
+			// we modify request properties to ensure that session applies CSRF protection
+			// TODO: this is a bit hacky
+			r.Method = "POST"
+			r.PostForm = url.Values{}
+			r.PostForm.Set("token", authParts[1])
+			sessionWrap(func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+				if session.IsLoggedIn() {
+					h(w, r, db, session.UserId, request)
+				}
+			})(w, r, db)
 		}
-
-		h(w, r, db, userId, request)
 	}
 }
 

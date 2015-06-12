@@ -17,7 +17,7 @@
 			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/start">
 				<div class="form-group">
 					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-success">Start up</button>
+					<button type="submit" class="btn btn-success ladda-button" data-style="expand-right" data-size="l" onclick="vmStart(this); return false;">Start up</button>
 				</div>
 			</form>
 		</div>
@@ -25,7 +25,7 @@
 			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/reboot">
 				<div class="form-group">
 					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-warning">Reboot</button>
+					<button type="submit" class="btn btn-warning ladda-button" data-style="expand-right" data-size="l" onclick="vmReboot(this); return false;">Reboot</button>
 				</div>
 			</form>
 		</div>
@@ -33,7 +33,7 @@
 			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/stop">
 				<div class="form-group">
 					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-warning">Shutdown</button>
+					<button type="submit" class="btn btn-warning ladda-button" data-style="expand-right" data-size="l" onclick="vmStop(this); return false;">Shutdown</button>
 				</div>
 			</form>
 		</div>
@@ -183,11 +183,11 @@
 			<tr>
 				<th>Status</th>
 				{{ if eq .Vm.Info.Status "Online" }}
-					<td><font color="green"><strong>{{ .Vm.Info.Status }}</strong></font></td>
+					<td id="vm_status"><font color="green"><strong>{{ .Vm.Info.Status }}</strong></font></td>
 				{{ else if eq .Vm.Info.Status "Offline" }}
-					<td><font color="red"><strong>{{ .Vm.Info.Status }}</strong></font></td>
+					<td id="vm_status"><font color="red"><strong>{{ .Vm.Info.Status }}</strong></font></td>
 				{{ else }}
-					<td><font color="blue"><strong>{{ .Vm.Info.Status }}</strong></font></td>
+					<td id="vm_status"><font color="blue"><strong>{{ .Vm.Info.Status }}</strong></font></td>
 				{{ end }}
 			</tr>
 			<tr>
@@ -225,4 +225,5 @@
 		</table>
 	</div>
 </div>
+<div id="js_id" style="display:none;">{{ .Vm.Id }}</div>
 {{ template "footer.html" .Frame }}

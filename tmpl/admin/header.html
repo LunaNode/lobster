@@ -11,6 +11,9 @@
 	<link href="/assets/css/metismenu.css" rel="stylesheet">
 	<link href="/assets/css/dashboard.css" rel="stylesheet">
 	<link href="/assets/css/fonts.css" rel="stylesheet">
+	{{ range .Styles }}
+		<link href="/assets/css/{{ . }}.css" rel="stylesheet">
+	{{ end }}
 </head>
 
 <body>

@@ -15,7 +15,8 @@ type FrameParams struct {
 	UserId int
 	Admin bool
 	OriginalId int // non-zero only if admin is logged in as another user
-	Scripts []string
+	Styles []string // additional CSS
+	Scripts []string // additional JS
 }
 type PanelFormParams struct {
 	Frame FrameParams
@@ -154,6 +155,8 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 	}
 	vm.LoadInfo()
 
+	frameParams.Styles = []string{"ladda"}
+	frameParams.Scripts = []string{"spin", "ladda", "lobstervm"}
 	params := PanelVMParams{}
 	params.Frame = frameParams
 	params.Vm = vm
@@ -586,4 +589,8 @@ func panelSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Databas
 	ticketClose(db, session.UserId, int(ticketId))
 	LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
 	redirectMessage(w, r, fmt.Sprintf("/panel/support/%d", ticketId), "This ticket has been marked closed.")
+}
+
+func panelToken(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	w.Write([]byte(csrfGenerate(db, session)))
 }

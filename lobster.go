@@ -180,6 +180,7 @@ func (this *Lobster) Init() {
 	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}", panelSupportTicket, false)
 	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/reply", panelSupportTicketReply, true)
 	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/close", panelSupportTicketClose, true)
+	this.RegisterPanelHandler("/panel/csrftoken", panelToken, false)
 
 	// api routes
 	this.RegisterAPIHandler("/api/vms", apiVMList, "GET")
