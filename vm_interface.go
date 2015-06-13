@@ -28,6 +28,11 @@ type VmInterface interface {
 	VmReimage(vm *VirtualMachine, imageIdentification string) error
 	CanReimage() bool
 
+	// On success, should return image identification of a created snapshot.
+	// (if backend store images and snapshots separately, the interface can tag the identification, e.g. "snapshot:XYZ" and "image:ABC")
+	VmSnapshot(vm *VirtualMachine) (string, error)
+	CanSnapshot() bool
+
 	CanAddresses() bool
 	VmAddresses(vm *VirtualMachine) ([]*IpAddress, error)
 	VmAddAddress(vm *VirtualMachine) error

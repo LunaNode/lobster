@@ -166,6 +166,7 @@ func (this *Lobster) Init() {
 	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/vnc", panelVMVnc, false)
 	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reimage", panelVMReimage, true)
 	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/rename", panelVMRename, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/snapshot", panelVMSnapshot, true)
 	this.RegisterPanelHandler("/panel/billing", panelBilling, false)
 	this.RegisterPanelHandler("/panel/pay", panelPay, false)
 	this.RegisterPanelHandler("/panel/charges", panelCharges, false)

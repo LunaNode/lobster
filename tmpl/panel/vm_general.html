@@ -118,6 +118,40 @@
 				{{ end }}
 			{{ end }}
 		</div>
+		{{ if .Vm.Info.CanSnapshot }}
+		<div style="float:left; padding-left:5px;">
+			<button class="btn btn-primary" data-toggle="modal" data-target="#modalSnapshot">Snapshot</button>
+			<div class="modal" id="modalSnapshot" tabindex="-1" role="dialog" aria-labelledby="modalSnapshotLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form method="POST" action="/panel/vm/{{ $vmId }}/snapshot">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+								<h4 class="modal-title" id="modalSnapshotLabel">Snapshot</h4>
+							</div>
+							<div class="modal-body">
+								<div class="form-group">
+									<label for="name">Snapshot Name:</label>
+									<input class="form-control" name="name" id="name">
+								</div>
+							</div>
+							<div class="modal-footer">
+								<div style="float:left; padding-left:5px;">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+								</div>
+								<div style="float:left; padding-left:5px;">
+									<div class="form-group">
+										<input type="hidden" name="token" value="{{ .Token }}" />
+										<button type="submit" class="btn btn-primary">Snapshot</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		{{ end }}
 		{{ if .Vm.Info.CanReimage }}
 		<div style="float:left; padding-left:5px;">
 			<button class="btn btn-danger" data-toggle="modal" data-target="#modalReimage">Re-image</button>

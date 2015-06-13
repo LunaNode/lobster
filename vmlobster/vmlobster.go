@@ -13,6 +13,8 @@ type Lobster struct {
 	client *api.Client
 	canVnc bool
 	canReimage bool
+	canSnapshot bool
+	canAddresses bool
 }
 
 func MakeLobster(region string, url string, apiId string, apiKey string) *Lobster {
@@ -27,6 +29,8 @@ func MakeLobster(region string, url string, apiId string, apiKey string) *Lobste
 	// assume capabilities by default, then disable if we see VM not able to do it
 	this.canVnc = true
 	this.canReimage = true
+	this.canSnapshot = true
+	this.canAddresses = true
 	return this
 }
 
@@ -91,6 +95,12 @@ func (this *Lobster) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 	if !apiInfo.CanReimage {
 		this.canReimage = false
 	}
+	if !apiInfo.CanSnapshot {
+		this.canSnapshot = false
+	}
+	if !apiInfo.CanAddresses {
+		this.canAddresses = false
+	}
 
 	return &info, nil
 }
@@ -141,6 +151,16 @@ func (this *Lobster) VmReimage(vm *lobster.VirtualMachine, imageIdentification s
 
 func (this *Lobster) CanReimage() bool {
 	return this.canReimage
+}
+
+func (this *Lobster) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	imageId, err := this.client.VmSnapshot(int(vmIdentification), utils.Uid(16))
+	return fmt.Sprintf("%d", imageId), err
+}
+
+func (this *Lobster) CanSnapshot() bool {
+	return true
 }
 
 func (this *Lobster) CanAddresses() bool {

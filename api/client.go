@@ -121,6 +121,20 @@ func (this *Client) VmVnc(vmId int) (string, error) {
 	}
 }
 
+func (this *Client) VmSnapshot(vmId int, name string) (int, error) {
+	request := VMActionRequest{
+		Action: "snapshot",
+		Value: name,
+	}
+	var response VMSnapshotResponse
+	err := this.request("POST", fmt.Sprintf("vms/%d/action", vmId), request, &response)
+	if err != nil {
+		return 0, err
+	} else {
+		return response.Id, nil
+	}
+}
+
 func (this *Client) VmReimage(vmId int, imageId int) error {
 	request := VMReimageRequest{
 		ImageId: imageId,

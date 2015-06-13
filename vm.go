@@ -64,6 +64,7 @@ type VmInfo struct {
 	// these fields are filled in by lobster, VM interface should not set
 	CanVnc bool
 	CanReimage bool
+	CanSnapshot bool
 	CanAddresses bool
 }
 
@@ -260,6 +261,7 @@ func (vm *VirtualMachine) LoadInfo() {
 
 	vm.Info.CanVnc = vmi.CanVnc()
 	vm.Info.CanReimage = vmi.CanReimage()
+	vm.Info.CanSnapshot = vmi.CanSnapshot()
 	vm.Info.CanAddresses = vmi.CanAddresses()
 }
 
@@ -339,11 +341,35 @@ func vmReimage(db *Database, userId int, vmId int, imageId int) error {
 	return vm.do(func(vm *VirtualMachine) error {
 		vmi := vmGetInterface(vm.Region)
 		if vmi.CanReimage() {
-			return vmGetInterface(vm.Region).VmReimage(vm, image.Identification)
+			return vmi.VmReimage(vm, image.Identification)
 		} else {
 			return errors.New("re-image is not supported on this VM")
 		}
 	})
+}
+
+func (vm *VirtualMachine) Snapshot(name string) (int, error) {
+	if name == "" {
+		return 0, errors.New("snapshot name cannot be empty")
+	}
+
+	log.Printf("vmSnapshot(%d, %s)", vm.Id, name)
+	var imageId int64
+	err := vm.do(func(vm *VirtualMachine) error {
+		vmi := vmGetInterface(vm.Region)
+		if vmi.CanSnapshot() {
+			imageIdentification, err := vmi.VmSnapshot(vm)
+			if err != nil {
+				return err
+			}
+			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status) VALUES (?, ?, ?, ?, 'pending')", vm.UserId, vm.Region, name, imageIdentification)
+			imageId, _ = result.LastInsertId()
+			return nil
+		} else {
+			return errors.New("snapshot is not supported on this VM")
+		}
+	})
+	return int(imageId), err
 }
 
 func (vm *VirtualMachine) Rename(name string) error {
@@ -361,7 +387,7 @@ func (vm *VirtualMachine) Rename(name string) error {
 		// don't worry about back-end errors, but try to rename anyway
 		vmi := vmGetInterface(vm.Region)
 		if vmi.CanRename() {
-			reportError(vmGetInterface(vm.Region).VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
+			reportError(vmi.VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
 		}
 		return nil
 	})

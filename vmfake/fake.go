@@ -89,6 +89,14 @@ func (this *Fake) CanReimage() bool {
 	return true
 }
 
+func (this *Fake) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	return "fake", nil
+}
+
+func (this *Fake) CanSnapshot() bool {
+	return true
+}
+
 func (this *Fake) CanAddresses() bool {
 	return true
 }

@@ -227,6 +227,17 @@ func (this *OpenStack) CanReimage() bool {
 	return true
 }
 
+func (this *OpenStack) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	opts := servers.CreateImageOpts{
+		Name: utils.Uid(16),
+	}
+	return servers.CreateImage(this.ComputeClient, vm.Identification, opts).ExtractImageID()
+}
+
+func (this *OpenStack) CanSnapshot() bool {
+	return true
+}
+
 func (this *OpenStack) CanAddresses() bool {
 	return false
 }

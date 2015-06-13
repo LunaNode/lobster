@@ -122,6 +122,14 @@ func (this *SolusVM) CanReimage() bool {
 	return true
 }
 
+func (this *SolusVM) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	return "", errors.New("operation not supported")
+}
+
+func (this *SolusVM) CanSnapshot() bool {
+	return false
+}
+
 func (this *SolusVM) CanAddresses() bool {
 	return true
 }

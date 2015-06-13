@@ -193,6 +193,7 @@ func copyVMDetails(src *VmInfo, dst *api.VirtualMachineDetails) {
 	dst.Details = src.Details
 	dst.CanVnc = src.CanVnc
 	dst.CanReimage = src.CanReimage
+	dst.CanSnapshot = src.CanSnapshot
 	dst.CanAddresses = src.CanAddresses
 	for _, srcAction := range src.Actions {
 		dstAction := new(api.VirtualMachineAction)
@@ -326,6 +327,12 @@ func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId in
 		}
 	} else if request.Action == "rename" {
 		err = vm.Rename(request.Value)
+	} else if request.Action == "snapshot" {
+		var imageId int
+		imageId, err = vm.Snapshot(request.Value)
+		if err == nil {
+			response = api.VMSnapshotResponse{Id: imageId}
+		}
 	} else {
 		err = vm.Action(request.Action, request.Value)
 	}

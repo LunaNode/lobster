@@ -223,6 +223,41 @@ func (this *API) VmInfo(vmIdentification int) (*APIVmInfoStruct, error) {
 	}
 }
 
+func (this *API) VmSnapshot(vmIdentification int, region string) (int, error) {
+	// create snapshot with random label
+	imageLabel := this.uid()
+	params := make(map[string]string)
+	params["vm_id"] = fmt.Sprintf("%d", vmIdentification)
+	params["name"] = imageLabel
+	var response APIGenericResponse
+	err := this.request("vm", "snapshot", params, &response)
+	if err != nil {
+		return 0, err
+	}
+
+	// find the image ID based on label
+	params = make(map[string]string)
+	params["region"] = region
+	var listResponse APIImageListResponse
+	err = this.request("image", "list", params, &listResponse)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, image := range listResponse.Images {
+		if strings.Contains(image.Name, imageLabel) {
+			imageId, err := strconv.ParseInt(image.Id, 10, 32)
+			if err != nil {
+				return 0, err
+			} else {
+				return int(imageId), nil
+			}
+		}
+	}
+
+	return 0, errors.New("backend reported successful snapshot creation, but not found in list")
+}
+
 // images
 
 func (this *API) ImageFetch(region string, location string, format string, virtio bool) (int, error) {

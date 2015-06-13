@@ -285,6 +285,21 @@ func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, sessio
 	}
 }
 
+func panelVMSnapshot(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
+	if err != nil {
+		redirectMessage(w, r, "/panel/vms", "Error: " + err.Error() + ".")
+	}
+
+	_, err = vm.Snapshot(r.PostFormValue("name"))
+	if err != nil {
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Error: " + err.Error() + ".")
+	} else {
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Snapshot", fmt.Sprintf("VM ID: %d; Name: %s", vm.Id, r.PostFormValue("name")))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), "Snapshot creation in progress (see Images tab to monitor progress).")
+	}
+}
+
 func panelVMRename(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {

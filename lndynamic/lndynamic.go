@@ -123,6 +123,16 @@ func (this *LNDynamic) CanReimage() bool {
 	return true
 }
 
+func (this *LNDynamic) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	imageId, err := this.api.VmSnapshot(int(vmIdentificationInt), this.region)
+	return fmt.Sprintf("%d", imageId), err
+}
+
+func (this *LNDynamic) CanSnapshot() bool {
+	return true
+}
+
 func (this *LNDynamic) CanAddresses() bool {
 	return false
 }
