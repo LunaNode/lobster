@@ -91,10 +91,6 @@ func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	}
 }
 
-func (this *SolusVM) CanVnc() bool {
-	return true
-}
-
 func (this *SolusVM) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	if action == "tuntap" {
@@ -109,21 +105,9 @@ func (this *SolusVM) VmRename(vm *lobster.VirtualMachine, name string) error {
 	return this.Api.VmHostname(int(vmIdentificationInt), name)
 }
 
-func (this *SolusVM) CanRename() bool {
-	return true
-}
-
 func (this *SolusVM) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
 	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.Api.VmReimage(int(vmIdentificationInt), imageIdentification)
-}
-
-func (this *SolusVM) CanReimage() bool {
-	return true
-}
-
-func (this *SolusVM) CanAddresses() bool {
-	return true
 }
 
 func (this *SolusVM) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
@@ -192,20 +176,4 @@ func (this *SolusVM) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	} else {
 		return info.BandwidthUsed - currentBandwidth
 	}
-}
-
-func (this *SolusVM) CanImages() bool {
-	return false
-}
-
-func (this *SolusVM) ImageFetch(url string, format string) (string, error) {
-	return "", errors.New("operation not supported")
-}
-
-func (this *SolusVM) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
-	return nil, errors.New("operation not supported")
-}
-
-func (this *SolusVM) ImageDelete(imageIdentification string) error {
-	return errors.New("operation not supported")
 }

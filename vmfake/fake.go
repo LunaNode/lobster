@@ -77,20 +77,12 @@ func (this *Fake) VmRename(vm *lobster.VirtualMachine, name string) error {
 	return nil
 }
 
-func (this *Fake) CanRename() bool {
-	return true
-}
-
 func (this *Fake) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
 	return nil
 }
 
-func (this *Fake) CanReimage() bool {
-	return true
-}
-
-func (this *Fake) CanAddresses() bool {
-	return true
+func (this *Fake) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	return "fake", nil
 }
 
 func (this *Fake) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
@@ -156,10 +148,6 @@ func (this *Fake) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname stri
 
 func (this *Fake) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	return this.Bandwidth
-}
-
-func (this *Fake) CanImages() bool {
-	return true
 }
 
 func (this *Fake) ImageFetch(url string, format string) (string, error) {

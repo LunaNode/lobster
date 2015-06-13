@@ -66,42 +66,29 @@
 		<div style="float:left; padding-left:5px;">
 			<p><a href="/admin/support/open/{{ .User.Id }}"><button type="button" class="btn btn-primary">Open ticket</button></a></p>
 		</div>
-		<div style="float:left; padding-left:5px;">
-			<button class="btn btn-primary" data-toggle="modal" data-target="#modalCredit">Adjust credit</button>
-			<div class="modal" id="modalCredit" tabindex="-1" role="dialog" aria-labelledby="modalCreditLabel" aria-hidden="true">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<form method="POST" action="/admin/user/{{ .User.Id }}/credit">
-							<div class="modal-header">
-								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-								<h4 class="modal-title" id="modalCreditLabel">Adjust credit</h4>
-							</div>
-							<div class="modal-body">
-								<div class="form-group">
-									<label>Credit:</label>
-									<input type="text" class="form-control" name="credit">
-								</div>
-								<div class="form-group">
-									<label>Description:</label>
-									<input type="text" class="form-control" name="description">
-								</div>
-							</div>
-							<div class="modal-footer">
-								<div style="float:left; padding-left:5px;">
-									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								</div>
-								<div style="float:left; padding-left:5px;">
-									<div class="form-group">
-										<input type="hidden" name="token" value="{{ .Token }}" />
-										<button type="submit" class="btn btn-primary">Adjust credit</button>
-									</div>
-								</div>
-							</div>
-						</form>
-					</div>
-				</div>
+		{{ $params := modal "Adjust credit" (print "/admin/user/" .User.Id "/credit") "primary" .Token }}
+		{{ template "modal_header.html" $params }}
+			<div class="form-group">
+				<label>Credit:</label>
+				<input type="text" class="form-control" name="credit">
 			</div>
-		</div>
+			<div class="form-group">
+				<label>Description:</label>
+				<input type="text" class="form-control" name="description">
+			</div>
+		{{ template "modal_footer.html" $params }}
+
+		{{ $params := modal "Change password" (print "/admin/user/" .User.Id "/password") "warning" .Token }}
+		{{ template "modal_header.html" $params }}
+			<div class="form-group">
+				<label>New password:</label>
+				<input type="password" class="form-control" name="password">
+			</div>
+			<div class="form-group">
+				<label>Confirm new password:</label>
+				<input type="password" class="form-control" name="password_confirm">
+			</div>
+		{{ template "modal_footer.html" $params }}
 		<div style="float:left; padding-left:5px;">
 			<form method="POST" action="/admin/user/{{ .User.Id }}/disable" onsubmit="return window.confirm('Are you sure you want to disable this user account?');">
 				<div class="form-group">

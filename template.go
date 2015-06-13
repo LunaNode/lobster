@@ -30,14 +30,39 @@ func templateFuncMap() template.FuncMap {
 		"MonthInteger": func(x time.Month) int {
 			return int(x)
 		},
+		"modal": func(label string, action, buttonType string, token string) map[string]string {
+			return map[string]string{
+				"Label": label,
+				"Id": stripAlphanumeric(label),
+				"Action": action,
+				"ButtonType": buttonType,
+				"Token": token,
+			}
+		},
+		"question": func(x bool, a string, b string) string {
+			if x {
+				return a
+			} else {
+				return b
+			}
+		},
 	}
 }
 
 func loadTemplates() {
 	templates = make(map[string]*template.Template)
+
+	var commonPaths []string
+	contents, _ := ioutil.ReadDir("tmpl/common")
+	for _, fileInfo := range contents {
+		if fileInfo.Mode().IsRegular() && strings.HasSuffix(fileInfo.Name(), ".html") {
+			commonPaths = append(commonPaths, "tmpl/common/" + fileInfo.Name())
+		}
+	}
+
 	for _, category := range []string{"splash", "panel", "admin"} {
+		templatePaths := commonPaths
 		contents, _ := ioutil.ReadDir("tmpl/" + category)
-		templatePaths := make([]string, 0)
 		for _, fileInfo := range contents {
 			if fileInfo.Mode().IsRegular() && strings.HasSuffix(fileInfo.Name(), ".html") {
 				templatePaths = append(templatePaths, "tmpl/" + category + "/" + fileInfo.Name())

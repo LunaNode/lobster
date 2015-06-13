@@ -23,6 +23,8 @@ const MYSQL_TIME_FORMAT = "2006-01-02 15:04:05"
 
 const API_MAX_REQUEST_LENGTH = 32 * 1024
 
+const ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 // billing constants
 const BILLING_PRECISION = 1000000 // credit is in units of 1/BILLING_PRECISION -dollars
 const BILLING_DISPLAY_DECIMALS = 3
@@ -81,4 +83,14 @@ func errorHandler(w http.ResponseWriter, r *http.Request, report bool) {
 
 func gigaToBytes(x int) int64 {
 	return int64(x) * 1024 * 1024 * 1024
+}
+
+func stripAlphanumeric(s string) string {
+	var n []rune
+	for _, c := range []rune(s) {
+		if strings.ContainsRune(ALPHANUMERIC, c) {
+			n = append(n, c)
+		}
+	}
+	return string(n)
 }

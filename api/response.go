@@ -32,6 +32,7 @@ type VirtualMachineDetails struct {
 	Actions []*VirtualMachineAction `json:"actions"`
 	CanVnc bool `json:"can_vnc"`
 	CanReimage bool `json:"can_reimage"`
+	CanSnapshot bool `json:"can_snapshot"`
 	CanAddresses bool `json:"can_addresses"`
 }
 
@@ -82,6 +83,10 @@ type VMInfoResponse struct {
 
 type VMVncResponse struct {
 	Url string `json:"url"`
+}
+
+type VMSnapshotResponse struct {
+	Id int `json:"id"`
 }
 
 type VMAddressesResponse struct {

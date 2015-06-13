@@ -1,0 +1,12 @@
+<div style="float:left; padding-left:5px;">
+	<button class="btn btn-{{ .ButtonType }}" data-toggle="modal" data-target="#modal{{ .Id }}">{{ .Label }}</button>
+	<div class="modal" id="modal{{ .Id }}" tabindex="-1" role="dialog" aria-labelledby="modal{{ .Id }}Label" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form method="POST" action="{{ .Action }}">
+				<input type="hidden" name="token" value="{{ .Token }}" />
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						<h4 class="modal-title" id="modal{{ .Id }}Label">{{ .Label }}</h4>
+					</div>
+					<div class="modal-body">

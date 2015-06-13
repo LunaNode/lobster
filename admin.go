@@ -114,6 +114,23 @@ func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Credit applied successfully.")
 }
 
+func adminUserPassword(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		redirectMessage(w, r, "/admin/users", "Error: invalid user ID.")
+		return
+	} else if r.PostFormValue("password") != r.PostFormValue("password_confirm") {
+		redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Error: passwords do not match.")
+		return
+	} else if r.PostFormValue("password") == "" {
+		redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Error: password cannot be empty.")
+		return
+	}
+
+	authForceChangePassword(db, int(userId), r.PostFormValue("password"))
+	redirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), "Password reset successfully.")
+}
+
 func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
 	if err != nil {

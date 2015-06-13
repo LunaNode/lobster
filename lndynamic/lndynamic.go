@@ -97,20 +97,8 @@ func (this *LNDynamic) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	return this.api.VmVnc(int(vmIdentificationInt))
 }
 
-func (this *LNDynamic) CanVnc() bool {
-	return true
-}
-
 func (this *LNDynamic) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
-}
-
-func (this *LNDynamic) VmRename(vm *lobster.VirtualMachine, name string) error {
-	return errors.New("operation not supported")
-}
-
-func (this *LNDynamic) CanRename() bool {
-	return false
 }
 
 func (this *LNDynamic) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
@@ -119,28 +107,10 @@ func (this *LNDynamic) VmReimage(vm *lobster.VirtualMachine, imageIdentification
 	return this.api.VmReimage(int(vmIdentificationInt), int(imageIdentificationInt))
 }
 
-func (this *LNDynamic) CanReimage() bool {
-	return true
-}
-
-func (this *LNDynamic) CanAddresses() bool {
-	return false
-}
-
-func (this *LNDynamic) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
-	return nil, errors.New("operation not supported")
-}
-
-func (this *LNDynamic) VmAddAddress(vm *lobster.VirtualMachine) error {
-	return errors.New("operation not supported")
-}
-
-func (this *LNDynamic) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, privateip string) error {
-	return errors.New("operation not supported")
-}
-
-func (this *LNDynamic) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname string) error {
-	return errors.New("operation not supported")
+func (this *LNDynamic) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	imageId, err := this.api.VmSnapshot(int(vmIdentificationInt), this.region)
+	return fmt.Sprintf("%d", imageId), err
 }
 
 func (this *LNDynamic) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
@@ -160,10 +130,6 @@ func (this *LNDynamic) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	} else {
 		return info.BandwidthUsed - currentBandwidth
 	}
-}
-
-func (this *LNDynamic) CanImages() bool {
-	return true
 }
 
 func (this *LNDynamic) ImageFetch(url string, format string) (string, error) {
