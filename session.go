@@ -45,6 +45,7 @@ func sessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 			if rows.Next() {
 				session = &Session{Id: sessionIdentifier}
 				rows.Scan(&session.UserId, &session.Admin, &session.OriginalId, &session.Regenerate)
+				rows.Close()
 			} else {
 				// invalid session identifier! need to generate new session
 				log.Printf("Invalid session identifier from %s", r.RemoteAddr)

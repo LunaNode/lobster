@@ -19,6 +19,7 @@ type Transaction struct {
 
 func transactionListHelper(rows *sql.Rows) []*Transaction {
 	transactions := make([]*Transaction, 0)
+	defer rows.Close()
 	for rows.Next() {
 		transaction := Transaction{}
 		rows.Scan(&transaction.Id, &transaction.UserId, &transaction.Gateway, &transaction.GatewayIdentifier, &transaction.Notes, &transaction.Amount, &transaction.Fee, &transaction.Time)

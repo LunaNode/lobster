@@ -94,6 +94,7 @@ func authLogin(db *Database, ip string, username string, password string) (int, 
 	var userId int
 	var actualPasswordCombined string
 	rows.Scan(&userId, &actualPasswordCombined)
+	rows.Close()
 
 	if authCheckPassword(password, actualPasswordCombined) {
 		log.Printf("Authentication successful for user=%s (%s)", username, ip)
@@ -121,6 +122,7 @@ func authChangePassword(db *Database, ip string, userId int, oldPassword string,
 	}
 	var actualPasswordCombined string
 	rows.Scan(&actualPasswordCombined)
+	rows.Close()
 
 	if authCheckPassword(oldPassword, actualPasswordCombined) {
 		db.Exec("UPDATE users SET password = ? WHERE id = ?", authMakePassword(newPassword), userId)

@@ -258,17 +258,19 @@ func (this *Lobster) Run() {
 
 func (this *Lobster) cron() {
 	defer errorHandler(nil, nil, true)
-	rows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL ? HOUR)", BILLING_VM_FREQUENCY)
-	for rows.Next() {
+	vmRows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL ? HOUR)", BILLING_VM_FREQUENCY)
+	defer vmRows.Close()
+	for vmRows.Next() {
 		var vmId int
-		rows.Scan(&vmId)
+		vmRows.Scan(&vmId)
 		vmBilling(this.db, vmId, false)
 	}
 
-	rows = this.db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
-	for rows.Next() {
+	userRows := this.db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+	defer userRows.Close()
+	for userRows.Next() {
 		var userId int
-		rows.Scan(&userId)
+		userRows.Scan(&userId)
 		userBilling(this.db, userId)
 	}
 
@@ -283,6 +285,7 @@ func (this *Lobster) cron() {
 func (this *Lobster) cached() {
 	defer errorHandler(nil, nil, true)
 	rows := this.db.Query("SELECT id, user_id FROM images WHERE status = 'pending' ORDER BY RAND() LIMIT 3")
+	defer rows.Close()
 	for rows.Next() {
 		var imageId, userId int
 		rows.Scan(&imageId, &userId)

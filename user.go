@@ -28,6 +28,7 @@ type Charge struct {
 func userList(db *Database) []*User {
 	var users []*User
 	rows := db.Query("SELECT id, username, email, time_created, credit, vm_limit, last_billing_notify, status, admin FROM users ORDER BY id")
+	defer rows.Close()
 	for rows.Next() {
 		user := &User{}
 		rows.Scan(&user.Id, &user.Username, &user.Email, &user.CreateTime, &user.Credit, &user.VmLimit, &user.LastBillingNotify, &user.Status, &user.Admin)
@@ -43,6 +44,7 @@ func userDetails(db *Database, userId int) *User {
 		return nil
 	}
 	rows.Scan(&user.Id, &user.Username, &user.Email, &user.CreateTime, &user.Credit, &user.VmLimit, &user.LastBillingNotify, &user.Status, &user.Admin)
+	rows.Close()
 	return user
 }
 
@@ -51,6 +53,7 @@ func chargeList(db *Database, userId int, year int, month time.Month) []*Charge 
 	timeEnd := timeStart.AddDate(0, 1, 0)
 	var charges []*Charge
 	rows := db.Query("SELECT id, user_id, name, detail, k, time, amount FROM charges WHERE user_id = ? AND time >= ? AND time < ? ORDER BY time", userId, timeStart.Format(MYSQL_TIME_FORMAT), timeEnd.Format(MYSQL_TIME_FORMAT))
+	defer rows.Close()
 	for rows.Next() {
 		charge := Charge{}
 		rows.Scan(&charge.Id, &charge.UserId, &charge.Name, &charge.Detail, &charge.Key, &charge.Time, &charge.Amount)
@@ -82,6 +85,7 @@ func userApplyCharge(db *Database, userId int, name string, detail string, k str
 	if rows.Next() {
 		var chargeId int
 		rows.Scan(&chargeId)
+		rows.Close()
 		db.Exec("UPDATE charges SET amount = amount + ? WHERE id = ?", amount, chargeId)
 	} else {
 		db.Exec("INSERT INTO charges (user_id, name, amount, time, detail, k) VALUES (?, ?, ?, CURDATE(), ?, ?)", userId, name, amount, detail, k)
@@ -152,6 +156,7 @@ func userBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary
 
 	bw := make(map[string]*BandwidthSummary)
 	rows := db.Query("SELECT region, bandwidth_used, bandwidth_additional, bandwidth_billed, bandwidth_notified_percent FROM region_bandwidth WHERE user_id = ?", userId)
+	defer rows.Close()
 	for rows.Next() {
 		var region string
 		summary := BandwidthSummary{}
@@ -233,6 +238,7 @@ func userBilling(db *Database, userId int) {
 	var lastBilledHoursAgo int // how many hours ago this user was last billed
 	var billingLowCount int // how many reminders regarding low account balance have been sent
 	rows.Scan(&credit, &email, &lastBilledHoursAgo, &billingLowCount)
+	rows.Close()
 	hourly := userCreditSummary(db, userId).Hourly
 
 	if credit <= hourly * 168 {

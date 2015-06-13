@@ -33,6 +33,7 @@ func ticketListAll(db *Database) []*Ticket {
 }
 func ticketListHelper(rows *sql.Rows) []*Ticket {
 	tickets := make([]*Ticket, 0)
+	defer rows.Close()
 	for rows.Next() {
 		ticket := Ticket{}
 		rows.Scan(&ticket.Id, &ticket.UserId, &ticket.Name, &ticket.Status, &ticket.Time, &ticket.ModifyTime)
@@ -55,6 +56,7 @@ func ticketDetails(db *Database, userId int, ticketId int, staff bool) *Ticket {
 	ticket := tickets[0]
 
 	rows = db.Query("SELECT id, staff, message, time FROM ticket_messages WHERE ticket_id = ? ORDER BY id", ticketId)
+	defer rows.Close()
 	for rows.Next() {
 		message := &TicketMessage{}
 		rows.Scan(&message.Id, &message.Staff, &message.Message, &message.Time)
