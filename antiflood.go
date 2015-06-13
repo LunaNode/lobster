@@ -2,6 +2,7 @@ package lobster
 
 func antifloodAction(db *Database, ip string, action string) {
 	rows := db.Query("SELECT id FROM antiflood WHERE ip = ? AND action = ? AND time > DATE_SUB(NOW(), INTERVAL 1 HOUR)", ip, action)
+	defer rows.Close()
 
 	if rows.Next() {
 		var rowId int

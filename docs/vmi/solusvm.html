@@ -5,7 +5,7 @@
 <body>
 	<p><a href="..">Index</a> &rarr; <a href=".">Virtual Machine Interfaces</a> &rarr; <a href="solusvm.html">SolusVM</a><lp>
 	<h1>SolusVM</h1>
-	<p>The Lobster SolusVM interface requires a single client to be created, along with an administrative API ID. The following keys are checked:</p>
+	<p>The Lobster SolusVM interface requires a single client to be created with username set to "lobster". All services will be provisioned on this SolusVM client. An administrative API ID is also needed. The following keys are checked:</p>
 	<ul>
 		<li><b>name</b>: a label for the region</li>
 		<li><b>type</b>: set to "solusvm"</li>
@@ -21,7 +21,7 @@
 	<p>To register an image, use the image filename without extension. It should be the same as other software that uses API.</p>
 
 	<h3>Plans</h3>
-	<p>When provisioning virtual machines, Lobster will attempt to match the storage, memory, and virtual CPU count with a SolusVM plan. Bandwidth is not matched -- Lobster will set custombandwidth to a large number, since bandwidth overages are billed separately. If no matching SolusVM plan is found, then a plan not found error will be raised.</p>
+	<p>A dummy plan with name set to "Lobster virttype" (e.g. "Lobster openvz" or "Lobster kvm") must be created; all virtual machines will use this dummy plan. Lobster will assign customdiskspace/custommemory/customcpu so that the plan matches the one specified in Lobster. Note that the plan will have a large bandwidth allocation; this is because Lobster bills for bandwidth overages, so the backend shouldn't be handling it.</p>
 
 	<h3>VNC</h3>
 	<p>For virtualization types that support VNC, Lobster will provide a noVNC client that will connect from the Lobster server to the host node. This means you can lockdown the host node VNC access if desired, so that only connections made via Lobster are permitted; this is of course not necessary.</p>

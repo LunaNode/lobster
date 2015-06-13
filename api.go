@@ -34,6 +34,7 @@ type ApiKey struct {
 
 func apiListHelper(rows *sql.Rows) []*ApiKey {
 	var keys []*ApiKey
+	defer rows.Close()
 	for rows.Next() {
 		var key ApiKey
 		rows.Scan(&key.Id, &key.Label, &key.UserId, &key.ApiId, &key.CreatedTime, &key.Nonce)
@@ -87,6 +88,7 @@ func apiCheck(db *Database, path string, authorization string, request []byte) (
 	}
 
 	rows := db.Query("SELECT api_keys.user_id, api_keys.api_key FROM users, api_keys WHERE api_keys.api_id = ? AND api_keys.nonce < ? AND api_keys.user_id = users.id AND users.status != 'disabled'", apiId, nonce)
+	defer rows.Close()
 	if !rows.Next() {
 		return 0, errors.New("authentication failure")
 	}

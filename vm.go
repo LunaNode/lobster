@@ -447,6 +447,7 @@ func (vm *VirtualMachine) SetMetadata(k string, v string) {
 	if rows.Next() {
 		var rowId int
 		rows.Scan(&rowId)
+		rows.Close()
 		vm.db.Exec("UPDATE vm_metadata SET v = ? WHERE id = ?", v, rowId)
 	} else {
 		vm.db.Exec("INSERT INTO vm_metadata (vm_id, k, v) VALUES (?, ?, ?)", vm.Id, k, v)
@@ -459,6 +460,7 @@ func (vm *VirtualMachine) Metadata(k string, d string) string {
 	if rows.Next() {
 		var v string
 		rows.Scan(&v)
+		rows.Close()
 		return v
 	} else {
 		return d
@@ -466,6 +468,7 @@ func (vm *VirtualMachine) Metadata(k string, d string) string {
 }
 
 func planListHelper(rows *sql.Rows) []*Plan {
+	defer rows.Close()
 	plans := make([]*Plan, 0)
 	for rows.Next() {
 		plan := Plan{}
@@ -497,6 +500,7 @@ func planDelete(db *Database, planId int) {
 }
 
 func imageListHelper(rows *sql.Rows) []*Image {
+	defer rows.Close()
 	images := make([]*Image, 0)
 	for rows.Next() {
 		image := Image{}
@@ -631,6 +635,7 @@ func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 	if rows.Next() {
 		var rowId int
 		rows.Scan(&rowId)
+		rows.Close()
 		db.Exec("UPDATE region_bandwidth SET bandwidth_additional = bandwidth_additional + ? WHERE id = ?", additionalBandwidth, vm.UserId)
 	} else {
 		db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_additional) VALUES (?, ?, ?)", vm.UserId, vm.Region, additionalBandwidth)
@@ -652,6 +657,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 
 	var minutes int
 	rows.Scan(&minutes)
+	rows.Close()
 	intervals := minutes / cfg.Billing.BillingInterval
 	if terminating {
 		intervals++
@@ -662,6 +668,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 			if rows.Next() {
 				var alreadyBilledMinutes int
 				rows.Scan(&alreadyBilledMinutes)
+				rows.Close()
 				alreadyBilledIntervals := alreadyBilledMinutes / cfg.Billing.BillingInterval
 				if alreadyBilledIntervals + intervals < cfg.Billing.BillingVmMinimum {
 					intervals = cfg.Billing.BillingVmMinimum - alreadyBilledIntervals
@@ -693,6 +700,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 		if rows.Next() {
 			var rowId int
 			rows.Scan(&rowId)
+			rows.Close()
 			db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ? WHERE id = ?", newBytesUsed, rowId)
 		} else {
 			db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_used) VALUES (?, ?, ?)", vm.UserId, vm.Region, newBytesUsed)
@@ -704,6 +712,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 func serviceBilling(db *Database) {
 	db.Exec("UPDATE users SET time_billed = NOW() WHERE time_billed = 0")
 	rows := db.Query("SELECT id, TIMESTAMPDIFF(HOUR, time_billed, NOW()) FROM users WHERE status = 'active' AND TIMESTAMPDIFF(HOUR, time_billed, NOW()) > 0")
+	defer rows.Close()
 
 	for rows.Next() {
 		var userId, hours int
