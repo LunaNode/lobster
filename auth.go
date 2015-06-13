@@ -137,6 +137,10 @@ func authChangePassword(db *Database, ip string, userId int, oldPassword string,
 	}
 }
 
+func authForceChangePassword(db *Database, userId int, password string) {
+	db.Exec("UPDATE users SET password = ? WHERE id = ?", authMakePassword(password), userId)
+}
+
 type AuthLoginForm struct {
 	Username string `schema:"username"`
 	Password string `schema:"password"`
