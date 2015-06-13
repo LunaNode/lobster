@@ -26,11 +26,6 @@ func MakeLobster(region string, url string, apiId string, apiKey string) *Lobste
 		ApiKey: apiKey,
 	}
 
-	// assume capabilities by default, then disable if we see VM not able to do it
-	this.canVnc = true
-	this.canReimage = true
-	this.canSnapshot = true
-	this.canAddresses = true
 	return this
 }
 
@@ -77,6 +72,11 @@ func (this *Lobster) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 		BandwidthUsed: apiInfo.BandwidthUsed,
 		LoginDetails: apiInfo.LoginDetails,
 		Details: apiInfo.Details,
+		OverrideCapabilities: true,
+		CanVnc: apiInfo.CanVnc,
+		CanReimage: apiInfo.CanReimage,
+		CanSnapshot: apiInfo.CanSnapshot,
+		CanAddresses: apiInfo.CanAddresses,
 	}
 	for _, srcAction := range apiInfo.Actions {
 		dstAction := new(lobster.VmActionDescriptor)
@@ -86,20 +86,6 @@ func (this *Lobster) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 		dstAction.Description = srcAction.Description
 		dstAction.Dangerous = srcAction.Dangerous
 		info.Actions = append(info.Actions, dstAction)
-	}
-
-	// set capabilities to false if needed
-	if !apiInfo.CanVnc {
-		this.canVnc = false
-	}
-	if !apiInfo.CanReimage {
-		this.canReimage = false
-	}
-	if !apiInfo.CanSnapshot {
-		this.canSnapshot = false
-	}
-	if !apiInfo.CanAddresses {
-		this.canAddresses = false
 	}
 
 	return &info, nil
@@ -125,10 +111,6 @@ func (this *Lobster) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	return this.client.VmVnc(int(vmIdentification))
 }
 
-func (this *Lobster) CanVnc() bool {
-	return this.canVnc
-}
-
 func (this *Lobster) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	return this.client.VmAction(int(vmIdentification), action, value)
@@ -149,22 +131,10 @@ func (this *Lobster) VmReimage(vm *lobster.VirtualMachine, imageIdentification s
 	return this.client.VmReimage(int(vmIdentification), int(imageIdentificationInt))
 }
 
-func (this *Lobster) CanReimage() bool {
-	return this.canReimage
-}
-
 func (this *Lobster) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
 	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	imageId, err := this.client.VmSnapshot(int(vmIdentification), utils.Uid(16))
 	return fmt.Sprintf("%d", imageId), err
-}
-
-func (this *Lobster) CanSnapshot() bool {
-	return true
-}
-
-func (this *Lobster) CanAddresses() bool {
-	return true
 }
 
 func (this *Lobster) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
@@ -208,10 +178,6 @@ func (this *Lobster) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	} else {
 		return 0
 	}
-}
-
-func (this *Lobster) CanImages() bool {
-	return true
 }
 
 func (this *Lobster) ImageFetch(url string, format string) (string, error) {

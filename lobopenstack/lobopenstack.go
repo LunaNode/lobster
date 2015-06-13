@@ -195,10 +195,6 @@ func (this *OpenStack) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	return servers.Vnc(this.ComputeClient, vm.Identification, servers.NoVnc).Extract()
 }
 
-func (this *OpenStack) CanVnc() bool {
-	return true
-}
-
 func (this *OpenStack) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
 }
@@ -211,20 +207,12 @@ func (this *OpenStack) VmRename(vm *lobster.VirtualMachine, name string) error {
 	return err
 }
 
-func (this *OpenStack) CanRename() bool {
-	return true
-}
-
 func (this *OpenStack) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
 	opts := servers.RebuildOpts{
 		ImageID: imageIdentification,
 	}
 	_, err := servers.Rebuild(this.ComputeClient, vm.Identification, opts).Extract()
 	return err
-}
-
-func (this *OpenStack) CanReimage() bool {
-	return true
 }
 
 func (this *OpenStack) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
@@ -234,36 +222,8 @@ func (this *OpenStack) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
 	return servers.CreateImage(this.ComputeClient, vm.Identification, opts).ExtractImageID()
 }
 
-func (this *OpenStack) CanSnapshot() bool {
-	return true
-}
-
-func (this *OpenStack) CanAddresses() bool {
-	return false
-}
-
-func (this *OpenStack) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
-	return nil, errors.New("operation not supported")
-}
-
-func (this *OpenStack) VmAddAddress(vm *lobster.VirtualMachine) error {
-	return errors.New("operation not supported")
-}
-
-func (this *OpenStack) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, privateip string) error {
-	return errors.New("operation not supported")
-}
-
-func (this *OpenStack) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname string) error {
-	return errors.New("operation not supported")
-}
-
 func (this *OpenStack) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	return 0
-}
-
-func (this *OpenStack) CanImages() bool {
-	return true
 }
 
 func (this *OpenStack) ImageFetch(url string, format string) (string, error) {

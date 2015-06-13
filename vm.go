@@ -61,11 +61,17 @@ type VmInfo struct {
 	Details map[string]string
 	Actions []*VmActionDescriptor
 
-	// these fields are filled in by lobster, VM interface should not set
+	// these fields are filled in by lobster, so VM interface should generally not set
+	// occassionally it may be useful for interface to override though
+	//   these are autodetected from whether we can cast the interface, so if
+	//    interface discovers that some capabilities aren't supported on some
+	//    virtual machines, it may want to override that
+	//   in that event it should set OverrideCapabilities
 	CanVnc bool
 	CanReimage bool
 	CanSnapshot bool
 	CanAddresses bool
+	OverrideCapabilities bool
 }
 
 type IpAddress struct {
@@ -259,10 +265,12 @@ func (vm *VirtualMachine) LoadInfo() {
 		vm.Info.Status = "Unknown"
 	}
 
-	vm.Info.CanVnc = vmi.CanVnc()
-	vm.Info.CanReimage = vmi.CanReimage()
-	vm.Info.CanSnapshot = vmi.CanSnapshot()
-	vm.Info.CanAddresses = vmi.CanAddresses()
+	if !vm.Info.OverrideCapabilities {
+		_, vm.Info.CanVnc = vmi.(VMIVnc)
+		_, vm.Info.CanReimage = vmi.(VMIReimage)
+		_, vm.Info.CanSnapshot = vmi.(VMISnapshot)
+		_, vm.Info.CanAddresses = vmi.(VMIAddresses)
+	}
 }
 
 // Attempt to apply function on the provided VM.
@@ -306,8 +314,8 @@ func (vm *VirtualMachine) Vnc() (string, error) {
 	log.Printf("vmVnc(%d)", vm.Id)
 	var url string
 	err := vm.do(func(vm *VirtualMachine) error {
-		vmi := vmGetInterface(vm.Region)
-		if !vmi.CanVnc() {
+		vmi, ok := vmGetInterface(vm.Region).(VMIVnc)
+		if !ok {
 			return errors.New("VNC not supported on this VM")
 		}
 
@@ -339,8 +347,8 @@ func vmReimage(db *Database, userId int, vmId int, imageId int) error {
 
 	log.Printf("vmReimage(%d, %d, %d)", userId, vmId, imageId)
 	return vm.do(func(vm *VirtualMachine) error {
-		vmi := vmGetInterface(vm.Region)
-		if vmi.CanReimage() {
+		vmi, ok := vmGetInterface(vm.Region).(VMIReimage)
+		if ok {
 			return vmi.VmReimage(vm, image.Identification)
 		} else {
 			return errors.New("re-image is not supported on this VM")
@@ -356,8 +364,8 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 	log.Printf("vmSnapshot(%d, %s)", vm.Id, name)
 	var imageId int64
 	err := vm.do(func(vm *VirtualMachine) error {
-		vmi := vmGetInterface(vm.Region)
-		if vmi.CanSnapshot() {
+		vmi, ok := vmGetInterface(vm.Region).(VMISnapshot)
+		if ok {
 			imageIdentification, err := vmi.VmSnapshot(vm)
 			if err != nil {
 				return err
@@ -385,8 +393,8 @@ func (vm *VirtualMachine) Rename(name string) error {
 		vm.db.Exec("UPDATE vms SET name = ? WHERE id = ?", name, vm.Id)
 
 		// don't worry about back-end errors, but try to rename anyway
-		vmi := vmGetInterface(vm.Region)
-		if vmi.CanRename() {
+		vmi, ok := vmGetInterface(vm.Region).(VMIRename)
+		if ok {
 			reportError(vmi.VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
 		}
 		return nil
@@ -400,7 +408,10 @@ func (vm *VirtualMachine) LoadAddresses() error {
 		return errors.New("VM is not ready yet")
 	}
 
-	vmi := vmGetInterface(vm.Region)
+	vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
+	if !ok {
+		return errors.New("operation not supported")
+	}
 	var err error
 	vm.Addresses, err = vmi.VmAddresses(vm)
 	return err
@@ -413,18 +424,33 @@ func (vm *VirtualMachine) AddAddress() error {
 	} else if len(vm.Addresses) >= cfg.Vm.MaximumIps {
 		return errors.New(fmt.Sprintf("this VM already has the maximum of %d IP addresses", cfg.Vm.MaximumIps))
 	}
-	return vm.do(vmGetInterface(vm.Region).VmAddAddress)
+
+	vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
+	if !ok {
+		return errors.New("operation not supported")
+	}
+	return vm.do(vmi.VmAddAddress)
 }
 
 func (vm *VirtualMachine) RemoveAddress(ip string, privateip string) error {
 	return vm.do(func(vm *VirtualMachine) error {
-		return vmGetInterface(vm.Region).VmRemoveAddress(vm, ip, privateip)
+		vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
+		if ok {
+			return vmi.VmRemoveAddress(vm, ip, privateip)
+		} else {
+			return errors.New("operation not supported")
+		}
 	})
 }
 
 func (vm *VirtualMachine) SetRdns(ip string, hostname string) error {
 	return vm.do(func(vm *VirtualMachine) error {
-		return vmGetInterface(vm.Region).VmSetRdns(vm, ip, hostname)
+		vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
+		if ok {
+			return vmi.VmSetRdns(vm, ip, hostname)
+		} else {
+			return errors.New("operation not supported")
+		}
 	})
 }
 
@@ -580,7 +606,12 @@ func imageFetch(db *Database, userId int, region string, name string, url string
 		return 0, errors.New("invalid region")
 	}
 
-	imageIdentification, err := vmi.ImageFetch(url, format)
+	vmiImage, ok := vmi.(VMIImages)
+	if !ok {
+		return 0, errors.New("operation not supported")
+	}
+
+	imageIdentification, err := vmiImage.ImageFetch(url, format)
 	if err != nil {
 		return 0, err
 	} else {
@@ -600,7 +631,12 @@ func imageDelete(db *Database, userId int, imageId int) error {
 		return errors.New("invalid image")
 	}
 
-	err := vmGetInterface(image.Region).ImageDelete(image.Identification)
+	vmi, ok := vmGetInterface(image.Region).(VMIImages)
+	if !ok {
+		return errors.New("operation not supported")
+	}
+
+	err := vmi.ImageDelete(image.Identification)
 	if err != nil {
 		return err
 	} else {
@@ -615,7 +651,12 @@ func imageDeleteForce(db *Database, imageId int) error {
 		return errors.New("image not found")
 	}
 
-	err := vmGetInterface(image.Region).ImageDelete(image.Identification)
+	vmi, ok := vmGetInterface(image.Region).(VMIImages)
+	if !ok {
+		return errors.New("operation not supported")
+	}
+
+	err := vmi.ImageDelete(image.Identification)
 	if err != nil {
 		reportError(err, "image force deletion failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
 	}
@@ -628,8 +669,14 @@ func imageInfo(db *Database, userId int, imageId int) *Image {
 	if image == nil || image.UserId != userId {
 		return nil
 	}
+
+	vmi, ok := vmGetInterface(image.Region).(VMIImages)
+	if !ok {
+		return nil
+	}
+
 	var err error
-	image.Info, err = vmGetInterface(image.Region).ImageInfo(image.Identification)
+	image.Info, err = vmi.ImageInfo(image.Identification)
 	if err != nil {
 		reportError(err, "imageInfo failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
 		image.Info = new(ImageInfo)
