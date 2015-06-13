@@ -1,6 +1,7 @@
 package lobster
 
 import "github.com/LunaNode/lobster/api"
+import "github.com/LunaNode/lobster/ipaddr"
 import "github.com/LunaNode/lobster/utils"
 
 import "github.com/gorilla/mux"
@@ -56,14 +57,40 @@ func apiGet(db *Database, userId int, id int) *ApiKey {
 	}
 }
 
-func apiCreate(db *Database, userId int, label string) *ApiKey {
+type ApiActionRestriction struct {
+	Path string `json:"path"`
+	Method string `json:"method"`
+}
+
+func apiCreate(db *Database, userId int, label string, restrictAction string, restrictIp string) (*ApiKey, error) {
+	// validate restrictAction
+	if len(restrictAction) > MAX_API_RESTRICTION {
+		return nil, errors.New(fmt.Sprintf("action restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION))
+	} else if restrictAction != "" {
+		var actionRestrictions []*ApiActionRestriction
+		err := json.Unmarshal([]byte(restrictAction), &actionRestrictions)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// validate restrictIp
+	if len(restrictIp) > MAX_API_RESTRICTION {
+		return nil, errors.New(fmt.Sprintf("IP restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION))
+	} else if restrictIp != "" {
+		_, err := ipaddr.ParseNetworks(restrictIp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	apiId := utils.Uid(16)
 	apiKey := utils.Uid(128)
-	result := db.Exec("INSERT INTO api_keys (label, user_id, api_id, api_key) VALUES (?, ?, ?, ?)", label, userId, apiId, apiKey)
+	result := db.Exec("INSERT INTO api_keys (label, user_id, api_id, api_key, restrict_action, restrict_ip) VALUES (?, ?, ?, ?, ?, ?)", label, userId, apiId, apiKey, restrictAction, restrictIp)
 	id, _ := result.LastInsertId()
 	key := apiGet(db, userId, int(id))
 	key.ApiKey = apiKey
-	return key
+	return key, nil
 }
 
 func apiDelete(db *Database, userId int, id int) {
@@ -72,7 +99,7 @@ func apiDelete(db *Database, userId int, id int) {
 
 type APIHandlerFunc func(http.ResponseWriter, *http.Request, *Database, int, []byte)
 
-func apiCheck(db *Database, path string, authorization string, request []byte) (int, error) {
+func apiCheck(db *Database, path string, method string, authorization string, request []byte, ip string) (int, error) {
 	authParts := strings.Split(authorization, ":")
 	if len(authParts) != 4 {
 		return 0, errors.New(fmt.Sprintf("bad authorization: expected 4 semicolon-delimited parts, only found %d", len(authParts)))
@@ -87,15 +114,15 @@ func apiCheck(db *Database, path string, authorization string, request []byte) (
 		return 0, errors.New("bad authorization: id, partial key, or signature has bad length; or signature not hex-encoded")
 	}
 
-	rows := db.Query("SELECT api_keys.user_id, api_keys.api_key FROM users, api_keys WHERE api_keys.api_id = ? AND api_keys.nonce < ? AND api_keys.user_id = users.id AND users.status != 'disabled'", apiId, nonce)
+	rows := db.Query("SELECT api_keys.user_id, api_keys.api_key, api_keys.restrict_action, api_keys.restrict_ip FROM users, api_keys WHERE api_keys.api_id = ? AND api_keys.nonce < ? AND api_keys.user_id = users.id AND users.status != 'disabled'", apiId, nonce)
 	defer rows.Close()
 	if !rows.Next() {
 		return 0, errors.New("authentication failure")
 	}
 
 	var userId int
-	var actualKey string
-	rows.Scan(&userId, &actualKey)
+	var actualKey, restrictAction, restrictIp string
+	rows.Scan(&userId, &actualKey, &restrictAction, &restrictIp)
 
 	// determine expected signature, hmac_{apikey}(path|nonce|request)
 	mac := hmac.New(sha512.New, []byte(actualKey))
@@ -107,6 +134,32 @@ func apiCheck(db *Database, path string, authorization string, request []byte) (
 	signatureGood := hmac.Equal(signature, expectedSignature)
 
 	if partialGood && signatureGood {
+		// now apply action and IP restrictions
+		if restrictAction != "" {
+			var actionRestrictions []*ApiActionRestriction
+			err := json.Unmarshal([]byte(restrictAction), &actionRestrictions)
+			if err != nil {
+				return 0, err
+			}
+
+			passed := false
+			for _, actionRestriction := range actionRestrictions {
+				fmt.Printf("%s %s %s %s", actionRestriction.Method, method, actionRestriction.Path, path)
+				if (actionRestriction.Method == "*" || actionRestriction.Method == method) && wildcardMatcher(actionRestriction.Path, path) {
+					passed = true
+					break
+				}
+			}
+
+			if !passed {
+				return 0, errors.New("failed action restriction")
+			}
+		}
+
+		if restrictIp != "" && !ipaddr.MatchNetworks(restrictIp, ip) {
+			return 0, errors.New("failed IP restriction")
+		}
+
 		db.Exec("UPDATE api_keys SET nonce = GREATEST(nonce, ?) WHERE api_id = ?", nonce, apiId)
 		return userId, nil
 	} else {
@@ -141,7 +194,7 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 		request := buf[:n]
 
 		if authParts[0] == "lobster" {
-			userId, err := apiCheck(db, apiPath, authParts[1], request)
+			userId, err := apiCheck(db, apiPath, r.Method, authParts[1], request, extractIP(r.RemoteAddr))
 			if err != nil {
 				http.Error(w, err.Error(), 401)
 				return

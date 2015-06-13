@@ -81,6 +81,20 @@
 					</div>
 				</div>
 				<div class="form-group">
+					<label class="col-lg-2 control-label">Action restrictions</label>
+					<div class="col-lg-10">
+						<textarea class="form-control" rows="5" name="restrict_action"></textarea>
+						<span class="help-block">A JSON-encoded list of API actions to allow for this key, or blank to allow everything.</span>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-lg-2 control-label">IP restrictions</label>
+					<div class="col-lg-10">
+						<input type="text" name="restrict_ip" class="form-control" placeholder="8.8.8.8,127.0.0.1/24">
+						<span class="help-block">A comma-delimited list of IP addresses and/or blocks in CIDR notation where this key can be used, or blank to allow any IP.</span>
+					</div>
+				</div>
+				<div class="form-group">
 					<div class="col-lg-10 col-lg-offset-2">
 						<button type="submit" class="btn btn-primary">Add new API key</button>
 					</div>

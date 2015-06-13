@@ -412,9 +412,25 @@ func panelAccountPassword(w http.ResponseWriter, r *http.Request, db *Database, 
 	}
 }
 
+type ApiAddForm struct {
+	Label string `schema:"label"`
+	RestrictAction string `schema:"restrict_action"`
+	RestrictIp string `schema:"restrict_ip"`
+}
 func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	key := apiCreate(db, session.UserId, r.PostFormValue("label"))
-	redirectMessage(w, r, "/panel/account", fmt.Sprintf("API key added successfully. The API ID is [%s] and the secret key is [%s].", key.ApiId, key.ApiKey))
+	form := new(ApiAddForm)
+	err := decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, "/panel/account", 303)
+		return
+	}
+
+	key, err := apiCreate(db, session.UserId, form.Label, form.RestrictAction, form.RestrictIp)
+	if err != nil {
+		redirectMessage(w, r, "/panel/account", "Error: " + err.Error() + ".")
+	} else {
+		redirectMessage(w, r, "/panel/account", fmt.Sprintf("API key added successfully. The API ID is [%s] and the secret key is [%s].", key.ApiId, key.ApiKey))
+	}
 }
 
 func panelApiRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {

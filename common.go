@@ -13,6 +13,7 @@ const MAX_USERNAME_LENGTH = 128
 const MIN_PASSWORD_LENGTH = 6
 const MAX_PASSWORD_LENGTH = 512
 const MAX_VM_NAME_LENGTH = 64
+const MAX_API_RESTRICTION = 512
 
 const SESSION_UID_LENGTH = 64
 const SESSION_COOKIE_NAME = "lobsterSession"
@@ -93,4 +94,16 @@ func stripAlphanumeric(s string) string {
 		}
 	}
 	return string(n)
+}
+
+func wildcardMatcher(regex string, s string) bool {
+	if len(regex) == 0 {
+		return false
+	}
+
+	if regex[len(regex) - 1] == '*' {
+		return strings.HasPrefix(s, regex[:len(regex) - 1])
+	} else {
+		return regex == s
+	}
 }
