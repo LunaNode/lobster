@@ -423,6 +423,8 @@ func (vm *VirtualMachine) AddAddress() error {
 		return err
 	} else if len(vm.Addresses) >= cfg.Vm.MaximumIps {
 		return errors.New(fmt.Sprintf("this VM already has the maximum of %d IP addresses", cfg.Vm.MaximumIps))
+	} else if cfg.Vm.MaximumIps <= 0 {
+		return errors.New("IP address management is disabled")
 	}
 
 	vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
