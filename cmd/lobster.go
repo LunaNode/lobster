@@ -84,6 +84,7 @@ func main() {
 	}
 
 	for _, vm := range interfaceConfig.Vm {
+		log.Printf("Initializing VM interface %s (type=%s)", vm.Name, vm.Type)
 		var vmi lobster.VmInterface
 		if vm.Type == "openstack" {
 			vmi = lobopenstack.MakeOpenStack(vm.Url, vm.Username, vm.Password, vm.Tenant, vm.NetworkId)
@@ -108,6 +109,7 @@ func main() {
 		} else {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
+		log.Println("... initialized successfully")
 		app.RegisterVmInterface(vm.Name, vmi)
 	}
 
