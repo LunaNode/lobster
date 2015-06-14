@@ -12,6 +12,7 @@ Lobster depends on several Golang libraries that must be fetched:
 - github.com/gorilla/websocket
 - golang.org/x/crypto
 - github.com/LunaNode/gophercloud
+- github.com/LunaNode/email
 
 Run `go get` for each dependency (e.g. `go get code.google.com/p/gcfg`)
 

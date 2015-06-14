@@ -43,6 +43,12 @@ type ConfigHttp struct {
 	Addr string
 }
 
+type ConfigEmail struct {
+	Host string
+	Port int
+	NoTLS bool
+}
+
 type ConfigNovnc struct {
 	Url string
 	Listen string
@@ -55,6 +61,7 @@ type Config struct {
 	Session ConfigSession
 	Database ConfigDatabase
 	Http ConfigHttp
+	Email ConfigEmail
 	Novnc ConfigNovnc
 }
 

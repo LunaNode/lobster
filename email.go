@@ -1,6 +1,6 @@
 package lobster
 
-import "github.com/jordan-wright/email"
+import "github.com/LunaNode/email"
 
 import "bytes"
 import "errors"
@@ -148,7 +148,7 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	e.Subject = templateParts[0]
 	e.Text = []byte(templateParts[1])
 	log.Printf("Sending email [%s] to [%s]", e.Subject, toAddress)
-	return e.Send("127.0.0.1:25", nil)
+	return e.Send(cfg.Email.Host, cfg.Email.Port, nil, cfg.Email.NoTLS)
 }
 
 func mailWrap(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) {
