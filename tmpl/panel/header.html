@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
-	<title>Lobster Panel</title>
+	<title>{{ T "lobster_panel" }}</title>
 	<link href="/assets/css/bootstrap.dashboard.css" rel="stylesheet">
 	<link href="/assets/css/metismenu.css" rel="stylesheet">
 	<link href="/assets/css/dashboard.css" rel="stylesheet">
@@ -26,7 +26,7 @@
 			<span class="icon-bar"></span>
 			<span class="icon-bar"></span>
 		</button>
-		<a class="navbar-brand" href="/panel/dashboard">Lobster Panel</a>
+		<a class="navbar-brand" href="/panel/dashboard">{{ T "lobster_panel" }}</a>
 	</div>
 	<ul class="nav navbar-top-links navbar-right">
 		<li class="dropdown">
@@ -36,13 +36,13 @@
 			<ul class="dropdown-menu dropdown-user">
 				{{ if .Admin }}
 					{{ if eq .OriginalId 0 }}
-						<li><a href="/admin/dashboard"><i class="fa fa-gear fa-key"></i> Admin</a></li>
+						<li><a href="/admin/dashboard"><i class="fa fa-gear fa-key"></i> {{ T "admin" }}</a></li>
 					{{ else }}
-						<li><a href="/admin/user/{{ .UserId }}"><i class="fa fa-gear fa-key"></i> Logout of user</a></li>
+						<li><a href="/admin/user/{{ .UserId }}"><i class="fa fa-gear fa-key"></i> {{ T "logout_of_user" }}</a></li>
 					{{ end }}
 				{{ end }}
-				<li><a href="/panel/account"><i class="fa fa-gear fa-fw"></i> Settings</a></li>
-				<li><a href="/auth/logout"><i class="fa fa-sign-out fa-fw"></i> Logout</a></li>
+				<li><a href="/panel/account"><i class="fa fa-gear fa-fw"></i> {{ T "settings" }}</a></li>
+				<li><a href="/auth/logout"><i class="fa fa-sign-out fa-fw"></i> {{ T "logout" }}</a></li>
 			</ul>
 		</li>
 	</ul>
@@ -50,25 +50,25 @@
 		<div class="sidebar-nav navbar-collapse">
 			<ul class="nav" id="side-menu">
 				<li>
-					<a href="/panel/dashboard"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a>
+					<a href="/panel/dashboard"><i class="fa fa-fw fa-dashboard"></i> {{ T "dashboard" }}</a>
 				</li>
 				<li>
-					<a href="/panel/vms"><i class="fa fa-fw fa-cloud"></i> Virtual Machines</a>
+					<a href="/panel/vms"><i class="fa fa-fw fa-cloud"></i> {{ T "virtual_machines" }}</a>
 				</li>
 				<li>
-					<a href="/panel/newvm"><i class="fa fa-fw fa-cog"></i> Create VM</a>
+					<a href="/panel/newvm"><i class="fa fa-fw fa-cog"></i> {{ T "create_vm" }}</a>
 				</li>
 				<li>
-					<a href="/panel/images"><i class="fa fa-fw fa-hdd-o"></i> Images</a>
+					<a href="/panel/images"><i class="fa fa-fw fa-hdd-o"></i> {{ T "images" }}</a>
 				</li>
 				<li>
-					<a href="/panel/support"><i class="fa fa-fw fa-support"></i> Support</a>
+					<a href="/panel/support"><i class="fa fa-fw fa-support"></i> {{ T "support" }}</a>
 				</li>
 				<li>
-					<a href="/panel/billing"><i class="fa fa-fw fa-bank"></i> Billing</a>
+					<a href="/panel/billing"><i class="fa fa-fw fa-bank"></i> {{ T "billing" }}</a>
 				</li>
 				<li>
-					<a href="/panel/charges"><i class="fa fa-fw fa-usd"></i> Charge History</a>
+					<a href="/panel/charges"><i class="fa fa-fw fa-usd"></i> {{ T "charge_history" }}</a>
 				</li>
 			</ul>
 		</div>

@@ -7,8 +7,6 @@ import "crypto/rand"
 import "crypto/sha512"
 import "crypto/subtle"
 import "encoding/hex"
-import "errors"
-import "fmt"
 import "log"
 import "net/http"
 import "strings"
@@ -23,39 +21,39 @@ func authMakePassword(password string) string {
 
 func authCreate(db *Database, ip string, username string, password string, email string) (int, error) {
 	if email != "" && !govalidator.IsEmail(email) {
-		return 0, errors.New("invalid email address")
+		return 0, L.Error("invalid_email")
 	}
 
 	if len(username) < MIN_USERNAME_LENGTH || len(username) > MAX_USERNAME_LENGTH {
-		return 0, errors.New(fmt.Sprintf("usernames must be between %d and %d characters long", MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH))
+		return 0, L.Errorf("username_length", MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH)
 	}
 
 	if !isPrintable(username) {
-		return 0, errors.New(fmt.Sprintf("provided username contains invalid characters"))
+		return 0, L.Error("invalid_username_format")
 	}
 
 	if len(password) < MIN_PASSWORD_LENGTH || len(password) > MAX_PASSWORD_LENGTH {
-		return 0, errors.New(fmt.Sprintf("passwords must be between %d and %d characters long", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH))
+		return 0, L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
 	}
 
 	// ensure username not taken already
 	var userCount int
 	db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&userCount)
 	if userCount > 0 {
-		return 0, errors.New("username is already taken")
+		return 0, L.Error("username_in_use")
 	}
 
 	// ensure email not taken already
 	if email != "" {
 		db.QueryRow("SELECT COUNT(*) FROM users WHERE email = ?", email).Scan(&userCount)
 		if userCount > 0 {
-			return 0, errors.New("email address is already in use")
+			return 0, L.Error("email_in_use")
 		}
 	}
 
 	// antiflood
 	if !antifloodCheck(db, ip, "authCreate", 3) {
-		return 0, errors.New("try again later")
+		return 0, L.Error("try_again_later")
 	}
 
 	// generate salt and hash password
@@ -80,16 +78,16 @@ func authCheckPassword(password string, actualPasswordCombined string) bool {
 
 func authLogin(db *Database, ip string, username string, password string) (int, error) {
 	if len(password) > MAX_PASSWORD_LENGTH {
-		return 0, errors.New("invalid username or password")
+		return 0, L.Error("incorrect_username_or_password")
 	} else if !antifloodCheck(db, ip, "authCheck", 12) {
-		return 0, errors.New("try again later")
+		return 0, L.Error("try_again_later")
 	}
 
 	rows := db.Query("SELECT id, password FROM users WHERE username = ? AND status != 'disabled'", username)
 	if !rows.Next() {
 		log.Printf("Authentication failure on user=%s: bad username (%s)", username, ip)
 		antifloodAction(db, ip, "authCheck")
-		return 0, errors.New("invalid username or password")
+		return 0, L.Error("incorrect_username_or_password")
 	}
 	var userId int
 	var actualPasswordCombined string
@@ -103,22 +101,22 @@ func authLogin(db *Database, ip string, username string, password string) (int, 
 	} else {
 		antifloodAction(db, ip, "authCheck")
 		log.Printf("Authentication failure on user=%s: bad password (%s)", username, ip)
-		return 0, errors.New("invalid username or password")
+		return 0, L.Error("incorrect_username_or_password")
 	}
 }
 
 func authChangePassword(db *Database, ip string, userId int, oldPassword string, newPassword string) error {
 	if len(newPassword) < MIN_PASSWORD_LENGTH || len(newPassword) > MAX_PASSWORD_LENGTH {
-		return errors.New(fmt.Sprintf("passwords must be between %d and %d characters long", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH))
+		return L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
 	} else if !antifloodCheck(db, ip, "authCheck", 12) {
-		return errors.New("try again later")
+		return L.Error("try_again_later")
 	}
 
 	rows := db.Query("SELECT password FROM users WHERE id = ?", userId)
 	if !rows.Next() {
 		antifloodAction(db, ip, "authCheck")
 		log.Printf("Error changing password: bad user ID?! (%d/%s)", userId ,ip)
-		return errors.New("invalid account")
+		return L.Error("invalid_account")
 	}
 	var actualPasswordCombined string
 	rows.Scan(&actualPasswordCombined)
@@ -133,7 +131,7 @@ func authChangePassword(db *Database, ip string, userId int, oldPassword string,
 	} else {
 		antifloodAction(db, ip, "authCheck")
 		log.Printf("Change password authentication failure for user_id=%d (%s)", userId, ip)
-		return errors.New("incorrect password provided")
+		return L.Error("incorrect_password")
 	}
 }
 
@@ -148,7 +146,7 @@ type AuthLoginForm struct {
 
 func authLoginHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	if session.IsLoggedIn() {
-		redirectMessage(w, r, "/panel/dashboard", "You are already logged in.")
+		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
 		return
 	}
 
@@ -161,9 +159,7 @@ func authLoginHandler(w http.ResponseWriter, r *http.Request, db *Database, sess
 
 	userId, err := authLogin(db, extractIP(r.RemoteAddr), form.Username, form.Password)
 	if err != nil {
-		errorMessage := err.Error()
-		prettyError := strings.ToUpper(errorMessage[:1]) + errorMessage[1:] + "."
-		redirectMessage(w, r, "/login", prettyError)
+		redirectMessage(w, r, "/login", L.FormatError(err))
 		return
 	} else {
 		session.UserId = userId
@@ -185,7 +181,7 @@ type AuthCreateForm struct {
 
 func authCreateHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	if session.IsLoggedIn() {
-		redirectMessage(w, r, "/panel/dashboard", "You are already logged in.")
+		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
 		return
 	}
 
@@ -197,13 +193,13 @@ func authCreateHandler(w http.ResponseWriter, r *http.Request, db *Database, ses
 	}
 
 	if form.AcceptTerms != "yes" {
-		redirectMessage(w, r, "/create", "You must agree to the terms of service to register an account.")
+		redirectMessage(w, r, "/create", L.FormattedError("must_terms"))
 		return
 	}
 
 	userId, err := authCreate(db, extractIP(r.RemoteAddr), form.Username, form.Password, form.Email)
 	if err != nil {
-		redirectMessage(w, r, "/create", "Error: " + err.Error() + ".")
+		redirectMessage(w, r, "/create", L.FormatError(err))
 		return
 	} else {
 		session.UserId = userId

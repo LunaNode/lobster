@@ -1,7 +1,7 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">Charge History</h1>
+		<h1 class="page-header">{{ T "charge_history" }}</h1>
 	</div>
 </div>
 <div class="row">
@@ -18,10 +18,10 @@
 	<div class="col-lg-12">
 		<table class="table table-striped">
 			<tr>
-				<th>Name</th>
-				<th>Amount charged</th>
-				<th>Date</th>
-				<th>Details</th>
+				<th>{{ T "name" }}</th>
+				<th>{{ T "amount_charged" }}</th>
+				<th>{{ T "date" }}</th>
+				<th>{{ T "details" }}</th>
 			</tr>
 			{{ range .Charges }}
 			<tr>

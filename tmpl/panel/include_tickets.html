@@ -1,11 +1,11 @@
 {{ if . }}
 <table class="table table-striped">
 <tr>
-	<th>Ticket Number</th>
-	<th>Subject</th>
-	<th>Status</th>
-	<th>Last Update</th>
-	<th>Creation Time</th>
+	<th>{{ T "ticket_number" }}</th>
+	<th>{{ T "subject" }}</th>
+	<th>{{ T "status" }}</th>
+	<th>{{ T "last_update" }}</th>
+	<th>{{ T "creation_time" }}</th>
 </tr>
 {{ range . }}
 <tr>
@@ -18,5 +18,5 @@
 {{ end }}
 </table>
 {{ else }}
-<p>You do not have any support tickets.</p>
+<p>{{ T "no_tickets" }}</p>
 {{ end }}

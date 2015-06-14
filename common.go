@@ -1,5 +1,7 @@
 package lobster
 
+import "github.com/LunaNode/lobster/utils"
+
 import "fmt"
 import "net/url"
 import "net/http"
@@ -42,8 +44,8 @@ func checkErr(err error) {
 	}
 }
 
-func redirectMessage(w http.ResponseWriter, r *http.Request, target string, msg string) {
-	http.Redirect(w, r, target + "?message=" + url.QueryEscape(msg), 303)
+func redirectMessage(w http.ResponseWriter, r *http.Request, target string, msg utils.Message) {
+	http.Redirect(w, r, target + "?message=" + url.QueryEscape(msg.Text) + "&type=" + url.QueryEscape(msg.Type), 303)
 }
 
 func isPrintable(s string) bool {

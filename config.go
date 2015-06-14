@@ -10,6 +10,7 @@ type ConfigDefault struct {
 	FromEmail string
 	ProxyHeader string
 	Debug bool
+	Language string
 }
 
 type ConfigVm struct {

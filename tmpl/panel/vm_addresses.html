@@ -1,8 +1,8 @@
 <div class="row">
 	<div class="col-lg-12">
-		<p>You can add additional IP addresses to your virtual machine using the tool below. You may have to reboot your VM and/or update your network configuration after IP addresses are updated.</p>
+		<p>{{ T "vm_addresses_text" }}</p>
 		<div id="vm_addresses_table"></div>
-		<button type="button" class="btn btn-primary ladda-button" data-style="expand-right" data-size="l" onclick="addressAdd(this);">Add additional IP</button>
+		<button type="button" class="btn btn-primary ladda-button" data-style="expand-right" data-size="l" onclick="addressAdd(this);">{{ T "add_additional_ip" }}</button>
 	</div>
 </div>
 <div class="modal" id="modalRdns" tabindex="-1" role="dialog" aria-labelledby="modalRdnsLabel" aria-hidden="true">
@@ -10,26 +10,26 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-				<h4 class="modal-title" id="modalRdnsLabel">Set rDNS</h4>
+				<h4 class="modal-title" id="modalRdnsLabel">{{ T "set_rdns" }}</h4>
 			</div>
 			<div class="modal-body">
 				<div class="form-group">
-					<label>IP address:</label>
+					<label>{{ T "ip_address" }}</label>
 					<p class="form-control-static" id="modal_rdns_ip"></p>
 				</div>
 				<div class="form-group">
-					<label>Hostname:</label>
+					<label>{{ T "hostname" }}</label>
 					<input type="text" class="form-control" name="hostname" id="modal_rdns_hostname" />
 				</div>
 			</div>
 			<div class="modal-footer">
 				<div style="float:left; padding-left:5px;">
-					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-default" data-dismiss="modal">{{ T "close" }}</button>
 				</div>
 				<div style="float:left; padding-left:5px;">
 					<div class="form-group">
 						<input type="hidden" name="token" value="{{ .Token }}" />
-						<button type="button" class="btn btn-primary ladda-button" data-style="expand-right" data-size="l" onclick="setRdns();">Set rDNS</button>
+						<button type="button" class="btn btn-primary ladda-button" data-style="expand-right" data-size="l" onclick="setRdns();">{{ T "set_rdns" }}</button>
 					</div>
 				</div>
 			</div>

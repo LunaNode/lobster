@@ -46,6 +46,7 @@ func templateFuncMap() template.FuncMap {
 				return b
 			}
 		},
+		"T": L.T,
 	}
 }
 

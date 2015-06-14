@@ -4,6 +4,7 @@ import "github.com/gorilla/context"
 import "github.com/gorilla/mux"
 import "github.com/gorilla/schema"
 
+import "github.com/LunaNode/lobster/i18n"
 import "github.com/LunaNode/lobster/websockify"
 
 import crand "crypto/rand"
@@ -17,6 +18,8 @@ import "time"
 
 var decoder *schema.Decoder
 var cfg *Config
+var L *i18n.Section
+var LA i18n.SectionFunc
 
 type Lobster struct {
 	router *mux.Router
@@ -128,6 +131,11 @@ func (this *Lobster) HandleWebsockify(ipport string, password string) string {
 }
 
 func (this *Lobster) Init() {
+	lang, err := i18n.LoadFile("language/" + cfg.Default.Language + ".json")
+	checkErr(err)
+	LA = lang.S
+	L = LA("lobster")
+
 	loadTemplates()
 	loadEmail()
 
@@ -226,7 +234,7 @@ func (this *Lobster) Init() {
 	// seed math/rand via crypt/rand in case interfaces want to use it for non-secure randomness source
 	// (math/rand is much faster)
 	seedBytes := make([]byte, 8)
-	_, err := crand.Read(seedBytes)
+	_, err = crand.Read(seedBytes)
 	if err != nil {
 		log.Printf("Warning: failed to seed math/rand: %s", err.Error())
 	} else {

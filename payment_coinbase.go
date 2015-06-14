@@ -44,7 +44,7 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db 
 	button, err := cli.CreateButton(params)
 	if err != nil {
 		reportError(err, "failed to create Coinbase button", fmt.Sprintf("username=%s, amount=%.2f", username, amount))
-		redirectMessage(w, r, "/panel/billing", "Error: try again later.")
+		redirectMessage(w, r, "/panel/billing", L.FormattedError("try_again_later"))
 		return
 	}
 	http.Redirect(w, r, "https://coinbase.com/checkouts/" + button.Code, 303)

@@ -1,7 +1,7 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">User: {{ .User.Username }}</h1>
+		<h1 class="page-header">{{ T "user" }}: {{ .User.Username }}</h1>
 	</div>
 </div>
 <div class="row">
@@ -13,40 +13,40 @@
 	<div class="col-lg-12">
 		<table class="table table-striped">
 			<tr>
-				<th>ID</th>
+				<th>{{ T "id" }}</th>
 				<td>{{ .User.Id }}</td>
 			</tr>
 			<tr>
-				<th>Username</th>
+				<th>{{ T "username" }}</th>
 				<td>{{ .User.Username }}</td>
 			</tr>
 			<tr>
-				<th>E-mail address</th>
+				<th>{{ T "email_address" }}</th>
 				<td>{{ .User.Email }}</td>
 			</tr>
 			<tr>
-				<th>Create time</th>
+				<th>{{ T "creation_time" }}</th>
 				<td>{{ .User.CreateTime | FormatTime }}</td>
 			</tr>
 			<tr>
-				<th>Credit</th>
+				<th>{{ T "credit" }}</th>
 				<td>{{ .User.Credit | FormatCredit }}</td>
 			</tr>
 			<tr>
-				<th>Limit</th>
+				<th>{{ T "limit" }}</th>
 				<td>{{ .User.VmLimit }}</td>
 			</tr>
 			<tr>
-				<th>Status</th>
+				<th>{{ T "status" }}</th>
 				<td>{{ .User.Status }}</td>
 			</tr>
 			<tr>
-				<th>Admin?</th>
+				<th>{{ T "admin?" }}</th>
 				<td>
 					{{ if .User.Admin }}
-						Yes
+						{{ T "yes" }}
 					{{ else }}
-						No
+						{{ T "no" }}
 					{{ end }}
 				</td>
 			</tr>
@@ -59,14 +59,14 @@
 			<form method="POST" action="/admin/user/{{ .User.Id }}/login">
 				<div class="form-group">
 					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-primary">Login as user</button>
+					<button type="submit" class="btn btn-primary">{{ T "login_as_user" }}</button>
 				</div>
 			</form>
 		</div>
 		<div style="float:left; padding-left:5px;">
-			<p><a href="/admin/support/open/{{ .User.Id }}"><button type="button" class="btn btn-primary">Open ticket</button></a></p>
+			<p><a href="/admin/support/open/{{ .User.Id }}"><button type="button" class="btn btn-primary">{{ T "open_ticket" }}</button></a></p>
 		</div>
-		{{ $params := modal "Adjust credit" (print "/admin/user/" .User.Id "/credit") "primary" .Token }}
+		{{ $params := modal (T "adjust_credit") (print "/admin/user/" .User.Id "/credit") "primary" .Token }}
 		{{ template "modal_header.html" $params }}
 			<div class="form-group">
 				<label>Credit:</label>
@@ -78,22 +78,22 @@
 			</div>
 		{{ template "modal_footer.html" $params }}
 
-		{{ $params := modal "Change password" (print "/admin/user/" .User.Id "/password") "warning" .Token }}
+		{{ $params := modal (T "change_password") (print "/admin/user/" .User.Id "/password") "warning" .Token }}
 		{{ template "modal_header.html" $params }}
 			<div class="form-group">
-				<label>New password:</label>
+				<label>{{ T "new_password" }}</label>
 				<input type="password" class="form-control" name="password">
 			</div>
 			<div class="form-group">
-				<label>Confirm new password:</label>
+				<label>{{ T "new_password_confirm" }}</label>
 				<input type="password" class="form-control" name="password_confirm">
 			</div>
 		{{ template "modal_footer.html" $params }}
 		<div style="float:left; padding-left:5px;">
-			<form method="POST" action="/admin/user/{{ .User.Id }}/disable" onsubmit="return window.confirm('Are you sure you want to disable this user account?');">
+			<form method="POST" action="/admin/user/{{ .User.Id }}/disable" onsubmit="return window.confirm('{{ js (T "account_disable_confirm_text") }}');">
 				<div class="form-group">
 					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-danger">Disable</button>
+					<button type="submit" class="btn btn-danger">{{ T "disable" }}</button>
 				</div>
 			</form>
 		</div>
@@ -103,15 +103,15 @@
 	<div class="col-lg-12">
 		<table class="table table-striped">
 		<tr>
-			<th>Name</th>
-			<th>Status</th>
-			<th>External IP</th>
-			<th>Private IP</th>
-			<th>Plan</th>
-			<th>vCPUs</th>
-			<th>Memory</th>
-			<th>Storage</th>
-			<th>Bandwidth</th>
+			<th>{{ T "name" }}</th>
+			<th>{{ T "status" }}</th>
+			<th>{{ T "external_ip" }}</th>
+			<th>{{ T "private_ip" }}</th>
+			<th>{{ T "plan" }}</th>
+			<th>{{ T "vcpus" }}</th>
+			<th>{{ T "memory" }}</th>
+			<th>{{ T "storage" }}</th>
+			<th>{{ T "bandwidth" }}</th>
 		</tr>
 		{{ range .VirtualMachines }}
 		<tr>
