@@ -227,7 +227,11 @@
 			"register": "Register",
 			"login": "Login",
 			"pending": "Pending",
-			"unknown": "Unknown"
+			"unknown": "Unknown",
+			"serial_console": "Serial Console",
+			"serial_console_text": "Use the SSH authentication details below to login to your virtual machine's serial console using any SSH client. The session will be active for one hour, after which it would need to be renewed.",
+			"host": "Host",
+			"port": "Port"
 		}
 	}, "payment_fake": {
 		"message": {

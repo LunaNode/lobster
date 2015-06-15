@@ -114,6 +114,10 @@ func (this *Lobster) GetDatabase() *Database {
 	return this.db
 }
 
+func (this *Lobster) RenderTemplate(w http.ResponseWriter, category string, tmpl string, data interface{}) error {
+	return renderTemplate(w, category, tmpl, data)
+}
+
 // Creates websockify instance if not already setup, initializes token, and returns URL to redirect to
 func (this *Lobster) HandleWebsockify(ipport string, password string) string {
 	this.wsMutex.Lock()

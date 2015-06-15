@@ -4,6 +4,7 @@ import "github.com/LunaNode/lobster"
 
 import "errors"
 import "fmt"
+import "net/http"
 import "strconv"
 import "strings"
 
@@ -14,6 +15,7 @@ type SolusVM struct {
 	Api *API
 
 	vmBandwidth map[string]int64 // for bandwidth accounting
+	setupConsolePage bool
 }
 
 func (this *SolusVM) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
@@ -80,15 +82,51 @@ func (this *SolusVM) VmReboot(vm *lobster.VirtualMachine) error {
 
 func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	vncInfo, err := this.Api.VmVnc(int(vmIdentificationInt))
-	if err != nil {
-		return "", err
-	} else {
-		if this.Lobster == nil {
-			return "", errors.New("solusvm module misconfiguration: lobster instance not referenced")
+
+	if this.VirtType == "kvm" || this.VirtType == "xen" {
+		vncInfo, err := this.Api.VmVnc(int(vmIdentificationInt))
+		if err != nil {
+			return "", err
+		} else {
+			if this.Lobster == nil {
+				return "", errors.New("solusvm module misconfiguration: lobster instance not referenced")
+			}
+			return this.Lobster.HandleWebsockify(vncInfo.Ip + vncInfo.Port, vncInfo.Password), nil
 		}
-		return this.Lobster.HandleWebsockify(vncInfo.Ip + vncInfo.Port, vncInfo.Password), nil
+	} else {
+		consoleInfo, err := this.Api.VmConsole(int(vmIdentificationInt))
+		if err != nil {
+			return "", err
+		} else {
+			if !this.setupConsolePage {
+				if this.Lobster == nil {
+					return "", errors.New("solusvm module misconfiguration: lobster instance not referenced")
+				} else {
+					this.Lobster.RegisterPanelHandler("/solusvm_console", this.handleConsole, false)
+					this.setupConsolePage = true
+				}
+			}
+			return "/solusvm_console?host=" + consoleInfo.Ip + "&port=" + consoleInfo.Port + "&username=" + consoleInfo.Username + "&password=" + consoleInfo.Password, nil
+		}
 	}
+}
+
+type ConsoleParams struct {
+	Frame lobster.FrameParams
+	Host string
+	Port string
+	Username string
+	Password string
+}
+
+func (this *SolusVM) handleConsole(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
+	params := ConsoleParams{}
+	params.Frame = frameParams
+	params.Host = r.URL.Query().Get("host")
+	params.Port = r.URL.Query().Get("port")
+	params.Username = r.URL.Query().Get("username")
+	params.Password = r.URL.Query().Get("password")
+	this.Lobster.RenderTemplate(w, "panel", "solusvm_console", params)
 }
 
 func (this *SolusVM) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
