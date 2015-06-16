@@ -35,6 +35,7 @@ type Image struct {
 	Name string
 	Identification string
 	Status string
+	SourceVm int
 
 	Info *ImageInfo
 }
@@ -72,6 +73,7 @@ type VmInfo struct {
 	CanSnapshot bool
 	CanAddresses bool
 	OverrideCapabilities bool
+	PendingSnapshots []*Image
 }
 
 type IpAddress struct {
@@ -271,6 +273,8 @@ func (vm *VirtualMachine) LoadInfo() {
 		_, vm.Info.CanSnapshot = vmi.(VMISnapshot)
 		_, vm.Info.CanAddresses = vmi.(VMIAddresses)
 	}
+
+	vm.Info.PendingSnapshots = imageListVmPending(vm.db, vm.Id)
 }
 
 // Attempt to apply function on the provided VM.
@@ -370,7 +374,7 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 			if err != nil {
 				return err
 			}
-			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status) VALUES (?, ?, ?, ?, 'pending')", vm.UserId, vm.Region, name, imageIdentification)
+			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status, source_vm) VALUES (?, ?, ?, ?, 'pending', ?)", vm.UserId, vm.Region, name, imageIdentification, vm.Id)
 			imageId, _ = result.LastInsertId()
 			return nil
 		} else {
@@ -558,26 +562,32 @@ func imageListHelper(rows *sql.Rows) []*Image {
 	images := make([]*Image, 0)
 	for rows.Next() {
 		image := Image{}
-		rows.Scan(&image.Id, &image.UserId, &image.Region, &image.Name, &image.Identification, &image.Status)
+		rows.Scan(&image.Id, &image.UserId, &image.Region, &image.Name, &image.Identification, &image.Status, &image.SourceVm)
 		images = append(images, &image)
 	}
 	return images
 }
 
+const IMAGE_QUERY = "SELECT id, user_id, region, name, identification, status, source_vm FROM images"
+
 func imageListAll(db *Database) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images ORDER BY user_id, name"))
+	return imageListHelper(db.Query(IMAGE_QUERY + " ORDER BY user_id, name"))
 }
 
 func imageList(db *Database, userId int) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
+	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
 }
 
 func imageListRegion(db *Database, userId int, region string) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
+	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
+}
+
+func imageListVmPending(db *Database, vmId int) []*Image {
+	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE source_vm = ? AND status = 'pending'", vmId))
 }
 
 func imageGet(db *Database, userId int, imageId int) *Image {
-	images := imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
+	images := imageListHelper(db.Query(IMAGE_QUERY + " WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
 	if len(images) == 1 {
 		return images[0]
 	} else {

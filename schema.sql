@@ -122,7 +122,8 @@ CREATE TABLE images (
 	region VARCHAR(64) NOT NULL,
 	name VARCHAR(64) NOT NULL,
 	identification VARCHAR(128) NOT NULL DEFAULT '',
-	status ENUM ('pending', 'active', 'error') NOT NULL DEFAULT 'active'
+	status ENUM ('pending', 'active', 'error') NOT NULL DEFAULT 'active',
+	source_vm INT NOT NULL DEFAULT -1
 );
 
 CREATE TABLE charges (

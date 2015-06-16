@@ -69,6 +69,14 @@
 		{{ if .Vm.Info.CanSnapshot }}
 			{{ $params := modal (T "snapshot") (print "/panel/vm/" $vmId "/snapshot") "primary" $token }}
 			{{ template "modal_header.html" $params }}
+				{{ if .Vm.Info.PendingSnapshots }}
+					<p><strong>{{ T "vm_snapshot_pending_snapshot_warning" }}</strong></p>
+					<ul>
+						{{ range .Vm.Info.PendingSnapshots }}
+							<li><a href="/panel/image/{{ .Id }}">{{ .Name }}</a></li>
+						{{ end }}
+					</ul>
+				{{ end }}
 				<div class="form-group">
 					<label for="name">{{ T "snapshot_name" }}</label>
 					<input class="form-control" name="name" id="name">
@@ -88,14 +96,20 @@
 				</div>
 			{{ template "modal_footer.html" $params }}
 		{{ end }}
-		<div style="float:left; padding-left:5px;">
-			<form method="POST" action="/panel/vm/{{ .Vm.Id }}/delete" onsubmit="return window.confirm('{{ js (T "vm_delete_confirm_text") }}');">
-				<div class="form-group">
-					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-danger">{{ T "delete" }}</button>
-				</div>
-			</form>
-		</div>
+		{{ $params := modal (T "delete") (print "/panel/vm/" $vmId "/delete") "danger" $token }}
+		{{ template "modal_header.html" $params }}
+			<div class="form-group">
+				<p><strong>{{ T "vm_delete_confirm_text" }}</strong></p>
+				{{ if .Vm.Info.PendingSnapshots }}
+					<p>{{ T "vm_delete_pending_snapshot_warning" }}</p>
+					<ul>
+						{{ range .Vm.Info.PendingSnapshots }}
+							<li><a href="/panel/image/{{ .Id }}">{{ .Name }}</a></li>
+						{{ end }}
+					</ul>
+				{{ end }}
+			</div>
+		{{ template "modal_footer.html" $params }}
 	</div>
 </div>
 <div class="row">

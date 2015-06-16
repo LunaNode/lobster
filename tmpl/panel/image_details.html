@@ -28,6 +28,12 @@
 				<th>{{ T "size" }}</th>
 				<td>{{ .Image.Info.Size | FormatGB }} GB</td>
 			</tr>
+			{{ if ne .Image.SourceVm -1 }}
+				<tr>
+					<th>{{ T "source_vm" }}</th>
+					<td><a href="/panel/vm/{{ .Image.SourceVm }}">{{ .Image.SourceVm }}</a></td>
+				</tr>
+			{{ end }}
 		</table>
 	</div>
 </div>

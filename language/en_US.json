@@ -231,7 +231,10 @@
 			"serial_console": "Serial Console",
 			"serial_console_text": "Use the SSH authentication details below to login to your virtual machine's serial console using any SSH client. The session will be active for one hour, after which it would need to be renewed.",
 			"host": "Host",
-			"port": "Port"
+			"port": "Port",
+			"source_vm": "Source VM",
+			"vm_snapshot_pending_snapshot_warning": "Warning: this virtual machine already has pending snapshots, listed below. Queuing additional snapshots is not recommended.",
+			"vm_delete_pending_snapshot_warning": "Warning: this virtual machine already has pending snapshots, listed below. Deleting the virtual machine before these snapshots become active will cause the snapshots to fail."
 		}
 	}, "payment_fake": {
 		"message": {
