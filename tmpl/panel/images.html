@@ -83,6 +83,7 @@
 		<table class="table table-striped">
 		<tr>
 			<th>{{ T "name" }}</th>
+			<th>{{ T "region" }}</th>
 			<th>{{ T "status" }}</th>
 			<th>{{ T "action" }}</th>
 		</tr>
@@ -90,6 +91,7 @@
 		{{ range .Images }}
 		<tr>
 			<td><a href="/panel/image/{{ .Id }}">{{ .Name }}</a></td>
+			<td>{{ .Region | Title }}</td>
 			<td>{{ .Status | Title }}</td>
 			<td>
 				<form method="POST" onsubmit="return window.confirm('{{ js (T "image_delete_confirm_text") }}');" action="/panel/image/{{ .Id }}/remove">
