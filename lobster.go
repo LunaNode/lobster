@@ -153,8 +153,10 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/contact", getSplashHandler("contact"))
 	this.router.HandleFunc("/terms", getSplashHandler("terms"))
 	this.router.HandleFunc("/privacy", getSplashHandler("privacy"))
+	this.router.HandleFunc("/message", getSplashHandler("splash_message"))
 	this.router.HandleFunc("/login", this.db.wrapHandler(sessionWrap(getSplashFormHandler("login"))))
 	this.router.HandleFunc("/create", this.db.wrapHandler(sessionWrap(getSplashFormHandler("create"))))
+	this.router.HandleFunc("/pwreset", this.db.wrapHandler(sessionWrap(authPwresetHandler)))
 	this.router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
 
@@ -162,6 +164,8 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/auth/login", this.db.wrapHandler(sessionWrap(authLoginHandler))).Methods("POST")
 	this.router.HandleFunc("/auth/create", this.db.wrapHandler(sessionWrap(authCreateHandler))).Methods("POST")
 	this.router.HandleFunc("/auth/logout", this.db.wrapHandler(sessionWrap(authLogoutHandler)))
+	this.router.HandleFunc("/auth/pwreset_request", this.db.wrapHandler(sessionWrap(authPwresetRequestHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/pwreset_submit", this.db.wrapHandler(sessionWrap(authPwresetSubmitHandler))).Methods("POST")
 
 	// panel routes
 	this.router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))
@@ -294,6 +298,7 @@ func (this *Lobster) cron() {
 	this.db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
 	this.db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
 	this.db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
+	this.db.Exec("DELETE FROM pwreset_tokens WHERE time < DATE_SUB(NOW(), INTERVAL ? MINUTE)", PWRESET_EXPIRE_MINUTES)
 }
 
 func (this *Lobster) cached() {

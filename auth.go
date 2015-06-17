@@ -1,5 +1,7 @@
 package lobster
 
+import "github.com/LunaNode/lobster/utils"
+
 import "github.com/asaskevich/govalidator"
 import "golang.org/x/crypto/pbkdf2"
 
@@ -7,6 +9,7 @@ import "crypto/rand"
 import "crypto/sha512"
 import "crypto/subtle"
 import "encoding/hex"
+import "fmt"
 import "log"
 import "net/http"
 import "strings"
@@ -139,6 +142,59 @@ func authForceChangePassword(db *Database, userId int, password string) {
 	db.Exec("UPDATE users SET password = ? WHERE id = ?", authMakePassword(password), userId)
 }
 
+func authPwresetRequest(db *Database, ip string, username string, email string) error {
+	if email == "" {
+		return L.Error("pwreset_email_required")
+	} else if !antifloodCheck(db, ip, "pwresetRequest", 10) {
+		return L.Error("try_again_later")
+	}
+	antifloodAction(db, ip, "pwresetRequest") // mark antiflood regardless of whether success/failure
+
+	rows := db.Query("SELECT id FROM users WHERE username = ? AND email = ?", username, email)
+	if !rows.Next() {
+		return L.Error("incorrect_username_email")
+	}
+	var userId int
+	rows.Scan(&userId)
+	rows.Close()
+
+	// make sure not already active pwreset for this user
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM pwreset_tokens WHERE user_id = ?", userId).Scan(&count)
+	if count > 0 {
+		return L.Error("pwreset_outstanding")
+	}
+
+	token := utils.Uid(32)
+	db.Exec("INSERT INTO pwreset_tokens (user_id, token) VALUES (?, ?)", userId, token)
+	mailWrap(db, userId, "pwresetRequest", token, false)
+	return nil
+}
+
+func authPwresetSubmit(db *Database, ip string, userId int, token string, password string) error {
+	if !antifloodCheck(db, ip, "pwresetSubmit", 10) {
+		return L.Error("try_again_later")
+	} else if len(password) < MIN_PASSWORD_LENGTH || len(password) > MAX_PASSWORD_LENGTH {
+		return L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
+	}
+	antifloodAction(db, ip, "pwresetSubmit") // mark antiflood regardless of whether success/failure
+
+	rows := db.Query("SELECT id FROM pwreset_tokens WHERE user_id = ? AND token = ? AND time > DATE_SUB(NOW(), INTERVAL ? MINUTE)", userId, token, PWRESET_EXPIRE_MINUTES)
+	if !rows.Next() {
+		return L.Error("incorrect_token")
+	}
+	var tokenId int
+	rows.Scan(&tokenId)
+	rows.Close()
+
+	db.Exec("DELETE FROM pwreset_tokens WHERE id = ?", tokenId)
+	db.Exec("UPDATE users SET password = ? WHERE id = ?", authMakePassword(password), userId)
+	log.Printf("Successful password reset for user_id=%d (%s)", userId, ip)
+	LogAction(db, userId, ip, "Reset password", "")
+	mailWrap(db, userId, "authChangePassword", nil, false)
+	return nil
+}
+
 type AuthLoginForm struct {
 	Username string `schema:"username"`
 	Password string `schema:"password"`
@@ -210,4 +266,89 @@ func authCreateHandler(w http.ResponseWriter, r *http.Request, db *Database, ses
 func authLogoutHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	session.Reset()
 	http.Redirect(w, r, "/login", 303)
+}
+
+type AuthPwresetParams struct {
+	Title string
+	Message string
+	Token string
+	PwresetUserId string
+	PwresetToken string
+}
+
+func authPwresetHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+	message := ""
+	if r.URL.Query()["message"] != nil {
+		message = r.URL.Query()["message"][0]
+	}
+	params := AuthPwresetParams{
+		Message: message,
+		Token: csrfGenerate(db, session),
+	}
+
+	if r.URL.Query().Get("user_id") != "" && r.URL.Query().Get("token") != "" {
+		params.PwresetUserId = r.URL.Query().Get("user_id")
+		params.PwresetToken = r.URL.Query().Get("token")
+		renderTemplate(w, "splash", "pwreset_submit", params)
+	} else {
+		renderTemplate(w, "splash", "pwreset_request", params)
+	}
+}
+
+type AuthPwresetRequestForm struct {
+	Username string `schema:"username"`
+	Email string `schema:"email"`
+}
+
+func authPwresetRequestHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+	if session.IsLoggedIn() {
+		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
+		return
+	}
+
+	form := new(AuthPwresetRequestForm)
+	err := decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, "/pwreset", 303)
+		return
+	}
+
+	err = authPwresetRequest(db, extractIP(r.RemoteAddr), form.Username, form.Email)
+	if err != nil {
+		redirectMessage(w, r, "/pwreset", L.FormatError(err))
+		return
+	} else {
+		redirectMessage(w, r, "/message", L.Success("pwreset_requested"))
+	}
+}
+
+type AuthPwresetSubmitForm struct {
+	UserId int `schema:"pwreset_user_id"`
+	Token string `schema:"pwreset_token"`
+	Password string `schema:"password"`
+	PasswordConfirm string `schema:"password_confirm"`
+}
+
+func authPwresetSubmitHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+	if session.IsLoggedIn() {
+		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
+		return
+	}
+
+	form := new(AuthPwresetSubmitForm)
+	err := decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, "/pwreset", 303)
+		return
+	} else if form.Password != form.PasswordConfirm {
+		redirectMessageExtra(w, r, "/pwreset", L.FormattedError("password_mismatch"), map[string]string{"user_id": fmt.Sprintf("%d", form.UserId), "token": form.Token})
+	}
+
+	err = authPwresetSubmit(db, extractIP(r.RemoteAddr), form.UserId, form.Token, form.Password)
+	if err != nil {
+		redirectMessageExtra(w, r, "/pwreset", L.FormatError(err), map[string]string{"user_id": fmt.Sprintf("%d", form.UserId), "token": form.Token})
+		return
+	} else {
+		redirectMessage(w, r, "/message", L.Success("pwreset_completed"))
+	}
 }

@@ -1,0 +1,11 @@
+Password reset request
+
+Hi {{ .Username }},
+
+We have received a password reset request for your account. If you did not submit this request, please ignore this e-mail.
+
+Otherwise, you can proceed to the URL below to continue with the password reset. The URL will expire in one hour.
+
+{{ .UrlBase }}/pwreset?user_id={{ .UserId }}&token={{ .Params }}
+
+{{ template "footer.txt" . }}

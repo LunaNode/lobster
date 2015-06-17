@@ -11,8 +11,10 @@ import "strings"
 import "text/template"
 
 type EmailParams struct {
+	UserId int
 	Username string
 	Email string
+	UrlBase string
 	Params interface{}
 }
 
@@ -71,6 +73,8 @@ type BandwidthUsageEmail struct {
 	Fee int64
 }
 
+type PwresetRequestEmail string
+
 var emailTemplate *template.Template
 
 func loadEmail() {
@@ -122,8 +126,10 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	}
 
 	params := EmailParams{
+		UserId: userId,
 		Username: username,
 		Email: toAddress,
+		UrlBase: cfg.Default.UrlBase,
 		Params: subparams,
 	}
 

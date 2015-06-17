@@ -16,6 +16,8 @@
 
 			"incorrect_username_or_password": "invalid username or password",
 			"incorrect_password": "incorrect password provided",
+			"incorrect_username_email": "invalid username/e-mail address combination",
+			"incorrect_token": "the provided token is not valid",
 
 			"user_not_found": "user not found",
 			"ticket_not_found": "ticket not found",
@@ -56,7 +58,9 @@
 			"vm_snapshot_unsupported": "snapshot is not supported on this VM",
 			"operation_unsupported": "operation not supported",
 			"vm_max_ips": "this VM already has the maximum of %d IP addresses",
-			"ip_manage_disabled": "IP address management is disabled"
+			"ip_manage_disabled": "IP address management is disabled",
+			"pwreset_email_required": "an e-mail address is required for password reset",
+			"pwreset_outstanding": "you already have an outstanding password reset request"
 		},
 		"message": {
 			"error_format": "Error: %s.",
@@ -80,7 +84,9 @@
 			"vm_action_success": "Action [%s] applied successfully.",
 			"vm_started": "VM started successfully.",
 			"vm_stopped": "VM stopped successfully.",
-			"vm_rebooted": "VM rebooted successfully."
+			"vm_rebooted": "VM rebooted successfully.",
+			"pwreset_requested": "Your password reset request has been processed, and an e-mail has been sent with details on how to proceed.",
+			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password."
 		}, "T": {
 			"account_settings": "Account Settings",
 			"username": "Username",
@@ -234,7 +240,11 @@
 			"port": "Port",
 			"source_vm": "Source VM",
 			"vm_snapshot_pending_snapshot_warning": "Warning: this virtual machine already has pending snapshots, listed below. Queuing additional snapshots is not recommended.",
-			"vm_delete_pending_snapshot_warning": "Warning: this virtual machine already has pending snapshots, listed below. Deleting the virtual machine before these snapshots become active will cause the snapshots to fail."
+			"vm_delete_pending_snapshot_warning": "Warning: this virtual machine already has pending snapshots, listed below. Deleting the virtual machine before these snapshots become active will cause the snapshots to fail.",
+			"pwreset_request": "Password reset request",
+			"submit": "Submit",
+			"pwreset_complete": "Complete password reset",
+			"pwreset_submit_help": "Enter a new password below to complete the password reset process. Once approved, you will be able to login to your account with the new password."
 		}
 	}, "payment_fake": {
 		"message": {
