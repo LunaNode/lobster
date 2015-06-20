@@ -7,6 +7,7 @@ import "errors"
 import "fmt"
 import "io/ioutil"
 import "log"
+import "net/smtp"
 import "strings"
 import "text/template"
 
@@ -153,8 +154,14 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	}
 	e.Subject = templateParts[0]
 	e.Text = []byte(templateParts[1])
+
+	var auth smtp.Auth
+	if cfg.Email.Username != "" {
+		auth = smtp.PlainAuth("", cfg.Email.Username, cfg.Email.Password, cfg.Email.Host)
+	}
+
 	log.Printf("Sending email [%s] to [%s]", e.Subject, toAddress)
-	return e.Send(cfg.Email.Host, cfg.Email.Port, nil, cfg.Email.NoTLS)
+	return e.Send(cfg.Email.Host, cfg.Email.Port, auth, cfg.Email.NoTLS)
 }
 
 func mailWrap(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) {

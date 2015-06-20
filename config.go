@@ -47,6 +47,8 @@ type ConfigEmail struct {
 	Host string
 	Port int
 	NoTLS bool
+	Username string
+	Password string
 }
 
 type ConfigNovnc struct {
