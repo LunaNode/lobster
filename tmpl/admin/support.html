@@ -1,7 +1,7 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">Support</h1>
+		<h1 class="page-header">{{ T "support" }}</h1>
 	</div>
 </div>
 <div class="row">
@@ -13,12 +13,12 @@
 	<div class="col-lg-12">
 		<table class="table table-striped">
 		<tr>
-			<th>User</th>
-			<th>Ticket Number</th>
-			<th>Subject</th>
-			<th>Status</th>
-			<th>Creation Time</th>
-			<th>Last Update</th>
+			<th>{{ T "user" }}</th>
+			<th>{{ T "ticket_number" }}</th>
+			<th>{{ T "subject" }}</th>
+			<th>{{ T "status" }}</th>
+			<th>{{ T "creation_time" }}</th>
+			<th>{{ T "last_update" }}</th>
 		</tr>
 		{{ range .Tickets }}
 		<tr>

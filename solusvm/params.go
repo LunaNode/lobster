@@ -22,6 +22,14 @@ type APIVmVncResponse struct {
 	Password string `xml:"vncpassword"`
 }
 
+type APIVmConsoleResponse struct {
+	XMLName xml.Name `xml:"root"`
+	Ip string `xml:"consoleip"`
+	Port string `xml:"consoleport"`
+	Username string `xml:"consoleusername"`
+	Password string `xml:"consolepassword"`
+}
+
 type APIVmInfoResponse struct {
 	XMLName xml.Name `xml:"root"`
 	Ip string `xml:"mainipaddress"`

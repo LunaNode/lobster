@@ -1,18 +1,21 @@
 package lobster
 
-import "github.com/jordan-wright/email"
+import "github.com/LunaNode/email"
 
 import "bytes"
 import "errors"
 import "fmt"
 import "io/ioutil"
 import "log"
+import "net/smtp"
 import "strings"
 import "text/template"
 
 type EmailParams struct {
+	UserId int
 	Username string
 	Email string
+	UrlBase string
 	Params interface{}
 }
 
@@ -71,6 +74,8 @@ type BandwidthUsageEmail struct {
 	Fee int64
 }
 
+type PwresetRequestEmail string
+
 var emailTemplate *template.Template
 
 func loadEmail() {
@@ -122,8 +127,10 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	}
 
 	params := EmailParams{
+		UserId: userId,
 		Username: username,
 		Email: toAddress,
+		UrlBase: cfg.Default.UrlBase,
 		Params: subparams,
 	}
 
@@ -147,8 +154,14 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	}
 	e.Subject = templateParts[0]
 	e.Text = []byte(templateParts[1])
+
+	var auth smtp.Auth
+	if cfg.Email.Username != "" {
+		auth = smtp.PlainAuth("", cfg.Email.Username, cfg.Email.Password, cfg.Email.Host)
+	}
+
 	log.Printf("Sending email [%s] to [%s]", e.Subject, toAddress)
-	return e.Send("127.0.0.1:25", nil)
+	return e.Send(cfg.Email.Host, cfg.Email.Port, auth, cfg.Email.NoTLS)
 }
 
 func mailWrap(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) {

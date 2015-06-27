@@ -1,7 +1,7 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">Create VM</h1>
+		<h1 class="page-header">{{ T "create_vm" }}</h1>
 	</div>
 </div>
 <div class="row">
@@ -30,11 +30,11 @@ label.plan {
 		<form method="POST" action="/panel/newvm/{{ .Region }}">
 		<input type="hidden" name="token" value="{{ .Token }}" />
 		<div class="form-group" id="div-hostname">
-			<h3>Name</h3>
-			<input id="input-hostname" type="text" class="form-control" name="name" placeholder="Server name (e.g. myvps or www.example.com)">
+			<h3>{{ T "name" }}</h3>
+			<input id="input-hostname" type="text" class="form-control" name="name" placeholder="{{ T "create_vm_name_placeholder" }}">
 		</div>
 		<div class="form-group" id="div-plan">
-			<h3>Plan</h3>
+			<h3>{{ T "plan" }}</h3>
 			<div class="btn-group plan" data-toggle="buttons">
 				{{ range .Plans }}
 					<label class="btn btn-primary plan">
@@ -48,10 +48,10 @@ label.plan {
 					</label>
 				{{ end }}
 			</div>
-			<p class="help-block">A VM "plan" specifies the available memory, disk, virtual cores, and bandwidth.</p>
+			<p class="help-block">{{ T "create_vm_plan_help" }}</p>
 		</div>
 		<div class="form-group" id="div-image">
-			<h3>Image</h3>
+			<h3>{{ T "image" }}</h3>
 			<div data-toggle="buttons">
 				<div class="btn-group btn-group-vertical" style="vertical-align: top;">
 					{{ range .PublicImages }}
@@ -69,7 +69,7 @@ label.plan {
 				</div>
 			</div>
 		</div>
-		<button type="submit" class="btn btn-success btn-lg">Create virtual machine</button>
+		<button type="submit" class="btn btn-success btn-lg">{{ T "create_vm" }}</button>
 		</form>
 	</div>
 </div>

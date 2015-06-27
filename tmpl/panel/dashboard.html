@@ -1,40 +1,40 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">Dashboard</h1>
+		<h1 class="page-header">{{ T "dashboard" }}</h1>
 	</div>
 </div>
 <div class="row">
 	<div class="col-lg-12">
 		{{ template "message.html" .Frame }}
-		<h3>Billing</h3>
+		<h3>{{ T "billing" }}</h3>
 	</div>
 </div>
 <div class="row">
 	<div class="col-lg-12">
 		<table class="table table-striped">
 		<tr>
-			<th>Hourly Cost</th>
-			<th>Daily Cost</th>
-			<th>Monthly Cost</th>
-			<th>Credits Remaining</th>
-			<th>Credit Status</th>
-			<th>Action</th>
+			<th>{{ T "hourly_cost" }}</th>
+			<th>{{ T "daily_cost" }}</th>
+			<th>{{ T "monthly_cost" }}</th>
+			<th>{{ T "credit_remaining" }}</th>
+			<th>{{ T "credit_status" }}</th>
+			<th>{{ T "action" }}</th>
 		</tr>
 		<tr>
 			<td>{{ .CreditSummary.Hourly | FormatCredit }}</td>
 			<td>{{ .CreditSummary.Daily | FormatCredit }}</td>
 			<td>{{ .CreditSummary.Monthly | FormatCredit }}</td>
 			<td>{{ .CreditSummary.Credit | FormatCredit }}</td>
-			<td><p class="text-{{ .CreditSummary.Status }}"><strong>{{ .CreditSummary.Status | Title }}!</strong> {{ .CreditSummary.DaysRemaining }} days left until credit exhaustion.</td>
-			<td><a href="/panel/billing"><button type="button" class="btn btn-primary btn-sm">Make a Payment</button></a></td>
+			<td><p class="text-{{ .CreditSummary.Status }}"><strong>{{ .CreditSummary.Status | Title }}!</strong> {{ T "credit_days_remaining" .CreditSummary.DaysRemaining }}</td>
+			<td><a href="/panel/billing"><button type="button" class="btn btn-primary btn-sm">{{ T "make_payment" }}</button></a></td>
 		</tr>
 		</table>
 	</div>
 </div>
 <div class="row">
 	<div class="col-lg-12">
-		<h3>Open Support Tickets</h3>
+		<h3>{{ T "open_tickets" }}</h3>
 	</div>
 </div>
 <div class="row">
@@ -44,17 +44,17 @@
 </div>
 <div class="row">
 	<div class="col-lg-12">
-		<h3>Bandwidth</h3>
+		<h3>{{ T "bandwidth" }}</h3>
 	</div>
 </div>
 <div class="row">
 	<div class="col-lg-12">
 		<table class="table table-striped">
 		<tr>
-			<th>Region</th>
-			<th>Used</th>
-			<th>Allocated</th>
-			<th>Percentage</th>
+			<th>{{ T "region" }}</th>
+			<th>{{ T "used" }}</th>
+			<th>{{ T "allocated" }}</th>
+			<th>{{ T "percentage" }}</th>
 		</tr>
 		{{ range $region, $bw := .BandwidthSummary }}
 			<tr>
@@ -69,7 +69,7 @@
 </div>
 <div class="row">
 	<div class="col-lg-12">
-		<h3>Virtual Machines</h3>
+		<h3>{{ T "virtual_machines" }}</h3>
 	</div>
 </div>
 <div class="row">

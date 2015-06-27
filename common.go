@@ -1,5 +1,7 @@
 package lobster
 
+import "github.com/LunaNode/lobster/utils"
+
 import "fmt"
 import "net/url"
 import "net/http"
@@ -13,9 +15,12 @@ const MAX_USERNAME_LENGTH = 128
 const MIN_PASSWORD_LENGTH = 6
 const MAX_PASSWORD_LENGTH = 512
 const MAX_VM_NAME_LENGTH = 64
+const MAX_API_RESTRICTION = 512
 
 const SESSION_UID_LENGTH = 64
 const SESSION_COOKIE_NAME = "lobsterSession"
+
+const PWRESET_EXPIRE_MINUTES = 60
 
 const TIME_FORMAT = "2 January 2006 15:04:05 MST"
 const DATE_FORMAT = "2 January 2006"
@@ -41,8 +46,18 @@ func checkErr(err error) {
 	}
 }
 
-func redirectMessage(w http.ResponseWriter, r *http.Request, target string, msg string) {
-	http.Redirect(w, r, target + "?message=" + url.QueryEscape(msg), 303)
+func redirectMessage(w http.ResponseWriter, r *http.Request, target string, msg utils.Message) {
+	http.Redirect(w, r, target + "?message=" + url.QueryEscape(msg.Text) + "&type=" + url.QueryEscape(msg.Type), 303)
+}
+
+func redirectMessageExtra(w http.ResponseWriter, r *http.Request, target string, msg utils.Message, extra map[string]string) {
+	values := url.Values{}
+	for k, v := range extra {
+		values.Set(k, v)
+	}
+	values.Set("message", msg.Text)
+	values.Set("type", msg.Type)
+	http.Redirect(w, r, target + "?" + values.Encode(), 303)
 }
 
 func isPrintable(s string) bool {
@@ -93,4 +108,16 @@ func stripAlphanumeric(s string) string {
 		}
 	}
 	return string(n)
+}
+
+func wildcardMatcher(regex string, s string) bool {
+	if len(regex) == 0 {
+		return false
+	}
+
+	if regex[len(regex) - 1] == '*' {
+		return strings.HasPrefix(s, regex[:len(regex) - 1])
+	} else {
+		return regex == s
+	}
 }

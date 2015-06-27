@@ -85,6 +85,10 @@ func (this *Fake) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
 	return "fake", nil
 }
 
+func (this *Fake) VmResize(vm *lobster.VirtualMachine, plan *lobster.Plan) error {
+	return nil
+}
+
 func (this *Fake) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
 	var addresses []*lobster.IpAddress
 	for _, addrString := range strings.Split(vm.Metadata("addresses", ""), ",") {

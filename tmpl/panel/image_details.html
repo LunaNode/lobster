@@ -1,7 +1,7 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">Image: {{ .Image.Name }}</h1>
+		<h1 class="page-header">{{ T "image" }}: {{ .Image.Name }}</h1>
 	</div>
 </div>
 <div class="row">
@@ -13,21 +13,27 @@
 	<div class="col-lg-12">
 		<table class="table table-striped">
 			<tr>
-				<th>Name</th>
+				<th>{{ T "name" }}</th>
 				<td>{{ .Image.Name }}</td>
 			</tr>
 			<tr>
-				<th>Region</th>
+				<th>{{ T "region" }}</th>
 				<td>{{ .Image.Region | Title }}</td>
 			</tr>
 			<tr>
-				<th>Status</th>
+				<th>{{ T "status" }}</th>
 				<td>{{ .Image.Status | Title }}</td>
 			</tr>
 			<tr>
-				<th>Size</th>
+				<th>{{ T "size" }}</th>
 				<td>{{ .Image.Info.Size | FormatGB }} GB</td>
 			</tr>
+			{{ if ne .Image.SourceVm -1 }}
+				<tr>
+					<th>{{ T "source_vm" }}</th>
+					<td><a href="/panel/vm/{{ .Image.SourceVm }}">{{ .Image.SourceVm }}</a></td>
+				</tr>
+			{{ end }}
 		</table>
 	</div>
 </div>

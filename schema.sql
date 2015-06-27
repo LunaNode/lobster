@@ -19,6 +19,8 @@ CREATE TABLE api_keys (
 	user_id INT NOT NULL,
 	api_id VARCHAR(16) NOT NULL UNIQUE,
 	api_key VARCHAR(128) NOT NULL,
+	restrict_action VARCHAR(512) NOT NULL,
+	restrict_ip VARCHAR(512) NOT NULL,
 	time_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	nonce BIGINT NOT NULL DEFAULT 0
 );
@@ -37,6 +39,13 @@ CREATE TABLE form_tokens (
 	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	token VARCHAR(64) NOT NULL UNIQUE,
 	session_uid VARCHAR(64) NOT NULL,
+	time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE pwreset_tokens (
+	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+	user_id INT NOT NULL UNIQUE,
+	token VARCHAR(32) NOT NULL UNIQUE,
 	time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -120,7 +129,8 @@ CREATE TABLE images (
 	region VARCHAR(64) NOT NULL,
 	name VARCHAR(64) NOT NULL,
 	identification VARCHAR(128) NOT NULL DEFAULT '',
-	status ENUM ('pending', 'active', 'error') NOT NULL DEFAULT 'active'
+	status ENUM ('pending', 'active', 'error') NOT NULL DEFAULT 'active',
+	source_vm INT NOT NULL DEFAULT -1
 );
 
 CREATE TABLE charges (

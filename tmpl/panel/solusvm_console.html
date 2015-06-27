@@ -1,0 +1,30 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">{{ T "serial_console" }}</h1>
+		<p>{{ T "serial_console_text" }}</p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+			<tr>
+				<th>{{ T "host" }}</th>
+				<td>{{ .Host }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "port" }}</th>
+				<td>{{ .Port }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "username" }}</th>
+				<td>{{ .Username }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "password" }}</th>
+				<td>{{ .Password }}</td>
+			</tr>
+		</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

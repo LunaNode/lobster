@@ -35,6 +35,7 @@ type Image struct {
 	Name string
 	Identification string
 	Status string
+	SourceVm int
 
 	Info *ImageInfo
 }
@@ -70,8 +71,10 @@ type VmInfo struct {
 	CanVnc bool
 	CanReimage bool
 	CanSnapshot bool
+	CanResize bool
 	CanAddresses bool
 	OverrideCapabilities bool
+	PendingSnapshots []*Image
 }
 
 type IpAddress struct {
@@ -162,11 +165,11 @@ func regionList() []string {
 
 func vmNameOk(name string) error {
 	if len(name) == 0 {
-		return errors.New("name cannot be empty")
+		return L.Error("name_empty")
 	} else if len(name) > MAX_VM_NAME_LENGTH {
-		return errors.New(fmt.Sprintf("name cannot exceed %d characters", MAX_VM_NAME_LENGTH))
+		return L.Errorf("name_too_long", MAX_VM_NAME_LENGTH)
 	} else if !isPrintable(name) {
-		return errors.New("provided name contains invalid characters")
+		return L.Error("invalid_name_format")
 	} else {
 		return nil
 	}
@@ -176,16 +179,16 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	// validate credit
 	user := userDetails(db, userId)
 	if user == nil {
-		return 0, errors.New("invalid user account")
+		return 0, L.Error("invalid_account")
 	} else if user.Credit < MINIMUM_CREDIT {
-		return 0, errors.New("insufficient credit (make a payment from the Billing tab)")
+		return 0, L.Error("insufficient_credit")
 	}
 
 	// validate limit
 	var vmCount int
 	db.QueryRow("SELECT COUNT(*) FROM vms WHERE user_id = ?", userId).Scan(&vmCount)
 	if vmCount >= user.VmLimit {
-		return 0, errors.New("you have exceeded your current VM count limit, please contact support to have your limit increased")
+		return 0, L.Error("exceeded_vm_limit")
 	}
 
 	// validate name
@@ -197,15 +200,15 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	// validate image ID
 	image := imageGet(db, userId, imageId)
 	if image == nil {
-		return 0, errors.New("specified image does not exist")
+		return 0, L.Error("image_not_exist")
 	} else if image.Status != "active" {
-		return 0, errors.New("specified image is not ready")
+		return 0, L.Error("image_not_ready")
 	}
 
 	// validate plan
 	plan := planGet(db, planId)
 	if plan == nil {
-		return 0, errors.New("no such plan")
+		return 0, L.Error("no_such_plan")
 	}
 
 	// create the virtual machine asynchronously
@@ -236,7 +239,7 @@ func (vm *VirtualMachine) LoadInfo() {
 	}
 
 	if vm.Identification == "" || vm.Status != "active" {
-		vm.Info = &VmInfo{Ip: "Pending", PrivateIp: "Pending", Status: strings.Title(vm.Status), Hostname: vm.Name}
+		vm.Info = &VmInfo{Ip: L.T("pending"), PrivateIp: L.T("pending"), Status: strings.Title(vm.Status), Hostname: vm.Name}
 		return
 	}
 
@@ -253,40 +256,43 @@ func (vm *VirtualMachine) LoadInfo() {
 		vm.Info.Hostname = vm.Name
 	}
 	if vm.Info.Ip == "" {
-		vm.Info.Ip = "Pending"
+		vm.Info.Ip = L.T("pending")
 
 		if vm.Info.PrivateIp == "" {
-			vm.Info.PrivateIp = "Pending"
+			vm.Info.PrivateIp = L.T("pending")
 		}
 	} else {
 		vm.db.Exec("UPDATE vms SET external_ip = ?, private_ip = ? WHERE id = ?", vm.Info.Ip, vm.Info.PrivateIp, vm.Id)
 	}
 	if vm.Info.Status == "" {
-		vm.Info.Status = "Unknown"
+		vm.Info.Status = L.T("unknown")
 	}
 
 	if !vm.Info.OverrideCapabilities {
 		_, vm.Info.CanVnc = vmi.(VMIVnc)
 		_, vm.Info.CanReimage = vmi.(VMIReimage)
 		_, vm.Info.CanSnapshot = vmi.(VMISnapshot)
+		_, vm.Info.CanResize = vmi.(VMIResize)
 		_, vm.Info.CanAddresses = vmi.(VMIAddresses)
 	}
+
+	vm.Info.PendingSnapshots = imageListVmPending(vm.db, vm.Id)
 }
 
 // Attempt to apply function on the provided VM.
 func (vm *VirtualMachine) do(f func(vm *VirtualMachine) error) error {
 	if vm.Identification == "" || vm.Status != "active" {
-		return errors.New("VM is not ready yet")
+		return L.Error("vm_not_ready")
 	} else if vm.Suspended != "no" {
 		if vm.Suspended == "auto" {
-			return errors.New("VM is suspended due to negative credit, make a payment first")
+			return L.Error("vm_suspended_auto")
 		} else if vm.Suspended == "manual" {
-			return errors.New("VM is suspended, please see abuse ticket under Support tab")
+			return L.Error("vm_suspended_manual")
 		} else {
-			return errors.New("VM is suspended")
+			return L.Error("vm_suspended")
 		}
 	} else if vm.TaskPending {
-		return errors.New("VM has pending task, please try again later")
+		return L.Error("vm_has_pending_task")
 	}
 
 	return f(vm)
@@ -316,7 +322,7 @@ func (vm *VirtualMachine) Vnc() (string, error) {
 	err := vm.do(func(vm *VirtualMachine) error {
 		vmi, ok := vmGetInterface(vm.Region).(VMIVnc)
 		if !ok {
-			return errors.New("VNC not supported on this VM")
+			return L.Error("vm_vnc_unsupported")
 		}
 
 		urlTry, err := vmi.VmVnc(vm)
@@ -335,14 +341,14 @@ func vmReimage(db *Database, userId int, vmId int, imageId int) error {
 	// validate image ID
 	image := imageGet(db, userId, imageId)
 	if image == nil {
-		return errors.New("specified image does not exist")
+		return L.Error("image_not_exist")
 	} else if image.Status != "active" {
-		return errors.New("specified image is not ready")
+		return L.Error("image_not_ready")
 	}
 
 	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
-		return errors.New("invalid VM ID")
+		return L.Error("invalid_vm")
 	}
 
 	log.Printf("vmReimage(%d, %d, %d)", userId, vmId, imageId)
@@ -351,14 +357,14 @@ func vmReimage(db *Database, userId int, vmId int, imageId int) error {
 		if ok {
 			return vmi.VmReimage(vm, image.Identification)
 		} else {
-			return errors.New("re-image is not supported on this VM")
+			return L.Error("vm_reimage_unsupported")
 		}
 	})
 }
 
 func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 	if name == "" {
-		return 0, errors.New("snapshot name cannot be empty")
+		return 0, L.Error("name_empty")
 	}
 
 	log.Printf("vmSnapshot(%d, %s)", vm.Id, name)
@@ -370,14 +376,36 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 			if err != nil {
 				return err
 			}
-			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status) VALUES (?, ?, ?, ?, 'pending')", vm.UserId, vm.Region, name, imageIdentification)
+			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status, source_vm) VALUES (?, ?, ?, ?, 'pending', ?)", vm.UserId, vm.Region, name, imageIdentification, vm.Id)
 			imageId, _ = result.LastInsertId()
 			return nil
 		} else {
-			return errors.New("snapshot is not supported on this VM")
+			return L.Error("vm_snapshot_unsupported")
 		}
 	})
 	return int(imageId), err
+}
+
+func (vm *VirtualMachine) Resize(planId int) error {
+	plan := planGet(vm.db, planId)
+	if plan == nil {
+		return L.Error("no_such_plan")
+	}
+
+	log.Printf("vmResize(%d, %d)", vm.Id, planId)
+	return vm.do(func(vm *VirtualMachine) error {
+		vmi, ok := vmGetInterface(vm.Region).(VMIResize)
+		if ok {
+			err := vmi.VmResize(vm, plan)
+			if err != nil {
+				return err
+			}
+			vm.db.Exec("UPDATE vms SET plan_id = ? WHERE id = ?", plan.Id, vm.Id)
+			return nil
+		} else {
+			return L.Error("vm_resize_unsupported")
+		}
+	})
 }
 
 func (vm *VirtualMachine) Rename(name string) error {
@@ -405,12 +433,12 @@ func (vm *VirtualMachine) LoadAddresses() error {
 	if vm.Addresses != nil {
 		return nil
 	} else if vm.Identification == "" || vm.Status != "active" {
-		return errors.New("VM is not ready yet")
+		return L.Error("vm_not_ready")
 	}
 
 	vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
 	if !ok {
-		return errors.New("operation not supported")
+		return L.Error("operation_unsupported")
 	}
 	var err error
 	vm.Addresses, err = vmi.VmAddresses(vm)
@@ -422,14 +450,14 @@ func (vm *VirtualMachine) AddAddress() error {
 	if err != nil {
 		return err
 	} else if len(vm.Addresses) >= cfg.Vm.MaximumIps {
-		return errors.New(fmt.Sprintf("this VM already has the maximum of %d IP addresses", cfg.Vm.MaximumIps))
+		return L.Errorf("vm_max_ips", cfg.Vm.MaximumIps)
 	} else if cfg.Vm.MaximumIps <= 0 {
-		return errors.New("IP address management is disabled")
+		return L.Error("ip_manage_disabled")
 	}
 
 	vmi, ok := vmGetInterface(vm.Region).(VMIAddresses)
 	if !ok {
-		return errors.New("operation not supported")
+		return L.Error("operation_unsupported")
 	}
 	return vm.do(vmi.VmAddAddress)
 }
@@ -440,7 +468,7 @@ func (vm *VirtualMachine) RemoveAddress(ip string, privateip string) error {
 		if ok {
 			return vmi.VmRemoveAddress(vm, ip, privateip)
 		} else {
-			return errors.New("operation not supported")
+			return L.Error("operation_unsupported")
 		}
 	})
 }
@@ -451,16 +479,16 @@ func (vm *VirtualMachine) SetRdns(ip string, hostname string) error {
 		if ok {
 			return vmi.VmSetRdns(vm, ip, hostname)
 		} else {
-			return errors.New("operation not supported")
+			return L.Error("operation_unsupported")
 		}
 	})
 }
 
 func (vm *VirtualMachine) Delete(userId int) error {
 	if vm.UserId != userId {
-		return errors.New("invalid VM instance")
+		return L.Error("invalid_vm")
 	} else if vm.Status == "provisioning" {
-		return errors.New("VM is not ready yet")
+		return L.Error("vm_not_ready")
 	}
 
 	log.Printf("vmDelete(%d, %d)", userId, vm.Id)
@@ -558,26 +586,32 @@ func imageListHelper(rows *sql.Rows) []*Image {
 	images := make([]*Image, 0)
 	for rows.Next() {
 		image := Image{}
-		rows.Scan(&image.Id, &image.UserId, &image.Region, &image.Name, &image.Identification, &image.Status)
+		rows.Scan(&image.Id, &image.UserId, &image.Region, &image.Name, &image.Identification, &image.Status, &image.SourceVm)
 		images = append(images, &image)
 	}
 	return images
 }
 
+const IMAGE_QUERY = "SELECT id, user_id, region, name, identification, status, source_vm FROM images"
+
 func imageListAll(db *Database) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images ORDER BY user_id, name"))
+	return imageListHelper(db.Query(IMAGE_QUERY + " ORDER BY user_id, name"))
 }
 
 func imageList(db *Database, userId int) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
+	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
 }
 
 func imageListRegion(db *Database, userId int, region string) []*Image {
-	return imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
+	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
+}
+
+func imageListVmPending(db *Database, vmId int) []*Image {
+	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE source_vm = ? AND status = 'pending'", vmId))
 }
 
 func imageGet(db *Database, userId int, imageId int) *Image {
-	images := imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
+	images := imageListHelper(db.Query(IMAGE_QUERY + " WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
 	if len(images) == 1 {
 		return images[0]
 	} else {
@@ -597,20 +631,20 @@ func imageFetch(db *Database, userId int, region string, name string, url string
 	// validate credit
 	user := userDetails(db, userId)
 	if user == nil {
-		return 0, errors.New("invalid user account")
+		return 0, L.Error("invalid_account")
 	} else if user.Credit < MINIMUM_CREDIT {
-		return 0, errors.New("insufficient credit (make a payment from the Billing tab)")
+		return 0, L.Error("insufficient_credit")
 	}
 
 	// validate region
 	vmi, ok := regionInterfaces[region]
 	if !ok {
-		return 0, errors.New("invalid region")
+		return 0, L.Error("invalid_region")
 	}
 
 	vmiImage, ok := vmi.(VMIImages)
 	if !ok {
-		return 0, errors.New("operation not supported")
+		return 0, L.Error("operation_unsupported")
 	}
 
 	imageIdentification, err := vmiImage.ImageFetch(url, format)
@@ -630,12 +664,12 @@ func imageAdd(db *Database, name string, region string, identification string) {
 func imageDelete(db *Database, userId int, imageId int) error {
 	image := imageGet(db, userId, imageId)
 	if image == nil || image.UserId != userId {
-		return errors.New("invalid image")
+		return L.Error("invalid_image")
 	}
 
 	vmi, ok := vmGetInterface(image.Region).(VMIImages)
 	if !ok {
-		return errors.New("operation not supported")
+		return L.Error("operation_unsupported")
 	}
 
 	err := vmi.ImageDelete(image.Identification)
@@ -650,12 +684,12 @@ func imageDelete(db *Database, userId int, imageId int) error {
 func imageDeleteForce(db *Database, imageId int) error {
 	image := imageGetForce(db, imageId)
 	if image == nil {
-		return errors.New("image not found")
+		return L.Error("invalid_image")
 	}
 
 	vmi, ok := vmGetInterface(image.Region).(VMIImages)
 	if !ok {
-		return errors.New("operation not supported")
+		return L.Error("operation_unsupported")
 	}
 
 	err := vmi.ImageDelete(image.Identification)

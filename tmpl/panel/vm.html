@@ -12,9 +12,9 @@
 {{ if .Vm.Info.CanAddresses }}
 	<div class="row">
 		<ul class="nav nav-tabs">
-			<li id="li_vm_general" class="active"><a href="#vm_general" data-toggle="tab">General</a></li>
+			<li id="li_vm_general" class="active"><a href="#vm_general" data-toggle="tab">{{ T "general" }}</a></li>
 			{{ if .Vm.Info.CanAddresses }}
-				<li id="li_vm_addresses"><a href="#vm_addresses" data-toggle="tab">IP Addresses</a></li>
+				<li id="li_vm_addresses"><a href="#vm_addresses" data-toggle="tab">{{ T "ip_addresses" }}</a></li>
 			{{ end }}
 		</ul>
 	</div>

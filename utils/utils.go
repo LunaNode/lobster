@@ -2,6 +2,11 @@ package utils
 
 import "crypto/rand"
 
+type Message struct {
+	Text string
+	Type string
+}
+
 func Uid(l int) string {
 	alphabet := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	bytes := make([]byte, l)

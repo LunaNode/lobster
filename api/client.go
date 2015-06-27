@@ -142,6 +142,13 @@ func (this *Client) VmReimage(vmId int, imageId int) error {
 	return this.request("POST", fmt.Sprintf("vms/%d/reimage", vmId), request, nil)
 }
 
+func (this *Client) VmResize(vmId int, planId int) error {
+	request := VMResizeRequest{
+		PlanId: planId,
+	}
+	return this.request("POST", fmt.Sprintf("vms/%d/resize", vmId), request, nil)
+}
+
 func (this *Client) VmDelete(vmId int) error {
 	return this.request("DELETE", fmt.Sprintf("vms/%d", vmId), nil, nil)
 }

@@ -1,0 +1,5 @@
+<div id="message">
+	{{ if .Message.Text }}
+		<div class="alert alert-{{ .Message.Type }}" role="alert"><strong>{{ .Message.Text }}</strong></div>
+	{{ end }}
+</div>

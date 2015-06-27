@@ -1,0 +1,32 @@
+{{ template "header.html" . }}
+<div class="col-md-6 col-md-offset-3" style="margin-top: 50px;">
+	<div class="well bs-component">
+		<form class="form-horizontal" method="POST" action="/auth/pwreset_request">
+		<input type="hidden" name="token" value="{{ .Token }}">
+			<fieldset>
+				<legend>{{ T "pwreset_request" }}</legend>
+				{{ if ne .Message "" }}
+				<p><strong>{{ .Message }}</strong></p>
+				{{ end }}
+				<div class="form-group">
+					<label for="inputUsername" class="col-lg-4 control-label">{{ T "username" }}</label>
+					<div class="col-lg-8">
+						<input type="text" name="username" class="form-control" id="inputUsername" placeholder="{{ T "username" }}">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputEmail" class="col-lg-4 control-label">{{ T "email_address" }}</label>
+					<div class="col-lg-8">
+						<input type="email" name="email" class="form-control" id="inputEmail" placeholder="{{ T "email_address" }}">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-lg-8 col-lg-offset-4">
+						<button type="submit" class="btn btn-primary">{{ T "submit" }}</button>
+					</div>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+</div>
+{{ template "footer.html" . }}

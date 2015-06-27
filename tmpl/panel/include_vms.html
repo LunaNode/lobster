@@ -1,16 +1,16 @@
 {{ if . }}
 <table class="table table-striped">
 <tr>
-	<th>Name</th>
-	<th>Status</th>
-	<th>External IP</th>
-	<th>Private IP</th>
-	<th>Plan</th>
-	<th>vCPUs</th>
-	<th>Memory</th>
-	<th>Storage</th>
-	<th>Bandwidth</th>
-	<th>Action</th>
+	<th>{{ T "name" }}</th>
+	<th>{{ T "status" }}</th>
+	<th>{{ T "external_ip" }}</th>
+	<th>{{ T "private_ip" }}</th>
+	<th>{{ T "plan" }}</th>
+	<th>{{ T "vcpus" }}</th>
+	<th>{{ T "memory" }}</th>
+	<th>{{ T "storage" }}</th>
+	<th>{{ T "bandwidth" }}</th>
+	<th>{{ T "action" }}</th>
 </tr>
 {{ range . }}
 <tr>
@@ -23,10 +23,10 @@
 	<td>{{ .Plan.Ram }} MB</td>
 	<td>{{ .Plan.Storage }} GB</td>
 	<td>{{ .Plan.Bandwidth }} GB</td>
-	<td><a href="/panel/vm/{{ .Id }}"><button type="button" class="btn btn-primary btn-sm">Manage</button></a></td>
+	<td><a href="/panel/vm/{{ .Id }}"><button type="button" class="btn btn-primary btn-sm">{{ T "manage" }}</button></a></td>
 </tr>
 {{ end }}
 </table>
 {{ else }}
-<p>You do not have any virtual machines.</p>
+<p>{{ T "no_vms" }}</p>
 {{ end }}

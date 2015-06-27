@@ -1,7 +1,7 @@
 {{ template "header.html" .Frame }}
 <div class="row">
 	<div class="col-lg-12">
-		<h1 class="page-header">Account Settings</h1>
+		<h1 class="page-header">{{ T "account_settings" }}</h1>
 	</div>
 </div>
 <div class="row">
@@ -13,15 +13,15 @@
 	<div class="col-lg-12">
 		<table class="table table-striped">
 			<tr>
-				<th>Username</th>
+				<th>{{ T "username" }}</th>
 				<td>{{ .User.Username }}</td>
 			</tr>
 			<tr>
-				<th>E-mail address</th>
-				<td>{{ if .User.Email }}{{ .User.Email }}{{ else }}None set{{ end }}</td>
+				<th>{{ T "email_address" }}</th>
+				<td>{{ if .User.Email }}{{ .User.Email }}{{ else }}{{ T "none_set" }}{{ end }}</td>
 			</tr>
 			<tr>
-				<th>Credit</th>
+				<th>{{ T "credit" }}</th>
 				<td>{{ .User.Credit | FormatCredit }}</td>
 			</tr>
 		</table>
@@ -29,7 +29,7 @@
 </div>
 <div class="row">
 	<div class="col-lg-12">
-		<h3>Change Password</h3>
+		<h3>{{ T "change_password" }}</h3>
 	</div>
 </div>
 <div class="row">
@@ -38,26 +38,26 @@
 			<input type="hidden" name="token" value="{{ .Token }}" />
 			<fieldset>
 				<div class="form-group">
-					<label class="col-lg-2 control-label">Current password</label>
+					<label class="col-lg-2 control-label">{{ T "current_password" }}</label>
 					<div class="col-lg-10">
 						<input type="password" name="old_password" class="form-control">
 					</div>
 				</div>
 				<div class="form-group">
-					<label class="col-lg-2 control-label">New password</label>
+					<label class="col-lg-2 control-label">{{ T "new_password" }}</label>
 					<div class="col-lg-10">
 						<input type="password" name="new_password" class="form-control">
 					</div>
 				</div>
 				<div class="form-group">
-					<label class="col-lg-2 control-label">Confirm new password</label>
+					<label class="col-lg-2 control-label">{{ T "new_password_confirm" }}</label>
 					<div class="col-lg-10">
 						<input type="password" name="new_password_confirm" class="form-control">
 					</div>
 				</div>
 				<div class="form-group">
 					<div class="col-lg-10 col-lg-offset-2">
-						<button type="submit" class="btn btn-primary">Change Password</button>
+						<button type="submit" class="btn btn-primary">{{ T "change_password" }}</button>
 					</div>
 				</div>
 			</fieldset>
@@ -66,7 +66,7 @@
 </div>
 <div class="row">
 	<div class="col-lg-12">
-		<h3>Manage API Keys</h3>
+		<h3>{{ T "manage_api_keys" }}</h3>
 	</div>
 </div>
 <div class="row">
@@ -75,14 +75,28 @@
 			<input type="hidden" name="token" value="{{ .Token }}" />
 			<fieldset>
 				<div class="form-group">
-					<label class="col-lg-2 control-label">Label</label>
+					<label class="col-lg-2 control-label">{{ T "label" }}</label>
 					<div class="col-lg-10">
 						<input type="text" name="label" class="form-control">
 					</div>
 				</div>
 				<div class="form-group">
+					<label class="col-lg-2 control-label">{{ T "action_restrictions" }}</label>
+					<div class="col-lg-10">
+						<textarea class="form-control" rows="5" name="restrict_action"></textarea>
+						<span class="help-block">{{ T "action_restrictions_help" }}</span>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-lg-2 control-label">{{ T "ip_restrictions" }}</label>
+					<div class="col-lg-10">
+						<input type="text" name="restrict_ip" class="form-control" placeholder="8.8.8.8,127.0.0.1/24">
+						<span class="help-block">{{ T "ip_restrictions_help" }}</span>
+					</div>
+				</div>
+				<div class="form-group">
 					<div class="col-lg-10 col-lg-offset-2">
-						<button type="submit" class="btn btn-primary">Add new API key</button>
+						<button type="submit" class="btn btn-primary">{{ T "add_api_key" }}</button>
 					</div>
 				</div>
 			</fieldset>
@@ -94,11 +108,11 @@
 		{{ if .Keys }}
 		<table class="table table-striped">
 		<tr>
-			<th>Label</th>
-			<th>API ID</th>
-			<th>Creation Time</th>
-			<th>Last Nonce</th>
-			<th>Action</th>
+			<th>{{ T "label" }}</th>
+			<th>{{ T "api_id" }}</th>
+			<th>{{ T "creation_time" }}</th>
+			<th>{{ T "last_nonce" }}</th>
+			<th>{{ T "action" }}</th>
 		</tr>
 		{{ $token := .Token }}
 		{{ range .Keys }}
@@ -110,14 +124,14 @@
 			<td>
 				<form method="POST" action="/panel/api/{{ .Id }}/remove">
 					<input type="hidden" name="token" value="{{ $token }}" />
-					<button type="submit" class="btn btn-danger">Delete</button>
+					<button type="submit" class="btn btn-danger">{{ T "delete" }}</button>
 				</form>
 			</td>
 		</tr>
 		{{ end }}
 		</table>
 		{{ else }}
-		<p>You do not have any API keys.</p>
+		<p><strong>{{ T "no_api_keys" }}</strong></p>
 		{{ end }}
 	</div>
 </div>

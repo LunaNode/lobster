@@ -4,6 +4,7 @@ import "github.com/gorilla/context"
 import "github.com/gorilla/mux"
 import "github.com/gorilla/schema"
 
+import "github.com/LunaNode/lobster/i18n"
 import "github.com/LunaNode/lobster/websockify"
 
 import crand "crypto/rand"
@@ -17,6 +18,8 @@ import "time"
 
 var decoder *schema.Decoder
 var cfg *Config
+var L *i18n.Section
+var LA i18n.SectionFunc
 
 type Lobster struct {
 	router *mux.Router
@@ -111,6 +114,10 @@ func (this *Lobster) GetDatabase() *Database {
 	return this.db
 }
 
+func (this *Lobster) RenderTemplate(w http.ResponseWriter, category string, tmpl string, data interface{}) error {
+	return renderTemplate(w, category, tmpl, data)
+}
+
 // Creates websockify instance if not already setup, initializes token, and returns URL to redirect to
 func (this *Lobster) HandleWebsockify(ipport string, password string) string {
 	this.wsMutex.Lock()
@@ -128,6 +135,11 @@ func (this *Lobster) HandleWebsockify(ipport string, password string) string {
 }
 
 func (this *Lobster) Init() {
+	lang, err := i18n.LoadFile("language/" + cfg.Default.Language + ".json")
+	checkErr(err)
+	LA = lang.S
+	L = LA("lobster")
+
 	loadTemplates()
 	loadEmail()
 
@@ -141,8 +153,10 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/contact", getSplashHandler("contact"))
 	this.router.HandleFunc("/terms", getSplashHandler("terms"))
 	this.router.HandleFunc("/privacy", getSplashHandler("privacy"))
+	this.router.HandleFunc("/message", getSplashHandler("splash_message"))
 	this.router.HandleFunc("/login", this.db.wrapHandler(sessionWrap(getSplashFormHandler("login"))))
 	this.router.HandleFunc("/create", this.db.wrapHandler(sessionWrap(getSplashFormHandler("create"))))
+	this.router.HandleFunc("/pwreset", this.db.wrapHandler(sessionWrap(authPwresetHandler)))
 	this.router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	this.router.Handle("/docs/{path:.*}", http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs/"))))
 	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
@@ -151,6 +165,8 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/auth/login", this.db.wrapHandler(sessionWrap(authLoginHandler))).Methods("POST")
 	this.router.HandleFunc("/auth/create", this.db.wrapHandler(sessionWrap(authCreateHandler))).Methods("POST")
 	this.router.HandleFunc("/auth/logout", this.db.wrapHandler(sessionWrap(authLogoutHandler)))
+	this.router.HandleFunc("/auth/pwreset_request", this.db.wrapHandler(sessionWrap(authPwresetRequestHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/pwreset_submit", this.db.wrapHandler(sessionWrap(authPwresetSubmitHandler))).Methods("POST")
 
 	// panel routes
 	this.router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))
@@ -168,6 +184,7 @@ func (this *Lobster) Init() {
 	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reimage", panelVMReimage, true)
 	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/rename", panelVMRename, true)
 	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/snapshot", panelVMSnapshot, true)
+	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/resize", panelVMResize, true)
 	this.RegisterPanelHandler("/panel/billing", panelBilling, false)
 	this.RegisterPanelHandler("/panel/pay", panelPay, false)
 	this.RegisterPanelHandler("/panel/charges", panelCharges, false)
@@ -193,6 +210,7 @@ func (this *Lobster) Init() {
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMInfo, "GET")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/action", apiVMAction, "POST")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/reimage", apiVMReimage, "POST")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/resize", apiVMResize, "POST")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMDelete, "DELETE")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips", apiVMAddresses, "GET")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/add", apiVMAddressAdd, "POST")
@@ -227,7 +245,7 @@ func (this *Lobster) Init() {
 	// seed math/rand via crypt/rand in case interfaces want to use it for non-secure randomness source
 	// (math/rand is much faster)
 	seedBytes := make([]byte, 8)
-	_, err := crand.Read(seedBytes)
+	_, err = crand.Read(seedBytes)
 	if err != nil {
 		log.Printf("Warning: failed to seed math/rand: %s", err.Error())
 	} else {
@@ -283,6 +301,7 @@ func (this *Lobster) cron() {
 	this.db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
 	this.db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
 	this.db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
+	this.db.Exec("DELETE FROM pwreset_tokens WHERE time < DATE_SUB(NOW(), INTERVAL ? MINUTE)", PWRESET_EXPIRE_MINUTES)
 }
 
 func (this *Lobster) cached() {

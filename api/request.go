@@ -15,6 +15,10 @@ type VMReimageRequest struct {
 	ImageId int `json:"image_id"`
 }
 
+type VMResizeRequest struct {
+	PlanId int `json:"plan_id"`
+}
+
 type VMAddressRemoveRequest struct {
 	Ip string `json:"ip"`
 	PrivateIp string `json:"private_ip"`

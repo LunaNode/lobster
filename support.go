@@ -1,7 +1,6 @@
 package lobster
 
 import "database/sql"
-import "errors"
 import "log"
 import "time"
 
@@ -68,14 +67,14 @@ func ticketDetails(db *Database, userId int, ticketId int, staff bool) *Ticket {
 
 func ticketOpen(db *Database, userId int, name string, message string, staff bool) (int, error) {
 	if name == "" || message == "" {
-		return 0, errors.New("subject and message cannot be empty")
+		return 0, L.Error("subject_message_empty")
 	} else if len(message) > 16384 {
-		return 0, errors.New("message contents too long, please limit to 15,000 characters")
+		return 0, L.Errorf("message_too_long", "15,000")
 	}
 
 	user := userDetails(db, userId)
 	if !staff && (user == nil || user.Status == "new") {
-		return 0, errors.New("the ticket system is only for technical support, but you have not added any credit; please either direct your inquiry to " + cfg.Default.AdminEmail + " or make a payment first")
+		return 0, L.Errorf("ticket_for_support", cfg.Default.AdminEmail)
 	}
 
 	result := db.Exec("INSERT INTO tickets (user_id, name, status, modify_time) VALUES (?, ?, 'open', NOW())", userId, name)
@@ -99,12 +98,12 @@ func ticketOpen(db *Database, userId int, name string, message string, staff boo
 
 func ticketReply(db *Database, userId int, ticketId int, message string, staff bool) error {
 	if message == "" {
-		return errors.New("message cannot be empty")
+		return L.Error("message_empty")
 	}
 
 	ticket := ticketDetails(db, userId, ticketId, staff)
 	if ticket == nil {
-		return errors.New("invalid ticket")
+		return L.Error("invalid_ticket")
 	}
 
 	db.Exec("INSERT INTO ticket_messages (ticket_id, staff, message) VALUES (?, ?, ?)", ticketId, staff, message)

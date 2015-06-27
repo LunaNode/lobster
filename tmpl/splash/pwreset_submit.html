@@ -1,0 +1,35 @@
+{{ template "header.html" . }}
+<div class="col-md-6 col-md-offset-3" style="margin-top: 50px;">
+	<div class="well bs-component">
+		<form class="form-horizontal" method="POST" action="/auth/pwreset_submit">
+		<input type="hidden" name="token" value="{{ .Token }}">
+		<input type="hidden" name="pwreset_user_id" value="{{ .PwresetUserId }}">
+		<input type="hidden" name="pwreset_token" value="{{ .PwresetToken }}">
+			<fieldset>
+				<legend>{{ T "pwreset_complete" }}</legend>
+				{{ if ne .Message "" }}
+				<p><strong>{{ .Message }}</strong></p>
+				<p>{{ T "pwreset_submit_help" }}</p>
+				{{ end }}
+				<div class="form-group">
+					<label class="col-lg-4 control-label">{{ T "new_password" }}</label>
+					<div class="col-lg-8">
+						<input type="password" name="password" class="form-control">
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-lg-4 control-label">{{ T "new_password_confirm" }}</label>
+					<div class="col-lg-8">
+						<input type="password" name="password_confirm" class="form-control">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-lg-8 col-lg-offset-4">
+						<button type="submit" class="btn btn-primary">{{ T "submit" }}</button>
+					</div>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+</div>
+{{ template "footer.html" . }}
