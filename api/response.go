@@ -32,6 +32,7 @@ type VirtualMachineDetails struct {
 	Actions []*VirtualMachineAction `json:"actions"`
 	CanVnc bool `json:"can_vnc"`
 	CanReimage bool `json:"can_reimage"`
+	CanResize bool `json:"can_resize"`
 	CanSnapshot bool `json:"can_snapshot"`
 	CanAddresses bool `json:"can_addresses"`
 }

@@ -29,20 +29,24 @@ func MakeLobster(region string, url string, apiId string, apiKey string) *Lobste
 	return this
 }
 
-func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *Lobster) findMatchingPlan(ram int, storage int, cpu int) (*api.Plan, error) {
 	plans, err := this.client.PlanList()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	var matchPlan *api.Plan
 	for _, plan := range plans {
-		if plan.Ram == vm.Plan.Ram && plan.Storage == vm.Plan.Storage && plan.Cpu == vm.Plan.Cpu {
-			matchPlan = plan
-			break
+		if plan.Ram == ram && plan.Storage == storage && plan.Cpu == cpu {
+			return plan, nil
 		}
 	}
-	if matchPlan == nil {
+	return nil, nil
+}
+
+func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+	matchPlan, err := this.findMatchingPlan(vm.Plan.Ram, vm.Plan.Storage, vm.Plan.Cpu)
+	if err != nil {
+		return "", err
+	} else if matchPlan == nil {
 		return "", errors.New("plan not available in this region")
 	}
 
@@ -75,6 +79,7 @@ func (this *Lobster) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 		OverrideCapabilities: true,
 		CanVnc: apiInfo.CanVnc,
 		CanReimage: apiInfo.CanReimage,
+		CanResize: apiInfo.CanResize,
 		CanSnapshot: apiInfo.CanSnapshot,
 		CanAddresses: apiInfo.CanAddresses,
 	}
@@ -129,6 +134,17 @@ func (this *Lobster) VmReimage(vm *lobster.VirtualMachine, imageIdentification s
 	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
 	return this.client.VmReimage(int(vmIdentification), int(imageIdentificationInt))
+}
+
+func (this *Lobster) VmResize(vm *lobster.VirtualMachine, plan *lobster.Plan) error {
+	vmIdentification, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	matchPlan, err := this.findMatchingPlan(plan.Ram, plan.Storage, plan.Cpu)
+	if err != nil {
+		return err
+	} else if matchPlan == nil {
+		return errors.New("plan not available in this region")
+	}
+	return this.client.VmResize(int(vmIdentification), matchPlan.Id)
 }
 
 func (this *Lobster) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {

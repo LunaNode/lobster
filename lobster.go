@@ -209,6 +209,7 @@ func (this *Lobster) Init() {
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMInfo, "GET")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/action", apiVMAction, "POST")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/reimage", apiVMReimage, "POST")
+	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/resize", apiVMResize, "POST")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMDelete, "DELETE")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips", apiVMAddresses, "GET")
 	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/add", apiVMAddressAdd, "POST")

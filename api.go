@@ -246,6 +246,7 @@ func copyVMDetails(src *VmInfo, dst *api.VirtualMachineDetails) {
 	dst.Details = src.Details
 	dst.CanVnc = src.CanVnc
 	dst.CanReimage = src.CanReimage
+	dst.CanResize = src.CanResize
 	dst.CanSnapshot = src.CanSnapshot
 	dst.CanAddresses = src.CanAddresses
 	for _, srcAction := range src.Actions {
@@ -417,6 +418,33 @@ func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId i
 	}
 
 	err = vmReimage(db, userId, vm.Id, request.ImageId)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 200, nil)
+	}
+}
+
+func apiVMResize(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid VM ID", 400)
+		return
+	}
+	vm := vmGetUser(db, userId, int(vmId))
+	if vm == nil {
+		http.Error(w, "No virtual machine with that ID", 404)
+		return
+	}
+
+	var request api.VMResizeRequest
+	err = json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: " + err.Error(), 400)
+		return
+	}
+
+	err = vm.Resize(request.PlanId)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 	} else {
