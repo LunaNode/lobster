@@ -42,6 +42,10 @@ type VMISnapshot interface {
 	VmSnapshot(vm *VirtualMachine) (string, error)
 }
 
+type VMIResize interface {
+	VmResize(vm *VirtualMachine, plan *Plan) error
+}
+
 type VMIAddresses interface {
 	VmAddresses(vm *VirtualMachine) ([]*IpAddress, error)
 	VmAddAddress(vm *VirtualMachine) error

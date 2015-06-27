@@ -83,6 +83,20 @@
 				</div>
 			{{ template "modal_footer.html" $params }}
 		{{ end }}
+		{{ if .Vm.Info.CanResize }}
+			{{ $params := modal (T "resize") (print "/panel/vm/" $vmId "/resize") "primary" $token }}
+			{{ template "modal_header.html" $params }}
+				<div class="form-group">
+					<label for="plan">{{ T "plan" }}</label>
+					<select name="plan_id" id="plan">
+						{{ $vmPlanId := .Vm.Plan.Id }}
+						{{ range .Plans }}
+							<option value="{{ .Id }}"{{ if eq .Id $vmPlanId }} selected{{ end }}>{{ .Name }}</option>
+						{{ end }}
+					</select>
+				</div>
+			{{ template "modal_footer.html" $params }}
+		{{ end }}
 		{{ if .Vm.Info.CanReimage }}
 			{{ $params := modal (T "reimage") (print "/panel/vm/" $vmId "/reimage") "danger" $token }}
 			{{ template "modal_header.html" $params }}

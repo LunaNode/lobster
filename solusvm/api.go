@@ -241,3 +241,21 @@ func (this *API) VmRemoveAddress(vmIdentification int, ip string) error {
 	params["ipaddr"] = ip
 	return this.vmAction(vmIdentification, "vserver-delip", params)
 }
+
+func (this *API) VmResizeDisk(vmIdentification int, hdd int) error {
+	params := make(map[string]string)
+	params["hdd"] = fmt.Sprintf("%d", hdd)
+	return this.vmAction(vmIdentification, "vserver-change-hdd", params)
+}
+
+func (this *API) VmResizeMemory(vmIdentification int, memory int) error {
+	params := make(map[string]string)
+	params["memory"] = fmt.Sprintf("%d", memory)
+	return this.vmAction(vmIdentification, "vserver-change-memory", params)
+}
+
+func (this *API) VmResizeCpu(vmIdentification int, cpu int) error {
+	params := make(map[string]string)
+	params["cpu"] = fmt.Sprintf("%d", cpu)
+	return this.vmAction(vmIdentification, "vserver-change-cpu", params)
+}

@@ -71,6 +71,7 @@ type VmInfo struct {
 	CanVnc bool
 	CanReimage bool
 	CanSnapshot bool
+	CanResize bool
 	CanAddresses bool
 	OverrideCapabilities bool
 	PendingSnapshots []*Image
@@ -271,6 +272,7 @@ func (vm *VirtualMachine) LoadInfo() {
 		_, vm.Info.CanVnc = vmi.(VMIVnc)
 		_, vm.Info.CanReimage = vmi.(VMIReimage)
 		_, vm.Info.CanSnapshot = vmi.(VMISnapshot)
+		_, vm.Info.CanResize = vmi.(VMIResize)
 		_, vm.Info.CanAddresses = vmi.(VMIAddresses)
 	}
 
@@ -382,6 +384,28 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 		}
 	})
 	return int(imageId), err
+}
+
+func (vm *VirtualMachine) Resize(planId int) error {
+	plan := planGet(vm.db, planId)
+	if plan == nil {
+		return L.Error("no_such_plan")
+	}
+
+	log.Printf("vmResize(%d, %d)", vm.Id, planId)
+	return vm.do(func(vm *VirtualMachine) error {
+		vmi, ok := vmGetInterface(vm.Region).(VMIResize)
+		if ok {
+			err := vmi.VmResize(vm, plan)
+			if err != nil {
+				return err
+			}
+			vm.db.Exec("UPDATE vms SET plan_id = ? WHERE id = ?", plan.Id, vm.Id)
+			return nil
+		} else {
+			return L.Error("vm_resize_unsupported")
+		}
+	})
 }
 
 func (vm *VirtualMachine) Rename(name string) error {

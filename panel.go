@@ -143,6 +143,7 @@ type PanelVMParams struct {
 	Frame FrameParams
 	Vm *VirtualMachine
 	Images []*Image
+	Plans []*Plan
 	Token string
 }
 func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
@@ -164,6 +165,7 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 	params.Frame = frameParams
 	params.Vm = vm
 	params.Images = imageListRegion(db, session.UserId, vm.Region)
+	params.Plans = planList(db)
 	params.Token = csrfGenerate(db, session)
 	renderTemplate(w, "panel", "vm", params)
 }
@@ -300,6 +302,31 @@ func panelVMSnapshot(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	} else {
 		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Snapshot", fmt.Sprintf("VM ID: %d; Name: %s", vm.Id, r.PostFormValue("name")))
 		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("snapshot_creating"))
+	}
+}
+
+type VMResizeForm struct {
+	PlanId int `schema:"plan_id"`
+}
+func panelVMResize(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, db, session, frameParams)
+	if err != nil {
+		redirectMessage(w, r, "/panel/vms", L.FormatError(err))
+	}
+
+	form := new(VMResizeForm)
+	err = decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), 303)
+		return
+	}
+
+	err = vm.Resize(form.PlanId)
+	if err != nil {
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
+	} else {
+		LogAction(db, session.UserId, extractIP(r.RemoteAddr), "Resize", fmt.Sprintf("VM ID: %d; New Plan: %s", vm.Id, form.PlanId))
+		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("vm_resized"))
 	}
 }
 

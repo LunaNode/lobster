@@ -148,6 +148,25 @@ func (this *SolusVM) VmReimage(vm *lobster.VirtualMachine, imageIdentification s
 	return this.Api.VmReimage(int(vmIdentificationInt), imageIdentification)
 }
 
+func (this *SolusVM) VmResize(vm *lobster.VirtualMachine, plan *lobster.Plan) error {
+	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+
+	// we start with disk since that is the most likely one to have problem
+	err := this.Api.VmResizeDisk(int(vmIdentificationInt), plan.Storage)
+	if err != nil {
+		return err
+	}
+	err = this.Api.VmResizeMemory(int(vmIdentificationInt), plan.Ram)
+	if err != nil {
+		return err
+	}
+	err = this.Api.VmResizeCpu(int(vmIdentificationInt), plan.Cpu)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (this *SolusVM) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
 	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
 	apiInfo, err := this.Api.VmInfo(int(vmIdentificationInt))
