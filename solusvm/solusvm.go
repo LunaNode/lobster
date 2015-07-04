@@ -98,15 +98,7 @@ func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 		if err != nil {
 			return "", err
 		} else {
-			if !this.setupConsolePage {
-				if this.Lobster == nil {
-					return "", errors.New("solusvm module misconfiguration: lobster instance not referenced")
-				} else {
-					this.Lobster.RegisterPanelHandler("/solusvm_console", this.handleConsole, false)
-					this.setupConsolePage = true
-				}
-			}
-			return "/solusvm_console?host=" + consoleInfo.Ip + "&port=" + consoleInfo.Port + "&username=" + consoleInfo.Username + "&password=" + consoleInfo.Password, nil
+			return this.Lobster.HandleWssh(consoleInfo.Ip + ":" + consoleInfo.Port, consoleInfo.Username, consoleInfo.Password), nil
 		}
 	}
 }

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>wssh</title>
+
+        <link href="bootstrap.min.css" rel="stylesheet" />
+        <link href="style.css" rel="stylesheet" />
+    </head>
+
+    <body>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="brand" href="#">wssh</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="term">
+            </div>
+        </div>
+
+        <script type="application/javascript" src="jquery.min.js">
+        </script>
+        <script type="application/javascript" src="term.js">
+        </script>
+        <script type="application/javascript" src="wssh.js">
+        </script>
+        <script type="application/javascript">
+            function openTerminal(options) {
+                var client = new WSSHClient();
+                var term = new Terminal(80, 24, function(key) {
+                    client.send(key);
+                });
+                term.open();
+                $('.terminal').detach().appendTo('#term');
+                term.resize(80, 24);
+                term.write('Connecting...');
+                client.connect($.extend(options, {
+                    onError: function(error) {
+                        term.write('Error: ' + error + '\r\n');
+                    },
+                    onConnect: function() {
+                        // Erase our connecting message
+                        term.write('\r');
+                    },
+                    onClose: function() {
+                        term.write('Connection Reset By Peer');
+                    },
+                    onData: function(data) {
+                        term.write(data);
+                    }
+                }));
+            }
+
+			function getParameterByName(name) {
+				name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+				var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+				results = regex.exec(location.search);
+				return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+			}
+        </script>
+
+        <script type='application/javascript'>
+            $(document).ready(function() {
+                token = getParameterByName("token");
+                if(token) {
+                    document.cookie = "token=" + token;
+                }
+                openTerminal({});
+            });
+        </script>
+    </body>
+</html>

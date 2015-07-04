@@ -215,6 +215,7 @@ func (this *API) VmVnc(vmIdentification int) (*APIVmVncResponse, error) {
 func (this *API) VmConsole(vmIdentification int) (*APIVmConsoleResponse, error) {
 	params := make(map[string]string)
 	params["vserverid"] = fmt.Sprintf("%d", vmIdentification)
+	params["access"] = "enable"
 	var response APIVmConsoleResponse
 	err := this.request("vserver-console", params, &response)
 	if err != nil {

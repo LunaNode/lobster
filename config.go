@@ -56,6 +56,11 @@ type ConfigNovnc struct {
 	Listen string
 }
 
+type ConfigWssh struct {
+	Url string
+	Listen string
+}
+
 type Config struct {
 	Default ConfigDefault
 	Vm ConfigVm
@@ -65,6 +70,7 @@ type Config struct {
 	Http ConfigHttp
 	Email ConfigEmail
 	Novnc ConfigNovnc
+	Wssh ConfigWssh
 }
 
 func LoadConfig(cfgPath string) *Config {

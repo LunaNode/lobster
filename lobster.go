@@ -6,6 +6,7 @@ import "github.com/gorilla/schema"
 
 import "github.com/LunaNode/lobster/i18n"
 import "github.com/LunaNode/lobster/websockify"
+import "github.com/LunaNode/lobster/wssh"
 
 import crand "crypto/rand"
 import "encoding/binary"
@@ -27,6 +28,7 @@ type Lobster struct {
 
 	wsMutex sync.Mutex
 	ws *websockify.Websockify
+	ssh *wssh.Wssh
 }
 
 func LobsterHandler(h http.Handler) http.Handler {
@@ -132,6 +134,23 @@ func (this *Lobster) HandleWebsockify(ipport string, password string) string {
 
 	token := this.ws.Register(ipport)
 	return strings.Replace(strings.Replace(cfg.Novnc.Url, "TOKEN", token, 1), "PASSWORD", password, 1)
+}
+
+// Creates wssh instance if not already setup, initializes token, and returns URL to redirect to
+func (this *Lobster) HandleWssh(ipport string, username string, password string) string {
+	this.wsMutex.Lock()
+	defer this.wsMutex.Unlock()
+
+	if this.ssh == nil {
+		this.ssh = &wssh.Wssh{
+			Debug: cfg.Default.Debug,
+			Listen: cfg.Wssh.Listen,
+		}
+		this.ssh.Run()
+	}
+
+	token := this.ssh.Register(ipport, username, password)
+	return strings.Replace(cfg.Wssh.Url, "TOKEN", token, 1)
 }
 
 func (this *Lobster) Init() {
