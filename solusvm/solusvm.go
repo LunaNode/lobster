@@ -118,7 +118,7 @@ func (this *SolusVM) handleConsole(w http.ResponseWriter, r *http.Request, db *l
 	params.Port = r.URL.Query().Get("port")
 	params.Username = r.URL.Query().Get("username")
 	params.Password = r.URL.Query().Get("password")
-	this.Lobster.RenderTemplate(w, "panel", "solusvm_console", params)
+	lobster.RenderTemplate(w, "panel", "solusvm_console", params)
 }
 
 func (this *SolusVM) VmAction(vm *lobster.VirtualMachine, action string, value string) error {

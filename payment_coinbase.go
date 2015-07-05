@@ -106,7 +106,7 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	}
 
 	if data.Order.Status == "completed" {
-		transactionAdd(db, int(userId), "coinbase", data.Order.Id, "Bitcoin transaction: " + data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents) * BILLING_PRECISION / 100, 0)
+		TransactionAdd(db, int(userId), "coinbase", data.Order.Id, "Bitcoin transaction: " + data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents) * BILLING_PRECISION / 100, 0)
 	} else if data.Order.Status == "mispaid" {
 		mailWrap(db, -1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
 	}

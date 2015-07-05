@@ -63,7 +63,7 @@ func panelDashboard(w http.ResponseWriter, r *http.Request, db *Database, sessio
 	params.CreditSummary = userCreditSummary(db, session.UserId)
 	params.BandwidthSummary = userBandwidthSummary(db, session.UserId)
 	params.Tickets = ticketListActive(db, session.UserId)
-	renderTemplate(w, "panel", "dashboard", params)
+	RenderTemplate(w, "panel", "dashboard", params)
 }
 
 type PanelVirtualMachinesParams struct {
@@ -74,7 +74,7 @@ func panelVirtualMachines(w http.ResponseWriter, r *http.Request, db *Database, 
 	params := PanelVirtualMachinesParams{}
 	params.Frame = frameParams
 	params.VirtualMachines = vmList(db, session.UserId)
-	renderTemplate(w, "panel", "vms", params)
+	RenderTemplate(w, "panel", "vms", params)
 }
 
 type PanelNewVMParams struct {
@@ -85,7 +85,7 @@ func panelNewVM(w http.ResponseWriter, r *http.Request, db *Database, session *S
 	params := PanelNewVMParams{}
 	params.Frame = frameParams
 	params.Regions = regionList()
-	renderTemplate(w, "panel", "newvm", params)
+	RenderTemplate(w, "panel", "newvm", params)
 }
 
 type PanelNewVMRegionParams struct {
@@ -136,7 +136,7 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 		}
 	}
 
-	renderTemplate(w, "panel", "newvm_region", params)
+	RenderTemplate(w, "panel", "newvm_region", params)
 }
 
 type PanelVMParams struct {
@@ -167,7 +167,7 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 	params.Images = imageListRegion(db, session.UserId, vm.Region)
 	params.Plans = planList(db)
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "panel", "vm", params)
+	RenderTemplate(w, "panel", "vm", params)
 }
 
 // virtual machine actions
@@ -260,7 +260,7 @@ func panelVMVnc(w http.ResponseWriter, r *http.Request, db *Database, session *S
 	if err != nil {
 		redirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		renderTemplate(w, "panel", "vnc", url)
+		RenderTemplate(w, "panel", "vnc", url)
 	}
 }
 
@@ -354,7 +354,7 @@ func panelBilling(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params.Frame = frameParams
 	params.CreditSummary = userCreditSummary(db, session.UserId)
 	params.PaymentMethods = paymentMethodList()
-	renderTemplate(w, "panel", "billing", params)
+	RenderTemplate(w, "panel", "billing", params)
 }
 
 type PayForm struct {
@@ -401,7 +401,7 @@ func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params.Charges = chargeList(db, session.UserId, params.Year, params.Month)
 	params.Previous = requestTime.AddDate(0, -1, 0)
 	params.Next = requestTime.AddDate(0, 1, 0)
-	renderTemplate(w, "panel", "charges", params)
+	RenderTemplate(w, "panel", "charges", params)
 }
 
 type PanelAccountParams struct {
@@ -416,7 +416,7 @@ func panelAccount(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params.User = userDetails(db, session.UserId)
 	params.Keys = apiList(db, session.UserId)
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "panel", "account", params)
+	RenderTemplate(w, "panel", "account", params)
 }
 
 type AccountPasswordForm struct {
@@ -491,7 +491,7 @@ func panelImages(w http.ResponseWriter, r *http.Request, db *Database, session *
 		}
 	}
 
-	renderTemplate(w, "panel", "images", params)
+	RenderTemplate(w, "panel", "images", params)
 }
 
 type ImageAddForm struct {
@@ -552,7 +552,7 @@ func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, ses
 	params := PanelImageDetailsParams{}
 	params.Frame = frameParams
 	params.Image = image
-	renderTemplate(w, "panel", "image_details", params)
+	RenderTemplate(w, "panel", "image_details", params)
 }
 
 type SupportParams struct {
@@ -563,7 +563,7 @@ func panelSupport(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params := SupportParams{}
 	params.Frame = frameParams
 	params.Tickets = ticketList(db, session.UserId)
-	renderTemplate(w, "panel", "support", params)
+	RenderTemplate(w, "panel", "support", params)
 }
 
 type SupportOpenForm struct {
@@ -589,7 +589,7 @@ func panelSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, sess
 		return
 	}
 
-	renderTemplate(w, "panel", "support_open", PanelFormParams{Frame: frameParams, Token: csrfGenerate(db, session)})
+	RenderTemplate(w, "panel", "support_open", PanelFormParams{Frame: frameParams, Token: csrfGenerate(db, session)})
 }
 
 type PanelSupportTicketParams struct {
@@ -613,7 +613,7 @@ func panelSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, se
 	params.Frame = frameParams
 	params.Ticket = ticket
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "panel", "support_ticket", params)
+	RenderTemplate(w, "panel", "support_ticket", params)
 }
 
 type SupportTicketReplyForm struct {

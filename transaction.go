@@ -27,10 +27,10 @@ func transactionListHelper(rows *sql.Rows) []*Transaction {
 	}
 	return transactions
 }
-func transactionList(db *Database) []*Transaction {
+func TransactionList(db *Database) []*Transaction {
 	return transactionListHelper(db.Query("SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time FROM transactions ORDER BY id"))
 }
-func transactionGet(db *Database, transactionId int) *Transaction {
+func TransactionGet(db *Database, transactionId int) *Transaction {
 	transactions := transactionListHelper(db.Query("SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time FROM transactions WHERE id = ?", transactionId))
 	if len(transactions) == 1 {
 		return transactions[0]
@@ -38,7 +38,7 @@ func transactionGet(db *Database, transactionId int) *Transaction {
 		return nil
 	}
 }
-func transactionGetByGateway(db *Database, gateway string, gatewayIdentifier string) *Transaction {
+func TransactionGetByGateway(db *Database, gateway string, gatewayIdentifier string) *Transaction {
 	transactions := transactionListHelper(db.Query("SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time FROM transactions WHERE gateway = ? AND gateway_identifier = ?", gateway, gatewayIdentifier))
 	if len(transactions) >= 1 {
 		return transactions[0]
@@ -47,9 +47,9 @@ func transactionGetByGateway(db *Database, gateway string, gatewayIdentifier str
 	}
 }
 
-func transactionAdd(db *Database, userId int, gateway string, gatewayIdentifier string, notes string, amount int64, fee int64) {
+func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier string, notes string, amount int64, fee int64) {
 	// verify not duplicate
-	if transactionGetByGateway(db, gateway, gatewayIdentifier) != nil {
+	if TransactionGetByGateway(db, gateway, gatewayIdentifier) != nil {
 		log.Printf("Duplicate transaction %s/%s (amount=%d)", gateway, gatewayIdentifier, amount)
 		return
 	}

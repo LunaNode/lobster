@@ -46,7 +46,7 @@ func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *D
 		ReturnUrl: this.returnUrl,
 		Currency: cfg.Billing.Currency,
 	}
-	renderTemplate(w, "panel", "paypal", params)
+	RenderTemplate(w, "panel", "paypal", params)
 }
 
 func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *Database) {
@@ -116,5 +116,5 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 		return
 	}
 
-	transactionAdd(db, int(userId), "paypal", transactionId, "Transaction " + transactionId, int64(paymentAmount * BILLING_PRECISION), 0)
+	TransactionAdd(db, int(userId), "paypal", transactionId, "Transaction " + transactionId, int64(paymentAmount * BILLING_PRECISION), 0)
 }

@@ -289,9 +289,9 @@ func authPwresetHandler(w http.ResponseWriter, r *http.Request, db *Database, se
 	if r.URL.Query().Get("user_id") != "" && r.URL.Query().Get("token") != "" {
 		params.PwresetUserId = r.URL.Query().Get("user_id")
 		params.PwresetToken = r.URL.Query().Get("token")
-		renderTemplate(w, "splash", "pwreset_submit", params)
+		RenderTemplate(w, "splash", "pwreset_submit", params)
 	} else {
-		renderTemplate(w, "splash", "pwreset_request", params)
+		RenderTemplate(w, "splash", "pwreset_request", params)
 	}
 }
 

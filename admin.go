@@ -47,7 +47,7 @@ func adminWrap(h AdminHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 }
 
 func adminDashboard(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	renderTemplate(w, "admin", "dashboard", frameParams)
+	RenderTemplate(w, "admin", "dashboard", frameParams)
 }
 
 type AdminUsersParams struct {
@@ -58,7 +58,7 @@ func adminUsers(w http.ResponseWriter, r *http.Request, db *Database, session *S
 	params := AdminUsersParams{}
 	params.Frame = frameParams
 	params.Users = userList(db)
-	renderTemplate(w, "admin", "users", params)
+	RenderTemplate(w, "admin", "users", params)
 }
 
 type AdminUserParams struct {
@@ -83,7 +83,7 @@ func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Se
 	params.User = user
 	params.VirtualMachines = vmList(db, int(userId))
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "admin", "user", params)
+	RenderTemplate(w, "admin", "user", params)
 }
 
 func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
@@ -165,7 +165,7 @@ func adminSupport(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params := AdminSupportParams{}
 	params.Frame = frameParams
 	params.Tickets = ticketListAll(db)
-	renderTemplate(w, "admin", "support", params)
+	RenderTemplate(w, "admin", "support", params)
 }
 
 type AdminSupportOpenParams struct {
@@ -211,7 +211,7 @@ func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, sess
 	params.Frame = frameParams
 	params.User = user
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "admin", "support_open", params)
+	RenderTemplate(w, "admin", "support_open", params)
 }
 
 type AdminSupportTicketParams struct {
@@ -235,7 +235,7 @@ func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, se
 	params.Frame = frameParams
 	params.Ticket = ticket
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "admin", "support_ticket", params)
+	RenderTemplate(w, "admin", "support_ticket", params)
 }
 
 type AdminSupportTicketReplyForm struct {
@@ -272,7 +272,7 @@ func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *S
 	params.Frame = frameParams
 	params.Plans = planList(db)
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "admin", "plans", params)
+	RenderTemplate(w, "admin", "plans", params)
 }
 
 type AdminPlansAddForm struct {
@@ -317,7 +317,7 @@ func adminImages(w http.ResponseWriter, r *http.Request, db *Database, session *
 	params.Images = imageListAll(db)
 	params.Regions = regionList()
 	params.Token = csrfGenerate(db, session)
-	renderTemplate(w, "admin", "images", params)
+	RenderTemplate(w, "admin", "images", params)
 }
 
 type AdminImagesAddForm struct {

@@ -73,7 +73,7 @@ func loadTemplates() {
 	}
 }
 
-func renderTemplate(w http.ResponseWriter, category string, tmpl string, data interface{}) error {
+func RenderTemplate(w http.ResponseWriter, category string, tmpl string, data interface{}) error {
 	err := templates[category].ExecuteTemplate(w, tmpl + ".html", data)
 	if err != nil {
 		http.Error(w, "Template render failure: " + err.Error(), http.StatusInternalServerError)

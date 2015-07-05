@@ -20,7 +20,7 @@ func getSplashHandler(template string) func(w http.ResponseWriter, r *http.Reque
 			Message: message,
 		}
 
-		renderTemplate(w, "splash", template, params)
+		RenderTemplate(w, "splash", template, params)
 	}
 }
 
@@ -37,11 +37,11 @@ func getSplashFormHandler(template string) func(w http.ResponseWriter, r *http.R
 			Token: csrfGenerate(db, session),
 		}
 
-		renderTemplate(w, "splash", template, params)
+		RenderTemplate(w, "splash", template, params)
 	}
 }
 
 func splashNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
-	renderTemplate(w, "splash", "notfound", SplashTemplateParams{Title: "404 Not Found"})
+	RenderTemplate(w, "splash", "notfound", SplashTemplateParams{Title: "404 Not Found"})
 }
