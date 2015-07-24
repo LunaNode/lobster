@@ -70,18 +70,18 @@ func MakeLobster(cfgPath string) *Lobster {
 }
 
 func (this *Lobster) RegisterPanelHandler(path string, f PanelHandlerFunc, onlyPost bool) {
-	result := this.router.HandleFunc(path, this.db.wrapHandler(sessionWrap(panelWrap(f))))
+	result := this.router.HandleFunc(path, this.db.WrapHandler(SessionWrap(panelWrap(f))))
 	if onlyPost {
 		result.Methods("POST")
 	}
 }
 
 func (this *Lobster) RegisterAPIHandler(path string, f APIHandlerFunc, method string) {
-	this.router.HandleFunc(path, this.db.wrapHandler(apiWrap(f))).Methods(method)
+	this.router.HandleFunc(path, this.db.WrapHandler(apiWrap(f))).Methods(method)
 }
 
 func (this *Lobster) RegisterAdminHandler(path string, f AdminHandlerFunc, onlyPost bool) {
-	result := this.router.HandleFunc(path, this.db.wrapHandler(sessionWrap(adminWrap(f))))
+	result := this.router.HandleFunc(path, this.db.WrapHandler(SessionWrap(adminWrap(f))))
 	if onlyPost {
 		result.Methods("POST")
 	}
@@ -169,18 +169,18 @@ func (this *Lobster) Init() {
 	this.router.HandleFunc("/terms", getSplashHandler("terms"))
 	this.router.HandleFunc("/privacy", getSplashHandler("privacy"))
 	this.router.HandleFunc("/message", getSplashHandler("splash_message"))
-	this.router.HandleFunc("/login", this.db.wrapHandler(sessionWrap(getSplashFormHandler("login"))))
-	this.router.HandleFunc("/create", this.db.wrapHandler(sessionWrap(getSplashFormHandler("create"))))
-	this.router.HandleFunc("/pwreset", this.db.wrapHandler(sessionWrap(authPwresetHandler)))
+	this.router.HandleFunc("/login", this.db.WrapHandler(SessionWrap(getSplashFormHandler("login"))))
+	this.router.HandleFunc("/create", this.db.WrapHandler(SessionWrap(getSplashFormHandler("create"))))
+	this.router.HandleFunc("/pwreset", this.db.WrapHandler(SessionWrap(authPwresetHandler)))
 	this.router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
 
 	// auth routes
-	this.router.HandleFunc("/auth/login", this.db.wrapHandler(sessionWrap(authLoginHandler))).Methods("POST")
-	this.router.HandleFunc("/auth/create", this.db.wrapHandler(sessionWrap(authCreateHandler))).Methods("POST")
-	this.router.HandleFunc("/auth/logout", this.db.wrapHandler(sessionWrap(authLogoutHandler)))
-	this.router.HandleFunc("/auth/pwreset_request", this.db.wrapHandler(sessionWrap(authPwresetRequestHandler))).Methods("POST")
-	this.router.HandleFunc("/auth/pwreset_submit", this.db.wrapHandler(sessionWrap(authPwresetSubmitHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/login", this.db.WrapHandler(SessionWrap(authLoginHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/create", this.db.WrapHandler(SessionWrap(authCreateHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/logout", this.db.WrapHandler(SessionWrap(authLogoutHandler)))
+	this.router.HandleFunc("/auth/pwreset_request", this.db.WrapHandler(SessionWrap(authPwresetRequestHandler))).Methods("POST")
+	this.router.HandleFunc("/auth/pwreset_submit", this.db.WrapHandler(SessionWrap(authPwresetSubmitHandler))).Methods("POST")
 
 	// panel routes
 	this.router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))

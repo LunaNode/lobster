@@ -177,7 +177,7 @@ func vmNameOk(name string) error {
 
 func vmCreate(db *Database, userId int, name string, planId int, imageId int) (int, error) {
 	// validate credit
-	user := userDetails(db, userId)
+	user := UserDetails(db, userId)
 	if user == nil {
 		return 0, L.Error("invalid_account")
 	} else if user.Credit < MINIMUM_CREDIT {
@@ -629,7 +629,7 @@ func imageGetForce(db *Database, imageId int) *Image {
 
 func imageFetch(db *Database, userId int, region string, name string, url string, format string) (int, error) {
 	// validate credit
-	user := userDetails(db, userId)
+	user := UserDetails(db, userId)
 	if user == nil {
 		return 0, L.Error("invalid_account")
 	} else if user.Credit < MINIMUM_CREDIT {
@@ -798,7 +798,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 	}
 
 	amount := int64(intervals) * int64(vm.Plan.Price)
-	userApplyCharge(db, vm.UserId, vm.Name, "Plan: " + vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
+	UserApplyCharge(db, vm.UserId, vm.Name, "Plan: " + vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
 	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? MINUTE) WHERE id = ?", intervals * cfg.Billing.BillingInterval, vmId)
 
 	// also bill for bandwidth usage
@@ -844,7 +844,7 @@ func serviceBilling(db *Database) {
 		if hourlyCharge > 0 {
 			totalCharge := hourlyCharge * int64(hours)
 			log.Printf("Charging user %d for %d bytes (amount=%.5f)", userId, storageBytes, float64(totalCharge) / BILLING_PRECISION)
-			userApplyCharge(db, userId, "Image storage space", fmt.Sprintf("%d MB", storageBytes / 1000 / 1000), "storage", totalCharge)
+			UserApplyCharge(db, userId, "Image storage space", fmt.Sprintf("%d MB", storageBytes / 1000 / 1000), "storage", totalCharge)
 		}
 
 		db.Exec("UPDATE users SET time_billed = DATE_ADD(time_billed, INTERVAL ? HOUR) WHERE id = ?", hours, userId)

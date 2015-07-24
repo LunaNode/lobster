@@ -31,7 +31,7 @@ func MakePaypalPayment(lobster *Lobster, business string, returnUrl string) *Pay
 	this := new(PaypalPayment)
 	this.business = business
 	this.returnUrl = returnUrl
-	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, lobster.GetDatabase().wrapHandler(this.Callback), true)
+	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, lobster.GetDatabase().WrapHandler(this.Callback), true)
 	return this
 }
 

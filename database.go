@@ -53,7 +53,7 @@ func (this *Database) Exec(q string, args ...interface{}) sql.Result {
 	return result
 }
 
-func (this *Database) wrapHandler(handler func(http.ResponseWriter, *http.Request, *Database)) func(http.ResponseWriter, *http.Request) {
+func (this *Database) WrapHandler(handler func(http.ResponseWriter, *http.Request, *Database)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer errorHandler(w, r, true)
 		handler(w, r, this)

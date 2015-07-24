@@ -46,11 +46,11 @@ func checkErr(err error) {
 	}
 }
 
-func redirectMessage(w http.ResponseWriter, r *http.Request, target string, msg utils.Message) {
+func RedirectMessage(w http.ResponseWriter, r *http.Request, target string, msg utils.Message) {
 	http.Redirect(w, r, target + "?message=" + url.QueryEscape(msg.Text) + "&type=" + url.QueryEscape(msg.Type), 303)
 }
 
-func redirectMessageExtra(w http.ResponseWriter, r *http.Request, target string, msg utils.Message, extra map[string]string) {
+func RedirectMessageExtra(w http.ResponseWriter, r *http.Request, target string, msg utils.Message, extra map[string]string) {
 	values := url.Values{}
 	for k, v := range extra {
 		values.Set(k, v)
@@ -70,7 +70,7 @@ func isPrintable(s string) bool {
 }
 
 // Extracts IP address from http.Request.RemoteAddr (127.0.0.1:9999 -> 127.0.0.1)
-func extractIP(ipport string) string {
+func ExtractIP(ipport string) string {
 	return strings.Split(ipport, ":")[0]
 }
 

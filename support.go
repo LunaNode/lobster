@@ -21,13 +21,13 @@ type Ticket struct {
 	Messages []*TicketMessage
 }
 
-func ticketList(db *Database, userId int) []*Ticket {
+func TicketList(db *Database, userId int) []*Ticket {
 	return ticketListHelper(db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets WHERE user_id = ? ORDER BY modify_time DESC", userId))
 }
-func ticketListActive(db *Database, userId int) []*Ticket {
+func TicketListActive(db *Database, userId int) []*Ticket {
 	return ticketListHelper(db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets WHERE user_id = ? AND (status = 'open' OR status = 'answered') ORDER BY modify_time DESC", userId))
 }
-func ticketListAll(db *Database) []*Ticket {
+func TicketListAll(db *Database) []*Ticket {
 	return ticketListHelper(db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets ORDER BY FIELD(status, 'open', 'answered', 'closed'), modify_time DESC"))
 }
 func ticketListHelper(rows *sql.Rows) []*Ticket {
@@ -41,7 +41,7 @@ func ticketListHelper(rows *sql.Rows) []*Ticket {
 	return tickets
 }
 
-func ticketDetails(db *Database, userId int, ticketId int, staff bool) *Ticket {
+func TicketDetails(db *Database, userId int, ticketId int, staff bool) *Ticket {
 	var rows *sql.Rows
 	if staff {
 		rows = db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets WHERE id = ?", ticketId)
@@ -72,7 +72,7 @@ func ticketOpen(db *Database, userId int, name string, message string, staff boo
 		return 0, L.Errorf("message_too_long", "15,000")
 	}
 
-	user := userDetails(db, userId)
+	user := UserDetails(db, userId)
 	if !staff && (user == nil || user.Status == "new") {
 		return 0, L.Errorf("ticket_for_support", cfg.Default.AdminEmail)
 	}
@@ -97,7 +97,7 @@ func ticketReply(db *Database, userId int, ticketId int, message string, staff b
 		return L.Error("message_empty")
 	}
 
-	ticket := ticketDetails(db, userId, ticketId, staff)
+	ticket := TicketDetails(db, userId, ticketId, staff)
 	if ticket == nil {
 		return L.Error("invalid_ticket")
 	}

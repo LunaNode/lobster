@@ -22,7 +22,7 @@ func MakeCoinbasePayment(lobster *Lobster, callbackSecret string, apiKey string,
 	this.callbackSecret = callbackSecret
 	this.apiKey = apiKey
 	this.apiSecret = apiSecret
-	lobster.RegisterHttpHandler("/coinbase_callback_" + this.callbackSecret, lobster.GetDatabase().wrapHandler(this.callback), true)
+	lobster.RegisterHttpHandler("/coinbase_callback_" + this.callbackSecret, lobster.GetDatabase().WrapHandler(this.callback), true)
 	return this
 }
 
@@ -44,7 +44,7 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db 
 	button, err := cli.CreateButton(params)
 	if err != nil {
 		reportError(err, "failed to create Coinbase button", fmt.Sprintf("username=%s, amount=%.2f", username, amount))
-		redirectMessage(w, r, "/panel/billing", L.FormattedError("try_again_later"))
+		RedirectMessage(w, r, "/panel/billing", L.FormattedError("try_again_later"))
 		return
 	}
 	http.Redirect(w, r, "https://coinbase.com/checkouts/" + button.Code, 303)

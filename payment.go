@@ -18,7 +18,7 @@ func paymentMethodList() []string {
 
 func paymentHandle(method string, w http.ResponseWriter, r *http.Request, db *Database, frameParams FrameParams, userId int, username string, amount float64) {
 	if amount < cfg.Billing.DepositMinimum || amount > cfg.Billing.DepositMaximum {
-		redirectMessage(w, r, "/panel/billing", L.FormattedErrorf("amount_between", cfg.Billing.DepositMinimum, cfg.Billing.DepositMaximum))
+		RedirectMessage(w, r, "/panel/billing", L.FormattedErrorf("amount_between", cfg.Billing.DepositMinimum, cfg.Billing.DepositMaximum))
 		return
 	}
 
@@ -26,6 +26,6 @@ func paymentHandle(method string, w http.ResponseWriter, r *http.Request, db *Da
 	if ok {
 		payInterface.Payment(w, r, db, frameParams, userId, username, amount)
 	} else {
-		redirectMessage(w, r, "/panel/billing", L.FormattedError("invalid_payment_method"))
+		RedirectMessage(w, r, "/panel/billing", L.FormattedError("invalid_payment_method"))
 	}
 }

@@ -194,7 +194,7 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 		request := buf[:n]
 
 		if authParts[0] == "lobster" {
-			userId, err := apiCheck(db, apiPath, r.Method, authParts[1], request, extractIP(r.RemoteAddr))
+			userId, err := apiCheck(db, apiPath, r.Method, authParts[1], request, ExtractIP(r.RemoteAddr))
 			if err != nil {
 				http.Error(w, err.Error(), 401)
 				return
@@ -206,7 +206,7 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 			r.Method = "POST"
 			r.PostForm = url.Values{}
 			r.PostForm.Set("token", authParts[1])
-			sessionWrap(func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+			SessionWrap(func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 				if session.IsLoggedIn() {
 					h(w, r, db, session.UserId, request)
 				}

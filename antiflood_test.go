@@ -10,18 +10,18 @@ func TestAntiflood(t *testing.T) {
 	for iteration := 0; iteration < 2; iteration++ {
 
 		for i := 1; i <= 5; i++ {
-			if !antifloodCheck(db, "127.0.0.1", "test", 5) {
+			if !AntifloodCheck(db, "127.0.0.1", "test", 5) {
 				t.Fatalf("Antiflood check failed on round %d", i)
 			}
-			antifloodAction(db, "127.0.0.1", "test")
+			AntifloodAction(db, "127.0.0.1", "test")
 		}
 
-		if antifloodCheck(db, "127.0.0.1", "test", 5) {
+		if AntifloodCheck(db, "127.0.0.1", "test", 5) {
 			t.Fatalf("Antiflood check succeeded unexpectedly")
 		}
 
 		db.Exec("UPDATE antiflood SET time = DATE_SUB(NOW(), INTERVAL 70 MINUTE)")
-		if !antifloodCheck(db, "127.0.0.1", "test", 5) {
+		if !AntifloodCheck(db, "127.0.0.1", "test", 5) {
 			t.Fatalf("Antiflood check after expiring")
 		}
 	}

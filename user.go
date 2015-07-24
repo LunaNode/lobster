@@ -25,7 +25,7 @@ type Charge struct {
 	Amount int64
 }
 
-func userList(db *Database) []*User {
+func UserList(db *Database) []*User {
 	var users []*User
 	rows := db.Query("SELECT id, username, email, time_created, credit, vm_limit, last_billing_notify, status, admin FROM users ORDER BY id")
 	defer rows.Close()
@@ -37,7 +37,7 @@ func userList(db *Database) []*User {
 	return users
 }
 
-func userDetails(db *Database, userId int) *User {
+func UserDetails(db *Database, userId int) *User {
 	user := &User{}
 	rows := db.Query("SELECT id, username, email, time_created, credit, vm_limit, last_billing_notify, status, admin FROM users WHERE id = ?", userId)
 	if !rows.Next() {
@@ -48,7 +48,7 @@ func userDetails(db *Database, userId int) *User {
 	return user
 }
 
-func chargeList(db *Database, userId int, year int, month time.Month) []*Charge {
+func ChargeList(db *Database, userId int, year int, month time.Month) []*Charge {
 	timeStart := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	timeEnd := timeStart.AddDate(0, 1, 0)
 	var charges []*Charge
@@ -62,12 +62,12 @@ func chargeList(db *Database, userId int, year int, month time.Month) []*Charge 
 	return charges
 }
 
-func userApplyCredit(db *Database, userId int, amount int64, detail string) {
+func UserApplyCredit(db *Database, userId int, amount int64, detail string) {
 	db.Exec("INSERT INTO charges (user_id, name, time, amount, detail) VALUES (?, ?, CURDATE(), ?, ?)", userId, "Credit updated", -amount, detail);
 	db.Exec("UPDATE users SET status = 'active' WHERE id = ? AND status = 'new'", userId);
 	userAdjustCredit(db, userId, amount)
 
-	user := userDetails(db, userId)
+	user := UserDetails(db, userId)
 	if user.Credit > 0 {
 		vms := vmList(db, userId)
 		for _, vm := range vms {
@@ -79,7 +79,7 @@ func userApplyCredit(db *Database, userId int, amount int64, detail string) {
 	}
 }
 
-func userApplyCharge(db *Database, userId int, name string, detail string, k string, amount int64) {
+func UserApplyCharge(db *Database, userId int, name string, detail string, k string, amount int64) {
 	rows := db.Query("SELECT id FROM charges WHERE user_id = ? AND k = ? AND time = CURDATE()", userId, k)
 
 	if rows.Next() {
@@ -107,8 +107,8 @@ type CreditSummary struct {
 	Status string
 }
 
-func userCreditSummary(db *Database, userId int) *CreditSummary {
-	user := userDetails(db, userId)
+func UserCreditSummary(db *Database, userId int) *CreditSummary {
+	user := UserDetails(db, userId)
 	if user == nil {
 		return nil
 	}
@@ -149,7 +149,7 @@ type BandwidthSummary struct {
 	ActualPercent float64
 }
 
-func userBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary {
+func UserBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary {
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	monthEnd := monthStart.AddDate(0, 1, 0)
@@ -187,7 +187,7 @@ func userBilling(db *Database, userId int) {
 	// bill/notify for bandwidth usage
 	creditPerGB := int64(cfg.Billing.BandwidthOverageFee * BILLING_PRECISION)
 
-	for region, summary := range userBandwidthSummary(db, userId) {
+	for region, summary := range UserBandwidthSummary(db, userId) {
 		if summary.Used > gigaToBytes(200) {
 			// first do billing
 			// we provide some leeway on bandwidth to avoid confusion in edge cases
@@ -198,7 +198,7 @@ func userBilling(db *Database, userId int) {
 			if summary.Used > summary.Allocated + gigaToBytes(50) {
 				gbOver := int((summary.Used - summary.Allocated - summary.Billed) / 1024 / 1024 / 1024)
 				if gbOver > 0 {
-					userApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-" + region, creditPerGB * int64(gbOver))
+					UserApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-" + region, creditPerGB * int64(gbOver))
 					db.Exec("UPDATE region_bandwidth SET bandwidth_billed = bandwidth_billed + ? WHERE user_id = ? AND region = ?", gigaToBytes(gbOver), userId, region)
 				}
 			}
@@ -239,7 +239,7 @@ func userBilling(db *Database, userId int) {
 	var billingLowCount int // how many reminders regarding low account balance have been sent
 	rows.Scan(&credit, &email, &lastBilledHoursAgo, &billingLowCount)
 	rows.Close()
-	hourly := userCreditSummary(db, userId).Hourly
+	hourly := UserCreditSummary(db, userId).Hourly
 
 	if credit <= hourly * 168 {
 		if credit < 0 && billingLowCount >= 5 {

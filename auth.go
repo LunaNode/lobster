@@ -55,7 +55,7 @@ func authCreate(db *Database, ip string, username string, password string, email
 	}
 
 	// antiflood
-	if !antifloodCheck(db, ip, "authCreate", 3) {
+	if !AntifloodCheck(db, ip, "authCreate", 3) {
 		return 0, L.Error("try_again_later")
 	}
 
@@ -63,7 +63,7 @@ func authCreate(db *Database, ip string, username string, password string, email
 	result := db.Exec("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", username, authMakePassword(password), email)
 	userId, _ := result.LastInsertId()
 	LogAction(db, int(userId), ip, "Registered account", "")
-	antifloodAction(db, ip, "authCreate")
+	AntifloodAction(db, ip, "authCreate")
 	mailWrap(db, -1, "accountCreated", AccountCreatedEmail{UserId: int(userId), Username: username, Email: email}, false)
 	return int(userId), nil
 }
@@ -82,14 +82,14 @@ func authCheckPassword(password string, actualPasswordCombined string) bool {
 func authLogin(db *Database, ip string, username string, password string) (int, error) {
 	if len(password) > MAX_PASSWORD_LENGTH {
 		return 0, L.Error("incorrect_username_or_password")
-	} else if !antifloodCheck(db, ip, "authCheck", 12) {
+	} else if !AntifloodCheck(db, ip, "authCheck", 12) {
 		return 0, L.Error("try_again_later")
 	}
 
 	rows := db.Query("SELECT id, password FROM users WHERE username = ? AND status != 'disabled'", username)
 	if !rows.Next() {
 		log.Printf("Authentication failure on user=%s: bad username (%s)", username, ip)
-		antifloodAction(db, ip, "authCheck")
+		AntifloodAction(db, ip, "authCheck")
 		return 0, L.Error("incorrect_username_or_password")
 	}
 	var userId int
@@ -102,7 +102,7 @@ func authLogin(db *Database, ip string, username string, password string) (int, 
 		LogAction(db, userId, ip, "Logged in", "")
 		return userId, nil
 	} else {
-		antifloodAction(db, ip, "authCheck")
+		AntifloodAction(db, ip, "authCheck")
 		log.Printf("Authentication failure on user=%s: bad password (%s)", username, ip)
 		return 0, L.Error("incorrect_username_or_password")
 	}
@@ -111,13 +111,13 @@ func authLogin(db *Database, ip string, username string, password string) (int, 
 func authChangePassword(db *Database, ip string, userId int, oldPassword string, newPassword string) error {
 	if len(newPassword) < MIN_PASSWORD_LENGTH || len(newPassword) > MAX_PASSWORD_LENGTH {
 		return L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
-	} else if !antifloodCheck(db, ip, "authCheck", 12) {
+	} else if !AntifloodCheck(db, ip, "authCheck", 12) {
 		return L.Error("try_again_later")
 	}
 
 	rows := db.Query("SELECT password FROM users WHERE id = ?", userId)
 	if !rows.Next() {
-		antifloodAction(db, ip, "authCheck")
+		AntifloodAction(db, ip, "authCheck")
 		log.Printf("Error changing password: bad user ID?! (%d/%s)", userId ,ip)
 		return L.Error("invalid_account")
 	}
@@ -132,7 +132,7 @@ func authChangePassword(db *Database, ip string, userId int, oldPassword string,
 		mailWrap(db, userId, "authChangePassword", nil, false)
 		return nil
 	} else {
-		antifloodAction(db, ip, "authCheck")
+		AntifloodAction(db, ip, "authCheck")
 		log.Printf("Change password authentication failure for user_id=%d (%s)", userId, ip)
 		return L.Error("incorrect_password")
 	}
@@ -145,10 +145,10 @@ func authForceChangePassword(db *Database, userId int, password string) {
 func authPwresetRequest(db *Database, ip string, username string, email string) error {
 	if email == "" {
 		return L.Error("pwreset_email_required")
-	} else if !antifloodCheck(db, ip, "pwresetRequest", 10) {
+	} else if !AntifloodCheck(db, ip, "pwresetRequest", 10) {
 		return L.Error("try_again_later")
 	}
-	antifloodAction(db, ip, "pwresetRequest") // mark antiflood regardless of whether success/failure
+	AntifloodAction(db, ip, "pwresetRequest") // mark antiflood regardless of whether success/failure
 
 	rows := db.Query("SELECT id FROM users WHERE username = ? AND email = ?", username, email)
 	if !rows.Next() {
@@ -172,12 +172,12 @@ func authPwresetRequest(db *Database, ip string, username string, email string) 
 }
 
 func authPwresetSubmit(db *Database, ip string, userId int, token string, password string) error {
-	if !antifloodCheck(db, ip, "pwresetSubmit", 10) {
+	if !AntifloodCheck(db, ip, "pwresetSubmit", 10) {
 		return L.Error("try_again_later")
 	} else if len(password) < MIN_PASSWORD_LENGTH || len(password) > MAX_PASSWORD_LENGTH {
 		return L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
 	}
-	antifloodAction(db, ip, "pwresetSubmit") // mark antiflood regardless of whether success/failure
+	AntifloodAction(db, ip, "pwresetSubmit") // mark antiflood regardless of whether success/failure
 
 	rows := db.Query("SELECT id FROM pwreset_tokens WHERE user_id = ? AND token = ? AND time > DATE_SUB(NOW(), INTERVAL ? MINUTE)", userId, token, PWRESET_EXPIRE_MINUTES)
 	if !rows.Next() {
@@ -202,7 +202,7 @@ type AuthLoginForm struct {
 
 func authLoginHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	if session.IsLoggedIn() {
-		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
+		RedirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
 		return
 	}
 
@@ -213,15 +213,15 @@ func authLoginHandler(w http.ResponseWriter, r *http.Request, db *Database, sess
 		return
 	}
 
-	userId, err := authLogin(db, extractIP(r.RemoteAddr), form.Username, form.Password)
+	userId, err := authLogin(db, ExtractIP(r.RemoteAddr), form.Username, form.Password)
 	if err != nil {
-		redirectMessage(w, r, "/login", L.FormatError(err))
+		RedirectMessage(w, r, "/login", L.FormatError(err))
 		return
 	} else {
 		session.UserId = userId
 		http.Redirect(w, r, "/panel/dashboard", 303)
 
-		user := userDetails(db, userId)
+		user := UserDetails(db, userId)
 		if user != nil && user.Admin {
 			session.Admin = true
 		}
@@ -237,7 +237,7 @@ type AuthCreateForm struct {
 
 func authCreateHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	if session.IsLoggedIn() {
-		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
+		RedirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
 		return
 	}
 
@@ -249,13 +249,13 @@ func authCreateHandler(w http.ResponseWriter, r *http.Request, db *Database, ses
 	}
 
 	if form.AcceptTerms != "yes" {
-		redirectMessage(w, r, "/create", L.FormattedError("must_terms"))
+		RedirectMessage(w, r, "/create", L.FormattedError("must_terms"))
 		return
 	}
 
-	userId, err := authCreate(db, extractIP(r.RemoteAddr), form.Username, form.Password, form.Email)
+	userId, err := authCreate(db, ExtractIP(r.RemoteAddr), form.Username, form.Password, form.Email)
 	if err != nil {
-		redirectMessage(w, r, "/create", L.FormatError(err))
+		RedirectMessage(w, r, "/create", L.FormatError(err))
 		return
 	} else {
 		session.UserId = userId
@@ -302,7 +302,7 @@ type AuthPwresetRequestForm struct {
 
 func authPwresetRequestHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	if session.IsLoggedIn() {
-		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
+		RedirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
 		return
 	}
 
@@ -313,12 +313,12 @@ func authPwresetRequestHandler(w http.ResponseWriter, r *http.Request, db *Datab
 		return
 	}
 
-	err = authPwresetRequest(db, extractIP(r.RemoteAddr), form.Username, form.Email)
+	err = authPwresetRequest(db, ExtractIP(r.RemoteAddr), form.Username, form.Email)
 	if err != nil {
-		redirectMessage(w, r, "/pwreset", L.FormatError(err))
+		RedirectMessage(w, r, "/pwreset", L.FormatError(err))
 		return
 	} else {
-		redirectMessage(w, r, "/message", L.Success("pwreset_requested"))
+		RedirectMessage(w, r, "/message", L.Success("pwreset_requested"))
 	}
 }
 
@@ -331,7 +331,7 @@ type AuthPwresetSubmitForm struct {
 
 func authPwresetSubmitHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
 	if session.IsLoggedIn() {
-		redirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
+		RedirectMessage(w, r, "/panel/dashboard", L.Info("already_logged_in"))
 		return
 	}
 
@@ -341,14 +341,14 @@ func authPwresetSubmitHandler(w http.ResponseWriter, r *http.Request, db *Databa
 		http.Redirect(w, r, "/pwreset", 303)
 		return
 	} else if form.Password != form.PasswordConfirm {
-		redirectMessageExtra(w, r, "/pwreset", L.FormattedError("password_mismatch"), map[string]string{"user_id": fmt.Sprintf("%d", form.UserId), "token": form.Token})
+		RedirectMessageExtra(w, r, "/pwreset", L.FormattedError("password_mismatch"), map[string]string{"user_id": fmt.Sprintf("%d", form.UserId), "token": form.Token})
 	}
 
-	err = authPwresetSubmit(db, extractIP(r.RemoteAddr), form.UserId, form.Token, form.Password)
+	err = authPwresetSubmit(db, ExtractIP(r.RemoteAddr), form.UserId, form.Token, form.Password)
 	if err != nil {
-		redirectMessageExtra(w, r, "/pwreset", L.FormatError(err), map[string]string{"user_id": fmt.Sprintf("%d", form.UserId), "token": form.Token})
+		RedirectMessageExtra(w, r, "/pwreset", L.FormatError(err), map[string]string{"user_id": fmt.Sprintf("%d", form.UserId), "token": form.Token})
 		return
 	} else {
-		redirectMessage(w, r, "/message", L.Success("pwreset_completed"))
+		RedirectMessage(w, r, "/message", L.Success("pwreset_completed"))
 	}
 }

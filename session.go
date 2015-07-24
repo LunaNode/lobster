@@ -31,7 +31,7 @@ func (this *Session) Reset() {
 	this.OriginalId = 0
 }
 
-func sessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Database, session *Session)) func(w http.ResponseWriter, r *http.Request, db *Database) {
+func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Database, session *Session)) func(w http.ResponseWriter, r *http.Request, db *Database) {
 	return func(w http.ResponseWriter, r *http.Request, db *Database) {
 		r.ParseForm()
 

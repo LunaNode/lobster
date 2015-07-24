@@ -109,7 +109,7 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	username := "N/A"
 
 	if userId >= 0 && db != nil {
-		user := userDetails(db, userId)
+		user := UserDetails(db, userId)
 		if user == nil {
 			return errors.New("user does not exist")
 		}
