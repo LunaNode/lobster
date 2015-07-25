@@ -751,7 +751,7 @@ func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 		var rowId int
 		rows.Scan(&rowId)
 		rows.Close()
-		db.Exec("UPDATE region_bandwidth SET bandwidth_additional = bandwidth_additional + ? WHERE id = ?", additionalBandwidth, vm.UserId)
+		db.Exec("UPDATE region_bandwidth SET bandwidth_additional = bandwidth_additional + ? WHERE id = ?", additionalBandwidth, rowId)
 	} else {
 		db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_additional) VALUES (?, ?, ?)", vm.UserId, vm.Region, additionalBandwidth)
 	}
