@@ -14,3 +14,4 @@ Installation
 	https://github.com/LunaNode/lobster-whmcs
 2. Create one or more products for Lobster. For product type, use "Hosting Account". The module settings should be self-explanatory. You'll need to create a custom field "userid" which should be marked admin only.
 3. MySQL table on Lobster: CREATE TABLE whmcs_tokens (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, token VARCHAR(32) NOT NULL, time TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+4. Optional: remove the Make a Payment section from the dashboard
