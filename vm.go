@@ -400,7 +400,13 @@ func (vm *VirtualMachine) Resize(planId int) error {
 			if err != nil {
 				return err
 			}
-			vm.db.Exec("UPDATE vms SET plan_id = ? WHERE id = ?", plan.Id, vm.Id)
+
+			// we need to be careful in our bandwidth accounting across resizes; the user should get both:
+			//   a) old plan's allocation for the time provisioned so far this month
+			//   b) new plan's allocation for the remainder of the month
+			// we handle this by treating it as a deletion and re-creation of the VM, i.e. call vmUpdateAdditionalBandwidth and reset VM creation time
+			vmUpdateAdditionalBandwidth(vm.db, vm)
+			vm.db.Exec("UPDATE vms SET plan_id = ?, time_created = NOW() WHERE id = ?", plan.Id, vm.Id)
 			return nil
 		} else {
 			return L.Error("vm_resize_unsupported")
@@ -720,7 +726,7 @@ func imageInfo(db *Database, userId int, imageId int) *Image {
 	return image
 }
 
-// vmUpdateAdditionalBandwidth is called on VM deletion, to add the VM's bandwidth to user's bandwidth pool
+// vmUpdateAdditionalBandwidth is called on VM deletion or resize, to add the VM's bandwidth to user's bandwidth pool
 func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 	// determine how much of the plan bandwidth to add to the user's bandwidth pool for current month
 	now := time.Now()
