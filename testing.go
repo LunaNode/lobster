@@ -1,5 +1,7 @@
 package lobster
 
+import "github.com/gorilla/mux"
+
 import "github.com/LunaNode/lobster/utils"
 
 const TEST_BANDWIDTH = 1000
@@ -20,6 +22,10 @@ func TestReset() *Database {
 			Password: "",
 			Name: "lobstertest",
 		},
+		Novnc: ConfigNovnc{
+			Listen: "127.0.0.1:6080",
+			Url: "TOKEN",
+		},
 	}
 	db := MakeDatabase()
 
@@ -29,6 +35,13 @@ func TestReset() *Database {
 	}
 
 	return db
+}
+
+func TestLobster() *Lobster {
+	app := new(Lobster)
+	app.router = mux.NewRouter()
+	app.db = MakeDatabase()
+	return app
 }
 
 // Creates user and returns user id.
