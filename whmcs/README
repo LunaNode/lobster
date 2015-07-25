@@ -1,0 +1,16 @@
+The WHMCS module supports integration with the WHMCS software.
+
+Introduction
+------------
+
+Customers will be able to select products in WHMCS that will add credit to their Lobster account (or create the account if it doesn't already exist).
+
+Lobster's WHMCS integration consists of a module for WHMCS in Lobster (i.e. this module) and a module for Lobster in WHMCS.
+
+Installation
+------------
+
+1. Add the Lobster module for WHMCS to your WHMCS installation
+	https://github.com/LunaNode/lobster-whmcs
+2. Create one or more products for Lobster. For product type, use "Hosting Account". The module settings should be self-explanatory. You'll need to create a custom field "userid" which should be marked admin only.
+3. MySQL table on Lobster: CREATE TABLE whmcs_tokens (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, token VARCHAR(32) NOT NULL, time TIMESTAMP DEFAULT CURRENT_TIMESTAMP);

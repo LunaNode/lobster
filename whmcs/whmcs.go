@@ -10,6 +10,8 @@ import "strconv"
 
 const TOKEN_LENGTH = 32
 
+// CREATE TABLE whmcs_tokens (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, token VARCHAR(32) NOT NULL, time TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+
 func MakeWHMCS(app *lobster.Lobster, ip string, secret string) *WHMCS {
 	this := new(WHMCS)
 	this.ip = ip
@@ -22,7 +24,6 @@ func MakeWHMCS(app *lobster.Lobster, ip string, secret string) *WHMCS {
 type WHMCS struct {
 	ip string
 	secret string
-	app *lobster.Lobster
 }
 
 func (this *WHMCS) handleConnector(w http.ResponseWriter, r *http.Request, db *lobster.Database) {
@@ -43,6 +44,24 @@ func (this *WHMCS) handleConnector(w http.ResponseWriter, r *http.Request, db *l
 			log.Printf("Registered account via WHMCS (email=%s)", email)
 			w.Write([]byte(fmt.Sprintf("%d", userId)))
 		}
+	case "credit":
+		userId, err := strconv.ParseInt(r.PostForm.Get("user_id"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		amount, err := strconv.ParseFloat(r.PostForm.Get("amount"), 64)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		userDetails := lobster.UserDetails(db, int(userId))
+		if userDetails == nil {
+			http.Error(w, "no such user", 400)
+			return
+		}
+		lobster.UserApplyCredit(db, int(userId), int64(amount * lobster.BILLING_PRECISION), "Credit via WHMCS")
+		w.Write([]byte("ok"))
 	case "token":
 		userId, err := strconv.ParseInt(r.PostForm.Get("user_id"), 10, 64)
 		if err != nil {
