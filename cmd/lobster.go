@@ -6,6 +6,7 @@ import "github.com/LunaNode/lobster/lobopenstack"
 import "github.com/LunaNode/lobster/solusvm"
 import "github.com/LunaNode/lobster/vmfake"
 import "github.com/LunaNode/lobster/vmlobster"
+import "github.com/LunaNode/lobster/whmcs"
 
 import "encoding/json"
 import "io/ioutil"
@@ -61,6 +62,7 @@ type PaymentConfig struct {
 type InterfaceConfig struct {
 	Vm []*VmConfig `json:"vm"`
 	Payment []*PaymentConfig `json:"payment"`
+	Module []map[string]string `json:"module"`
 }
 
 func main() {
@@ -125,6 +127,15 @@ func main() {
 			log.Fatalf("Encountered unrecognized payment interface type %s", payment.Type)
 		}
 		app.RegisterPaymentInterface(payment.Name, pi)
+	}
+
+	for _, module := range interfaceConfig.Module {
+		t := module["type"]
+		if t == "whmcs" {
+			whmcs.MakeWHMCS(app, module["ip"], module["secret"])
+		} else {
+			log.Fatalf("Encountered unrecognized module type %s", t)
+		}
 	}
 
 	app.Run()

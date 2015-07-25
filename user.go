@@ -1,5 +1,7 @@
 package lobster
 
+import "github.com/asaskevich/govalidator"
+
 import "fmt"
 import "time"
 
@@ -46,6 +48,44 @@ func UserDetails(db *Database, userId int) *User {
 	rows.Scan(&user.Id, &user.Username, &user.Email, &user.CreateTime, &user.Credit, &user.VmLimit, &user.LastBillingNotify, &user.Status, &user.Admin)
 	rows.Close()
 	return user
+}
+
+func UserCreate(db *Database, username string, password string, email string) (int, error) {
+	if email != "" && !govalidator.IsEmail(email) {
+		return 0, L.Error("invalid_email")
+	}
+
+	if len(username) < MIN_USERNAME_LENGTH || len(username) > MAX_USERNAME_LENGTH {
+		return 0, L.Errorf("username_length", MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH)
+	}
+
+	if !isPrintable(username) {
+		return 0, L.Error("invalid_username_format")
+	}
+
+	if len(password) < MIN_PASSWORD_LENGTH || len(password) > MAX_PASSWORD_LENGTH {
+		return 0, L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
+	}
+
+	// ensure username not taken already
+	var userCount int
+	db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&userCount)
+	if userCount > 0 {
+		return 0, L.Error("username_in_use")
+	}
+
+	// ensure email not taken already
+	if email != "" {
+		db.QueryRow("SELECT COUNT(*) FROM users WHERE email = ?", email).Scan(&userCount)
+		if userCount > 0 {
+			return 0, L.Error("email_in_use")
+		}
+	}
+
+	// generate salt and hash password
+	result := db.Exec("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", username, authMakePassword(password), email)
+	userId, _ := result.LastInsertId()
+	return int(userId), nil
 }
 
 func ChargeList(db *Database, userId int, year int, month time.Month) []*Charge {

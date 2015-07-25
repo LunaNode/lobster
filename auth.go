@@ -2,7 +2,6 @@ package lobster
 
 import "github.com/LunaNode/lobster/utils"
 
-import "github.com/asaskevich/govalidator"
 import "golang.org/x/crypto/pbkdf2"
 
 import "crypto/rand"
@@ -23,49 +22,19 @@ func authMakePassword(password string) string {
 }
 
 func authCreate(db *Database, ip string, username string, password string, email string) (int, error) {
-	if email != "" && !govalidator.IsEmail(email) {
-		return 0, L.Error("invalid_email")
-	}
-
-	if len(username) < MIN_USERNAME_LENGTH || len(username) > MAX_USERNAME_LENGTH {
-		return 0, L.Errorf("username_length", MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH)
-	}
-
-	if !isPrintable(username) {
-		return 0, L.Error("invalid_username_format")
-	}
-
-	if len(password) < MIN_PASSWORD_LENGTH || len(password) > MAX_PASSWORD_LENGTH {
-		return 0, L.Errorf("password_length", MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)
-	}
-
-	// ensure username not taken already
-	var userCount int
-	db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", username).Scan(&userCount)
-	if userCount > 0 {
-		return 0, L.Error("username_in_use")
-	}
-
-	// ensure email not taken already
-	if email != "" {
-		db.QueryRow("SELECT COUNT(*) FROM users WHERE email = ?", email).Scan(&userCount)
-		if userCount > 0 {
-			return 0, L.Error("email_in_use")
-		}
-	}
-
-	// antiflood
 	if !AntifloodCheck(db, ip, "authCreate", 3) {
 		return 0, L.Error("try_again_later")
 	}
 
-	// generate salt and hash password
-	result := db.Exec("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", username, authMakePassword(password), email)
-	userId, _ := result.LastInsertId()
-	LogAction(db, int(userId), ip, "Registered account", "")
+	userId, err := UserCreate(db, username, password, email)
+	if err != nil {
+		return 0, err
+	}
+
+	LogAction(db, userId, ip, "Registered account", "")
 	AntifloodAction(db, ip, "authCreate")
 	mailWrap(db, -1, "accountCreated", AccountCreatedEmail{UserId: int(userId), Username: username, Email: email}, false)
-	return int(userId), nil
+	return userId, nil
 }
 
 func authCheckPassword(password string, actualPasswordCombined string) bool {
