@@ -98,7 +98,7 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	}
 
 	userIdStr := strings.Split(data.Order.Custom, "lobster")[1]
-	userId, err := strconv.ParseInt(userIdStr, 10, 32)
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		reportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", data.Order.Custom)), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
@@ -106,7 +106,7 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	}
 
 	if data.Order.Status == "completed" {
-		TransactionAdd(db, int(userId), "coinbase", data.Order.Id, "Bitcoin transaction: " + data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents) * BILLING_PRECISION / 100, 0)
+		TransactionAdd(db, userId, "coinbase", data.Order.Id, "Bitcoin transaction: " + data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents) * BILLING_PRECISION / 100, 0)
 	} else if data.Order.Status == "mispaid" {
 		mailWrap(db, -1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
 	}

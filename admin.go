@@ -68,12 +68,12 @@ type AdminUserParams struct {
 	Token string
 }
 func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
 		return
 	}
-	user := UserDetails(db, int(userId))
+	user := UserDetails(db, userId)
 	if user == nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("user_not_found"))
 		return
@@ -81,18 +81,18 @@ func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Se
 	params := AdminUserParams{}
 	params.Frame = frameParams
 	params.User = user
-	params.VirtualMachines = vmList(db, int(userId))
+	params.VirtualMachines = vmList(db, userId)
 	params.Token = csrfGenerate(db, session)
 	RenderTemplate(w, "admin", "user", params)
 }
 
 func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
 	} else {
 		session.OriginalId = session.UserId
-		session.UserId = int(userId)
+		session.UserId = userId
 		http.Redirect(w, r, "/panel/dashboard", 303)
 	}
 }
@@ -102,7 +102,7 @@ type AdminUserCreditForm struct {
 	Description string `schema:"description"`
 }
 func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
 		return
@@ -115,12 +115,12 @@ func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	}
 
 	creditInt := int64(form.Credit * BILLING_PRECISION)
-	UserApplyCredit(db, int(userId), creditInt, form.Description)
+	UserApplyCredit(db, userId, creditInt, form.Description)
 	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("credit_applied"))
 }
 
 func adminUserPassword(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
 		return
@@ -132,12 +132,12 @@ func adminUserPassword(w http.ResponseWriter, r *http.Request, db *Database, ses
 		return
 	}
 
-	authForceChangePassword(db, int(userId), r.PostFormValue("password"))
+	authForceChangePassword(db, userId, r.PostFormValue("password"))
 	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("password_reset"))
 }
 
 func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
 	} else {
@@ -147,12 +147,12 @@ func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, sess
 }
 
 func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
 		return
 	}
-	ticketClose(db, session.UserId, int(ticketId))
+	ticketClose(db, session.UserId, ticketId)
 	LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
 	RedirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), L.Success("ticket_closed"))
 }
@@ -179,12 +179,12 @@ type AdminSupportOpenForm struct {
 	Message string `schema:"message"`
 }
 func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_user"))
 		return
 	}
-	user := UserDetails(db, int(userId))
+	user := UserDetails(db, userId)
 	if user == nil {
 		RedirectMessage(w, r, "/admin/support", L.FormattedError("user_not_found"))
 		return
@@ -220,12 +220,12 @@ type AdminSupportTicketParams struct {
 	Token string
 }
 func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
 		return
 	}
-	ticket := TicketDetails(db, session.UserId, int(ticketId), true)
+	ticket := TicketDetails(db, session.UserId, ticketId, true)
 	if ticket == nil {
 		RedirectMessage(w, r, "/admin/support", L.FormattedError("ticket_not_found"))
 		return
@@ -242,7 +242,7 @@ type AdminSupportTicketReplyForm struct {
 	Message string `schema:"message"`
 }
 func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
 		return
@@ -254,7 +254,7 @@ func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Databas
 		return
 	}
 
-	err = ticketReply(db, session.UserId, int(ticketId), form.Message, true)
+	err = ticketReply(db, session.UserId, ticketId, form.Message, true)
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), L.FormatError(err))
 	} else {
@@ -296,12 +296,12 @@ func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 }
 
 func adminPlanDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	planId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
 		return
 	}
-	planDelete(db, int(planId))
+	planDelete(db, planId)
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_deleted"))
 }
 
@@ -338,13 +338,13 @@ func adminImagesAdd(w http.ResponseWriter, r *http.Request, db *Database, sessio
 }
 
 func adminImageDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/images", L.FormattedError("invalid_plan"))
 		return
 	}
 
-	err = imageDeleteForce(db, int(imageId))
+	err = imageDeleteForce(db, imageId)
 	if err != nil {
 		RedirectMessage(w, r, "/admin/images", L.FormatError(err))
 	} else {

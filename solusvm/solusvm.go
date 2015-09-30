@@ -30,13 +30,13 @@ func (this *SolusVM) VmCreate(vm *lobster.VirtualMachine, imageIdentification st
 }
 
 func (this *SolusVM) VmDelete(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmDelete(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmDelete(vmIdentificationInt)
 }
 
 func (this *SolusVM) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	apiInfo, err := this.Api.VmInfo(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	apiInfo, err := this.Api.VmInfo(vmIdentificationInt)
 	if err != nil {
 		return nil, err
 	}
@@ -66,25 +66,25 @@ func (this *SolusVM) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 }
 
 func (this *SolusVM) VmStart(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmStart(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmStart(vmIdentificationInt)
 }
 
 func (this *SolusVM) VmStop(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmStop(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmStop(vmIdentificationInt)
 }
 
 func (this *SolusVM) VmReboot(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmReboot(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmReboot(vmIdentificationInt)
 }
 
 func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 
 	if this.VirtType == "kvm" || this.VirtType == "xen" {
-		vncInfo, err := this.Api.VmVnc(int(vmIdentificationInt))
+		vncInfo, err := this.Api.VmVnc(vmIdentificationInt)
 		if err != nil {
 			return "", err
 		} else {
@@ -94,7 +94,7 @@ func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 			return this.Lobster.HandleWebsockify(vncInfo.Ip + vncInfo.Port, vncInfo.Password), nil
 		}
 	} else {
-		consoleInfo, err := this.Api.VmConsole(int(vmIdentificationInt))
+		consoleInfo, err := this.Api.VmConsole(vmIdentificationInt)
 		if err != nil {
 			return "", err
 		} else {
@@ -122,37 +122,37 @@ func (this *SolusVM) handleConsole(w http.ResponseWriter, r *http.Request, db *l
 }
 
 func (this *SolusVM) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	if action == "tuntap" {
-		return this.Api.VmTunTap(int(vmIdentificationInt), value == "enable")
+		return this.Api.VmTunTap(vmIdentificationInt, value == "enable")
 	} else {
 		return errors.New("operation not supported")
 	}
 }
 
 func (this *SolusVM) VmRename(vm *lobster.VirtualMachine, name string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmHostname(int(vmIdentificationInt), name)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmHostname(vmIdentificationInt, name)
 }
 
 func (this *SolusVM) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmReimage(int(vmIdentificationInt), imageIdentification)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmReimage(vmIdentificationInt, imageIdentification)
 }
 
 func (this *SolusVM) VmResize(vm *lobster.VirtualMachine, plan *lobster.Plan) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 
 	// we start with disk since that is the most likely one to have problem
-	err := this.Api.VmResizeDisk(int(vmIdentificationInt), plan.Storage)
+	err := this.Api.VmResizeDisk(vmIdentificationInt, plan.Storage)
 	if err != nil {
 		return err
 	}
-	err = this.Api.VmResizeMemory(int(vmIdentificationInt), plan.Ram)
+	err = this.Api.VmResizeMemory(vmIdentificationInt, plan.Ram)
 	if err != nil {
 		return err
 	}
-	err = this.Api.VmResizeCpu(int(vmIdentificationInt), plan.Cpu)
+	err = this.Api.VmResizeCpu(vmIdentificationInt, plan.Cpu)
 	if err != nil {
 		return err
 	}
@@ -160,8 +160,8 @@ func (this *SolusVM) VmResize(vm *lobster.VirtualMachine, plan *lobster.Plan) er
 }
 
 func (this *SolusVM) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	apiInfo, err := this.Api.VmInfo(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	apiInfo, err := this.Api.VmInfo(vmIdentificationInt)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +179,8 @@ func (this *SolusVM) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddre
 }
 
 func (this *SolusVM) VmAddAddress(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmAddAddress(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmAddAddress(vmIdentificationInt)
 }
 
 func (this *SolusVM) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, privateip string) error {
@@ -200,8 +200,8 @@ func (this *SolusVM) VmRemoveAddress(vm *lobster.VirtualMachine, ip string, priv
 		return errors.New("invalid IP address")
 	}
 
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.Api.VmRemoveAddress(int(vmIdentificationInt), ip)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.Api.VmRemoveAddress(vmIdentificationInt, ip)
 }
 
 func (this *SolusVM) VmSetRdns(vm *lobster.VirtualMachine, ip string, hostname string) error {

@@ -127,7 +127,7 @@ func (this *API) VmCreate(virtType string, nodeGroup string, hostname string, im
 	if err != nil {
 		return 0, "", err
 	} else {
-		vmId, err := strconv.ParseInt(response.VmId, 10, 32)
+		vmId, err := strconv.Atoi(response.VmId)
 		if err != nil {
 			return 0, "", err
 		} else {
@@ -136,16 +136,16 @@ func (this *API) VmCreate(virtType string, nodeGroup string, hostname string, im
 			// TODO: reportError?
 			go func() {
 				time.Sleep(15 * time.Second)
-				this.VmStop(int(vmId))
+				this.VmStop(vmId)
 				time.Sleep(time.Second)
 				params := make(map[string]string)
 				params["memory"] = fmt.Sprintf("%d|%d", memory, memory)
-				this.vmAction(int(vmId), "vserver-change-memory", params)
+				this.vmAction(vmId, "vserver-change-memory", params)
 				time.Sleep(5 * time.Second)
-				this.VmStart(int(vmId))
+				this.VmStart(vmId)
 			}()
 
-			return int(vmId), rootPassword, nil
+			return vmId, rootPassword, nil
 		}
 	}
 }

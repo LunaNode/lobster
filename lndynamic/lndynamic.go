@@ -33,11 +33,11 @@ func (this *LNDynamic) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 
 	var matchPlan *APIPlan
 	for _, apiPlan := range plans {
-		cpu, _ := strconv.ParseInt(apiPlan.Vcpu, 10, 32)
-		ram, _ := strconv.ParseInt(apiPlan.Ram, 10, 32)
-		storage, _ := strconv.ParseInt(apiPlan.Storage, 10, 32)
+		cpu, _ := strconv.Atoi(apiPlan.Vcpu)
+		ram, _ := strconv.Atoi(apiPlan.Ram)
+		storage, _ := strconv.Atoi(apiPlan.Storage)
 
-		if int(cpu) == vm.Plan.Cpu && int(ram) == vm.Plan.Ram && int(storage) == vm.Plan.Storage {
+		if cpu == vm.Plan.Cpu && ram == vm.Plan.Ram && storage == vm.Plan.Storage {
 			matchPlan = apiPlan
 			break
 		}
@@ -47,20 +47,20 @@ func (this *LNDynamic) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 		return "", errors.New("plan not available in this region")
 	}
 
-	planIdentification, _ := strconv.ParseInt(matchPlan.Id, 10, 32)
-	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
-	vmId, err := this.api.VmCreateImage(this.region, vm.Name, int(planIdentification), int(imageIdentificationInt))
+	planIdentification, _ := strconv.Atoi(matchPlan.Id)
+	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
+	vmId, err := this.api.VmCreateImage(this.region, vm.Name, planIdentification, imageIdentificationInt)
 	return fmt.Sprintf("%d", vmId), err
 }
 
 func (this *LNDynamic) VmDelete(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.api.VmDelete(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.api.VmDelete(vmIdentificationInt)
 }
 
 func (this *LNDynamic) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	apiInfo, err := this.api.VmInfo(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	apiInfo, err := this.api.VmInfo(vmIdentificationInt)
 	if err != nil {
 		return nil, err
 	}
@@ -78,23 +78,23 @@ func (this *LNDynamic) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, erro
 }
 
 func (this *LNDynamic) VmStart(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.api.VmStart(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.api.VmStart(vmIdentificationInt)
 }
 
 func (this *LNDynamic) VmStop(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.api.VmStop(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.api.VmStop(vmIdentificationInt)
 }
 
 func (this *LNDynamic) VmReboot(vm *lobster.VirtualMachine) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.api.VmReboot(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.api.VmReboot(vmIdentificationInt)
 }
 
 func (this *LNDynamic) VmVnc(vm *lobster.VirtualMachine) (string, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	return this.api.VmVnc(int(vmIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	return this.api.VmVnc(vmIdentificationInt)
 }
 
 func (this *LNDynamic) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
@@ -102,14 +102,14 @@ func (this *LNDynamic) VmAction(vm *lobster.VirtualMachine, action string, value
 }
 
 func (this *LNDynamic) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
-	return this.api.VmReimage(int(vmIdentificationInt), int(imageIdentificationInt))
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
+	return this.api.VmReimage(vmIdentificationInt, imageIdentificationInt)
 }
 
 func (this *LNDynamic) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
-	vmIdentificationInt, _ := strconv.ParseInt(vm.Identification, 10, 32)
-	imageId, err := this.api.VmSnapshot(int(vmIdentificationInt), this.region)
+	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
+	imageId, err := this.api.VmSnapshot(vmIdentificationInt, this.region)
 	return fmt.Sprintf("%d", imageId), err
 }
 
@@ -142,8 +142,8 @@ func (this *LNDynamic) ImageFetch(url string, format string) (string, error) {
 }
 
 func (this *LNDynamic) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
-	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
-	image, err := this.api.ImageDetails(int(imageIdentificationInt))
+	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
+	image, err := this.api.ImageDetails(imageIdentificationInt)
 	if err != nil {
 		return nil, err
 	} else {
@@ -164,6 +164,6 @@ func (this *LNDynamic) ImageInfo(imageIdentification string) (*lobster.ImageInfo
 }
 
 func (this *LNDynamic) ImageDelete(imageIdentification string) error {
-	imageIdentificationInt, _ := strconv.ParseInt(imageIdentification, 10, 32)
-	return this.api.ImageDelete(int(imageIdentificationInt))
+	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
+	return this.api.ImageDelete(imageIdentificationInt)
 }

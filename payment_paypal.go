@@ -110,11 +110,11 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	paymentAmount, _ := strconv.ParseFloat(myPost["mc_gross"], 64)
 	transactionId := myPost["txn_id"]
 	userIdStr := strings.Split(myPost["custom"], "lobster")[1]
-	userId, err := strconv.ParseInt(userIdStr, 10, 32)
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		reportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 
-	TransactionAdd(db, int(userId), "paypal", transactionId, "Transaction " + transactionId, int64(paymentAmount * BILLING_PRECISION), 0)
+	TransactionAdd(db, userId, "paypal", transactionId, "Transaction " + transactionId, int64(paymentAmount * BILLING_PRECISION), 0)
 }

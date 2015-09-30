@@ -128,11 +128,11 @@ func (this *API) VmCreateVolume(region string, hostname string, planIdentificati
 	if err != nil {
 		return 0, err
 	} else {
-		vmId, err := strconv.ParseInt(response.VmId, 10, 32)
+		vmId, err := strconv.Atoi(response.VmId)
 		if err != nil {
 			return 0, err
 		} else {
-			return int(vmId), nil
+			return vmId, nil
 		}
 	}
 }
@@ -147,11 +147,11 @@ func (this *API) VmCreateImage(region string, hostname string, planIdentificatio
 	if err != nil {
 		return 0, err
 	} else {
-		vmId, err := strconv.ParseInt(response.VmId, 10, 32)
+		vmId, err := strconv.Atoi(response.VmId)
 		if err != nil {
 			return 0, err
 		} else {
-			return int(vmId), nil
+			return vmId, nil
 		}
 	}
 }
@@ -246,11 +246,11 @@ func (this *API) VmSnapshot(vmIdentification int, region string) (int, error) {
 
 	for _, image := range listResponse.Images {
 		if strings.Contains(image.Name, imageLabel) {
-			imageId, err := strconv.ParseInt(image.Id, 10, 32)
+			imageId, err := strconv.Atoi(image.Id)
 			if err != nil {
 				return 0, err
 			} else {
-				return int(imageId), nil
+				return imageId, nil
 			}
 		}
 	}
@@ -288,11 +288,11 @@ func (this *API) ImageFetch(region string, location string, format string, virti
 
 	for _, image := range listResponse.Images {
 		if strings.Contains(image.Name, imageLabel) {
-			imageId, err := strconv.ParseInt(image.Id, 10, 32)
+			imageId, err := strconv.Atoi(image.Id)
 			if err != nil {
 				return 0, err
 			} else {
-				return int(imageId), nil
+				return imageId, nil
 			}
 		}
 	}
@@ -350,11 +350,9 @@ func (this *API) VolumeCreate(region string, size int, imageIdentification int, 
 	var volumeId int
 	for _, volume := range listResponse.Volumes {
 		if strings.Contains(volume.Name, volumeLabel) {
-			volumeId64, err := strconv.ParseInt(volume.Id, 10, 32)
+			volumeId, err = strconv.Atoi(volume.Id)
 			if err != nil {
 				return 0, err
-			} else {
-				volumeId = int(volumeId64)
 			}
 		}
 	}

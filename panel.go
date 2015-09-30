@@ -147,12 +147,12 @@ type PanelVMParams struct {
 	Token string
 }
 func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormattedError("invalid_vm"))
 		return
 	}
-	vm := vmGetUser(db, session.UserId, int(vmId))
+	vm := vmGetUser(db, session.UserId, vmId)
 	if vm == nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormattedError("vm_not_found"))
 		return
@@ -172,11 +172,11 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 
 // virtual machine actions
 func panelVMProcess(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) (*VirtualMachine, error) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		return nil, errors.New("invalid VM ID")
 	}
-	vm := vmGetUser(db, session.UserId, int(vmId))
+	vm := vmGetUser(db, session.UserId, vmId)
 	if vm == nil {
 		return nil, errors.New("VM does not exist")
 	}
@@ -268,7 +268,7 @@ type VMReimageForm struct {
 	Image int `schema:"image"`
 }
 func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormattedError("invalid_vm"))
 		return
@@ -281,7 +281,7 @@ func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, sessio
 		return
 	}
 
-	err = vmReimage(db, session.UserId, int(vmId), form.Image)
+	err = vmReimage(db, session.UserId, vmId, form.Image)
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), L.FormatError(err))
 	} else {
@@ -383,20 +383,20 @@ type PanelChargesParams struct {
 	Next time.Time
 }
 func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	year, err := strconv.ParseInt(mux.Vars(r)["year"], 10, 32)
+	year, err := strconv.Atoi(mux.Vars(r)["year"])
 	if err != nil {
-		year = int64(time.Now().Year())
+		year = time.Now().Year()
 	}
-	month, err := strconv.ParseInt(mux.Vars(r)["month"], 10, 32)
+	month, err := strconv.Atoi(mux.Vars(r)["month"])
 	if err != nil {
-		month = int64(time.Now().Month())
+		month = int(time.Now().Month())
 	}
 
-	requestTime := time.Date(int(year), time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	requestTime := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 
 	params := PanelChargesParams{}
 	params.Frame = frameParams
-	params.Year = int(year)
+	params.Year = year
 	params.Month = time.Month(month)
 	params.Charges = ChargeList(db, session.UserId, params.Year, params.Month)
 	params.Previous = requestTime.AddDate(0, -1, 0)
@@ -464,12 +464,12 @@ func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *
 }
 
 func panelApiRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/account", L.FormattedError("invalid_id"))
 		return
 	}
-	apiDelete(db, session.UserId, int(id))
+	apiDelete(db, session.UserId, id)
 	RedirectMessage(w, r, "/panel/account", L.Success("api_deleted"))
 }
 
@@ -518,13 +518,13 @@ func panelImageAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 }
 
 func panelImageRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormattedError("invalid_image"))
 		return
 	}
 
-	err = imageDelete(db, session.UserId, int(imageId))
+	err = imageDelete(db, session.UserId, imageId)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormatError(err))
 	} else {
@@ -538,12 +538,12 @@ type PanelImageDetailsParams struct {
 	Image *Image
 }
 func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormattedError("invalid_image"))
 		return
 	}
-	image := imageInfo(db, session.UserId, int(imageId))
+	image := imageInfo(db, session.UserId, imageId)
 	if image == nil {
 		RedirectMessage(w, r, "/panel/images", L.FormattedError("image_not_found"))
 		return
@@ -598,12 +598,12 @@ type PanelSupportTicketParams struct {
 	Token string
 }
 func panelSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/support", L.FormattedError("invalid_ticket"))
 		return
 	}
-	ticket := TicketDetails(db, session.UserId, int(ticketId), false)
+	ticket := TicketDetails(db, session.UserId, ticketId, false)
 	if ticket == nil {
 		RedirectMessage(w, r, "/panel/support", L.FormattedError("ticket_not_found"))
 		return
@@ -620,7 +620,7 @@ type SupportTicketReplyForm struct {
 	Message string `schema:"message"`
 }
 func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/support", L.FormattedError("invalid_ticket"))
 		return
@@ -632,7 +632,7 @@ func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Databas
 		return
 	}
 
-	err = ticketReply(db, session.UserId, int(ticketId), form.Message, false)
+	err = ticketReply(db, session.UserId, ticketId, form.Message, false)
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/support/%d", ticketId), L.FormatError(err))
 	} else {
@@ -642,12 +642,12 @@ func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Databas
 }
 
 func panelSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/support", L.FormattedError("invalid_ticket"))
 		return
 	}
-	ticketClose(db, session.UserId, int(ticketId))
+	ticketClose(db, session.UserId, ticketId)
 	LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
 	RedirectMessage(w, r, fmt.Sprintf("/panel/support/%d", ticketId), L.Success("ticket_closed"))
 }

@@ -45,7 +45,7 @@ func (this *WHMCS) handleConnector(w http.ResponseWriter, r *http.Request, db *l
 			w.Write([]byte(fmt.Sprintf("%d", userId)))
 		}
 	case "credit":
-		userId, err := strconv.ParseInt(r.PostForm.Get("user_id"), 10, 64)
+		userId, err := strconv.Atoi(r.PostForm.Get("user_id"))
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 			return
@@ -60,10 +60,10 @@ func (this *WHMCS) handleConnector(w http.ResponseWriter, r *http.Request, db *l
 			http.Error(w, "no such user", 400)
 			return
 		}
-		lobster.UserApplyCredit(db, int(userId), int64(amount * lobster.BILLING_PRECISION), "Credit via WHMCS")
+		lobster.UserApplyCredit(db, userId, int64(amount * lobster.BILLING_PRECISION), "Credit via WHMCS")
 		w.Write([]byte("ok"))
 	case "token":
-		userId, err := strconv.ParseInt(r.PostForm.Get("user_id"), 10, 64)
+		userId, err := strconv.Atoi(r.PostForm.Get("user_id"))
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 			return

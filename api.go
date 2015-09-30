@@ -326,12 +326,12 @@ func apiVMCreate(w http.ResponseWriter, r *http.Request, db *Database, userId in
 }
 
 func apiVMInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -347,12 +347,12 @@ func apiVMInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int,
 }
 
 func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -399,12 +399,12 @@ func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId in
 }
 
 func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -426,12 +426,12 @@ func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId i
 }
 
 func apiVMResize(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -453,12 +453,12 @@ func apiVMResize(w http.ResponseWriter, r *http.Request, db *Database, userId in
 }
 
 func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -473,7 +473,7 @@ func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId in
 }
 
 func apiVMAddresses(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
@@ -498,12 +498,12 @@ func apiVMAddresses(w http.ResponseWriter, r *http.Request, db *Database, userId
 }
 
 func apiVMAddressAdd(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -518,12 +518,12 @@ func apiVMAddressAdd(w http.ResponseWriter, r *http.Request, db *Database, userI
 }
 
 func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -545,12 +545,12 @@ func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, db *Database, us
 }
 
 func apiVMAddressRdns(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	vmId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(db, userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -600,12 +600,12 @@ func apiImageFetch(w http.ResponseWriter, r *http.Request, db *Database, userId 
 }
 
 func apiImageInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid image ID", 400)
 		return
 	}
-	image := imageInfo(db, userId, int(imageId))
+	image := imageInfo(db, userId, imageId)
 	if image == nil {
 		http.Error(w, "No image with that ID", 404)
 		return
@@ -620,13 +620,13 @@ func apiImageInfo(w http.ResponseWriter, r *http.Request, db *Database, userId i
 }
 
 func apiImageDelete(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
-	imageId, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 32)
+	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid image ID", 400)
 		return
 	}
 
-	err = imageDelete(db, userId, int(imageId))
+	err = imageDelete(db, userId, imageId)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 	} else {
