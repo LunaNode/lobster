@@ -48,7 +48,7 @@
 						{{ end }}
 						{{ if .Options }}
 							<div class="form-group">
-								<select name="value">
+								<select name="value" class="form-control">
 									{{ range $value, $desc := .Options }}
 										<option value="{{ $value }}">{{ $desc }}</option>
 									{{ end }}
@@ -88,7 +88,7 @@
 			{{ template "modal_header.html" $params }}
 				<div class="form-group">
 					<label for="plan">{{ T "plan" }}</label>
-					<select name="plan_id" id="plan">
+					<select name="plan_id" id="plan" class="form-control">
 						{{ $vmPlanId := .Vm.Plan.Id }}
 						{{ range .Plans }}
 							<option value="{{ .Id }}"{{ if eq .Id $vmPlanId }} selected{{ end }}>{{ .Name }}</option>
@@ -102,7 +102,7 @@
 			{{ template "modal_header.html" $params }}
 				<div class="form-group">
 					<label for="image">{{ T "image" }}</label>
-					<select name="image" id="image">
+					<select name="image" id="image" class="form-control">
 						{{ range .Images }}
 							<option value="{{ .Id }}">{{ .Name }}</option>
 						{{ end }}
