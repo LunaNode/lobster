@@ -3,26 +3,20 @@
 <tr>
 	<th>{{ T "name" }}</th>
 	<th>{{ T "status" }}</th>
+	<th>{{ T "plan" }}</th>
+	<th>{{ T "region" }}</th>
 	<th>{{ T "external_ip" }}</th>
 	<th>{{ T "private_ip" }}</th>
-	<th>{{ T "plan" }}</th>
-	<th>{{ T "vcpus" }}</th>
-	<th>{{ T "memory" }}</th>
-	<th>{{ T "storage" }}</th>
-	<th>{{ T "bandwidth" }}</th>
 	<th>{{ T "action" }}</th>
 </tr>
 {{ range . }}
 <tr>
 	<td><a href="/panel/vm/{{ .Id }}">{{ .Name }}</a></td>
 	<td>{{ .Status | Title }}</td>
+	<td><span data-toggle="tooltip" data-placement="top" title="vCPU: {{ .Plan.Cpu }}, Memory: {{ .Plan.Ram }} MB, Disk: {{ .Plan.Storage }} GB, Bandwidth: {{ .Plan.Bandwidth }} GB">{{ .Plan.Name }}</span></td>
+	<td>{{ .Region }}</td>
 	<td>{{ .ExternalIP }}</td>
 	<td>{{ .PrivateIP }}</td>
-	<td>{{ .Plan.Name }}</td>
-	<td>{{ .Plan.Cpu }}</td>
-	<td>{{ .Plan.Ram }} MB</td>
-	<td>{{ .Plan.Storage }} GB</td>
-	<td>{{ .Plan.Bandwidth }} GB</td>
 	<td><a href="/panel/vm/{{ .Id }}"><button type="button" class="btn btn-primary btn-sm">{{ T "manage" }}</button></a></td>
 </tr>
 {{ end }}
