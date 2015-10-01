@@ -4,6 +4,7 @@ import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/lndynamic"
 import "github.com/LunaNode/lobster/lobopenstack"
 import "github.com/LunaNode/lobster/solusvm"
+import "github.com/LunaNode/lobster/vmdigitalocean"
 import "github.com/LunaNode/lobster/vmfake"
 import "github.com/LunaNode/lobster/vmlobster"
 import "github.com/LunaNode/lobster/whmcs"
@@ -16,10 +17,10 @@ import "os"
 type VmConfig struct {
 	Name string `json:"name"`
 
-	// one of solusvm, openstack, lobster, lndynamic, fake
+	// one of solusvm, openstack, lobster, lndynamic, fake, digitalocean
 	Type string `json:"type"`
 
-	// API options (used by solusvm, lobster, lndynamic)
+	// API options (used by solusvm, lobster, lndynamic, digitalocean)
 	ApiId string `json:"api_id"`
 	ApiKey string `json:"api_key"`
 
@@ -37,7 +38,7 @@ type VmConfig struct {
 	Tenant string `json:"tenant"`
 	NetworkId string `json:"network_id"`
 
-	// region option (used by lobster, lndynamic)
+	// region option (used by lobster, lndynamic, digitalocean)
 	Region string `json:"region"`
 }
 
@@ -108,6 +109,8 @@ func main() {
 			vmi = lndynamic.MakeLNDynamic(vm.Region, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "fake" {
 			vmi = new(vmfake.Fake)
+		} else if vm.Type == "digitalocean" {
+			vmi = vmdigitalocean.MakeDigitalOcean(vm.Region, vm.ApiId)
 		} else {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
