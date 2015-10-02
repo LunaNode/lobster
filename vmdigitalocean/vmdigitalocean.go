@@ -65,12 +65,16 @@ func (this *DigitalOcean) processAction(vmIdentification int, actionId int) erro
 
 func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	password := utils.Uid(16)
+	image, err := this.findImage(imageIdentification)
+	if err != nil {
+		return "", err
+	}
 	createRequest := &godo.DropletCreateRequest{
 		Name: vm.Name,
 		Region: this.region,
 		Size: this.getPlanName(vm.Plan.Ram),
 		Image: godo.DropletCreateImage{
-			Slug: imageIdentification,
+			ID: image.ID,
 		},
 		IPv6: true,
 		PrivateNetworking: true,
@@ -204,7 +208,7 @@ func (this *DigitalOcean) VmSnapshot(vm *lobster.VirtualMachine) (string, error)
 	if err != nil {
 		return "", err
 	} else {
-		return snapshotName, nil
+		return "snapshot:" + snapshotName, nil
 	}
 }
 
@@ -222,17 +226,27 @@ func (this *DigitalOcean) BandwidthAccounting(vm *lobster.VirtualMachine) int64 
 	return 0
 }
 
-func (this *DigitalOcean) findImageByName(name string) (*godo.Image, error) {
-	images, _, err := this.client.Images.ListUser(&godo.ListOptions{PerPage: 500})
-	if err != nil {
-		return nil, err
-	}
-	for _, image := range images {
-		if image.Name == name {
-			return &image, nil
+func (this *DigitalOcean) findImage(imageIdentification string) (*godo.Image, error) {
+	parts := strings.SplitN(imageIdentification, ":", 2)
+	if len(parts) == 2 {
+		if parts[0] == "snapshot" {
+			images, _, err := this.client.Images.ListUser(&godo.ListOptions{PerPage: 500})
+			if err != nil {
+				return nil, err
+			}
+			for _, image := range images {
+				if image.Name == parts[1] {
+					return &image, nil
+				}
+			}
+			return nil, errors.New("could not find image on account")
+		} else {
+			return nil, errors.New("invalid image prefix " + parts[0])
 		}
+	} else {
+		image, _, err := this.client.Images.GetBySlug(imageIdentification)
+		return image, err
 	}
-	return nil, errors.New("could not find image on account")
 }
 
 func (this *DigitalOcean) ImageFetch(url string, format string) (string, error) {
@@ -240,7 +254,7 @@ func (this *DigitalOcean) ImageFetch(url string, format string) (string, error) 
 }
 
 func (this *DigitalOcean) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
-	image, err := this.findImageByName(imageIdentification)
+	image, err := this.findImage(imageIdentification)
 	if err != nil {
 		if strings.Contains(err.Error(), "could not find image") {
 			return &lobster.ImageInfo {
@@ -257,7 +271,7 @@ func (this *DigitalOcean) ImageInfo(imageIdentification string) (*lobster.ImageI
 }
 
 func (this *DigitalOcean) ImageDelete(imageIdentification string) error {
-	image, err := this.findImageByName(imageIdentification)
+	image, err := this.findImage(imageIdentification)
 	if err != nil {
 		return err
 	}
