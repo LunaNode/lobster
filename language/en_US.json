@@ -23,6 +23,7 @@
 			"ticket_not_found": "ticket not found",
 			"ticket_not_found": "image not found",
 			"vm_not_found": "VM not found",
+			"image_not_found": "image not found",
 
 			"password_mismatch": "passwords do not match",
 			"new_password_mismatch": "new passwords do not match",
