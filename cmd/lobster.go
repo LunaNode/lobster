@@ -7,20 +7,22 @@ import "github.com/LunaNode/lobster/solusvm"
 import "github.com/LunaNode/lobster/vmdigitalocean"
 import "github.com/LunaNode/lobster/vmfake"
 import "github.com/LunaNode/lobster/vmlobster"
+import "github.com/LunaNode/lobster/vmvultr"
 import "github.com/LunaNode/lobster/whmcs"
 
 import "encoding/json"
 import "io/ioutil"
 import "log"
 import "os"
+import "strconv"
 
 type VmConfig struct {
 	Name string `json:"name"`
 
-	// one of solusvm, openstack, lobster, lndynamic, fake, digitalocean
+	// one of solusvm, openstack, lobster, lndynamic, fake, digitalocean, vultr
 	Type string `json:"type"`
 
-	// API options (used by solusvm, lobster, lndynamic, digitalocean)
+	// API options (used by solusvm, lobster, lndynamic, digitalocean, vultr)
 	ApiId string `json:"api_id"`
 	ApiKey string `json:"api_key"`
 
@@ -38,7 +40,7 @@ type VmConfig struct {
 	Tenant string `json:"tenant"`
 	NetworkId string `json:"network_id"`
 
-	// region option (used by lobster, lndynamic, digitalocean)
+	// region option (used by lobster, lndynamic, digitalocean, vultr)
 	Region string `json:"region"`
 }
 
@@ -111,6 +113,12 @@ func main() {
 			vmi = new(vmfake.Fake)
 		} else if vm.Type == "digitalocean" {
 			vmi = vmdigitalocean.MakeDigitalOcean(vm.Region, vm.ApiId)
+		} else if vm.Type == "vultr" {
+			regionId, err := strconv.Atoi(vm.Region)
+			if err != nil {
+				log.Fatalf("Error: invalid region ID for vultr interface: %d", vm.Region)
+			}
+			vmi = vmvultr.MakeVultr(vm.ApiKey, regionId)
 		} else {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
