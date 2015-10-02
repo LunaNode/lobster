@@ -1,6 +1,7 @@
 package vmdigitalocean
 
 import "github.com/LunaNode/lobster"
+import "github.com/LunaNode/lobster/utils"
 import "github.com/digitalocean/godo"
 import "golang.org/x/oauth2"
 
@@ -63,6 +64,7 @@ func (this *DigitalOcean) processAction(vmIdentification int, actionId int) erro
 }
 
 func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+	password := utils.Uid(16)
 	createRequest := &godo.DropletCreateRequest{
 		Name: vm.Name,
 		Region: this.region,
@@ -72,11 +74,13 @@ func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, imageIdentificati
 		},
 		IPv6: true,
 		PrivateNetworking: true,
+		UserData: fmt.Sprintf("#cloud-config\nchpasswd:\n list: |\n  root:%s\n expire: False\n", password),
 	}
 	droplet, _, err := this.client.Droplets.Create(createRequest)
 	if err != nil {
 		return "", err
 	} else {
+		vm.SetMetadata("password", password)
 		return fmt.Sprintf("%d", droplet.ID), nil
 	}
 }
@@ -96,6 +100,7 @@ func (this *DigitalOcean) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, e
 
 	info := lobster.VmInfo{
 		Hostname: droplet.Name,
+		LoginDetails: "username: root; password: " + vm.Metadata("password", "unknown"),
 	}
 	for _, addr4 := range droplet.Networks.V4 {
 		if addr4.Type == "public" {
