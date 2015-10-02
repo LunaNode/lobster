@@ -117,6 +117,25 @@ func (this *DigitalOcean) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, e
 		info.Status = strings.Title(droplet.Status)
 	}
 
+	// list droplet actions
+	var pendingActions []string
+	actionList, _, err := this.client.Droplets.Actions(droplet.ID, &godo.ListOptions{PerPage: 25})
+	if err == nil {
+		for _, action := range actionList {
+			if action.Status == "in-progress" {
+				pendingActions = append(pendingActions, action.Type)
+			}
+		}
+		if len(pendingActions) >= 1 {
+			info.Details = make(map[string]string)
+			if len(pendingActions) == 1 {
+				info.Details["Pending action"] = pendingActions[0]
+			} else {
+				info.Details["Pending actions"] = strings.Join(pendingActions, ", ")
+			}
+		}
+	}
+
 	return &info, nil
 }
 

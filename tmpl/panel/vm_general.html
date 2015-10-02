@@ -171,6 +171,12 @@
 				<th>{{ T "price" }}</th>
 				<td>{{ .Vm.Plan.Price | FormatCredit }} hourly</td>
 			</tr>
+			{{ range $key, $value := .Vm.Info.Details }}
+				<tr>
+					<th>{{ $key }}</th>
+					<td>{{ $value }}</td>
+				</tr>
+			{{ end }}
 		</table>
 	</div>
 </div>
