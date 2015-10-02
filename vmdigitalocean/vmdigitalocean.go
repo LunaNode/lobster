@@ -193,6 +193,21 @@ func (this *DigitalOcean) VmReimage(vm *lobster.VirtualMachine, imageIdentificat
 	}
 }
 
+func (this *DigitalOcean) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+	vmIdentification, _ := strconv.Atoi(vm.Identification)
+	snapshotName := fmt.Sprintf("%d.%s", vm.Id, utils.Uid(16))
+	action, _, err := this.client.DropletActions.Snapshot(vmIdentification, snapshotName)
+	if err != nil {
+		return "", err
+	}
+	err = this.processAction(vm.Id, action.ID)
+	if err != nil {
+		return "", err
+	} else {
+		return snapshotName, nil
+	}
+}
+
 func (this *DigitalOcean) VmResize(vm *lobster.VirtualMachine, plan *lobster.Plan) error {
 	vmIdentification, _ := strconv.Atoi(vm.Identification)
 	action, _, err := this.client.DropletActions.Resize(vmIdentification, this.getPlanName(plan.Ram), true)
@@ -205,4 +220,47 @@ func (this *DigitalOcean) VmResize(vm *lobster.VirtualMachine, plan *lobster.Pla
 
 func (this *DigitalOcean) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	return 0
+}
+
+func (this *DigitalOcean) findImageByName(name string) (*godo.Image, error) {
+	images, _, err := this.client.Images.ListUser(&godo.ListOptions{PerPage: 500})
+	if err != nil {
+		return nil, err
+	}
+	for _, image := range images {
+		if image.Name == name {
+			return &image, nil
+		}
+	}
+	return nil, errors.New("could not find image on account")
+}
+
+func (this *DigitalOcean) ImageFetch(url string, format string) (string, error) {
+	return "", errors.New("operation not supported")
+}
+
+func (this *DigitalOcean) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
+	image, err := this.findImageByName(imageIdentification)
+	if err != nil {
+		if strings.Contains(err.Error(), "could not find image") {
+			return &lobster.ImageInfo {
+				Status: lobster.ImagePending,
+			}, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &lobster.ImageInfo {
+		Status: lobster.ImageActive,
+		Size: int64(image.MinDiskSize) * 1024 * 1024 * 1024,
+	}, nil
+}
+
+func (this *DigitalOcean) ImageDelete(imageIdentification string) error {
+	image, err := this.findImageByName(imageIdentification)
+	if err != nil {
+		return err
+	}
+	_, err = this.client.Images.Delete(image.ID)
+	return err
 }
