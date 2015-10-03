@@ -116,7 +116,7 @@ func main() {
 		} else if vm.Type == "vultr" {
 			regionId, err := strconv.Atoi(vm.Region)
 			if err != nil {
-				log.Fatalf("Error: invalid region ID for vultr interface: %d", vm.Region)
+				log.Fatalf("Error: invalid region ID for vultr interface: %s", vm.Region)
 			}
 			vmi = vmvultr.MakeVultr(vm.ApiKey, regionId)
 		} else {
