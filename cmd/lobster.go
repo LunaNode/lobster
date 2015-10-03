@@ -6,6 +6,7 @@ import "github.com/LunaNode/lobster/lobopenstack"
 import "github.com/LunaNode/lobster/solusvm"
 import "github.com/LunaNode/lobster/vmdigitalocean"
 import "github.com/LunaNode/lobster/vmfake"
+import "github.com/LunaNode/lobster/vmlinode"
 import "github.com/LunaNode/lobster/vmlobster"
 import "github.com/LunaNode/lobster/vmvultr"
 import "github.com/LunaNode/lobster/whmcs"
@@ -19,10 +20,10 @@ import "strconv"
 type VmConfig struct {
 	Name string `json:"name"`
 
-	// one of solusvm, openstack, lobster, lndynamic, fake, digitalocean, vultr
+	// one of solusvm, openstack, lobster, lndynamic, fake, digitalocean, vultr, linode
 	Type string `json:"type"`
 
-	// API options (used by solusvm, lobster, lndynamic, digitalocean, vultr)
+	// API options (used by solusvm, lobster, lndynamic, digitalocean, vultr, linode)
 	ApiId string `json:"api_id"`
 	ApiKey string `json:"api_key"`
 
@@ -40,7 +41,7 @@ type VmConfig struct {
 	Tenant string `json:"tenant"`
 	NetworkId string `json:"network_id"`
 
-	// region option (used by lobster, lndynamic, digitalocean, vultr)
+	// region option (used by lobster, lndynamic, digitalocean, vultr, linode)
 	Region string `json:"region"`
 }
 
@@ -119,6 +120,12 @@ func main() {
 				log.Fatalf("Error: invalid region ID for vultr interface: %s", vm.Region)
 			}
 			vmi = vmvultr.MakeVultr(vm.ApiKey, regionId)
+		} else if vm.Type == "linode" {
+			datacenterId, err := strconv.Atoi(vm.Region)
+			if err != nil {
+				log.Fatalf("Error: invalid datacenter ID for linode interface: %s", vm.Region)
+			}
+			vmi = vmlinode.MakeLinode(vm.ApiKey, datacenterId)
 		} else {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
