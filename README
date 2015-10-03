@@ -1,22 +1,28 @@
+Lobster
+=======
+
 Introduction
 ------------
 
-Lobster is a simple hourly billing panel for virtual machine services.
-Lobster does not manage virtual machines directly -- instead, it relies on backends that it communicates with through VM interfaces; several backends are supported.
+Lobster is a simple hourly billing panel for virtual machine services. Lobster
+does not manage virtual machines directly -- instead, it relies on backends that
+it communicates with through VM interfaces; several backends are supported.
 
 Regions
 -------
 
-Lobster allows multiple regions to be defined.
-Each region has a separate virtual machine interface, although the interface type may be the same.
-Plans are shared across regions, but images are not.
+Lobster allows multiple regions to be defined. Each region has a separate
+virtual machine interface, although the interface type may be the same. Plans
+are shared across regions, but images are not.
 
 Billing
 -------
 
-Lobster currently only supports a prepaid hourly billing model.
-Users pay via some payment interface, and once payment is recorded as completed, credit is added to their account.
-If a user is running out of credit, Lobster will send low credit notifications; once credit reaches zero, services are suspended, and eventually the account is terminated.
+Lobster currently only supports a prepaid hourly billing model. Users pay via
+some payment interface, and once payment is recorded as completed, credit is
+added to their account. If a user is running out of credit, Lobster will send
+low credit notifications; once credit reaches zero, services are suspended, and
+eventually the account is terminated.
 
 There are three services billed by Lobster:
 
@@ -27,16 +33,27 @@ There are three services billed by Lobster:
 Backends
 --------
 
-Different backends have different features, but Lobster tries to support as much as possible. Currently these backends are supported:
+Different backends have different features, but Lobster tries to support as
+much as possible. Currently these backends are supported:
 
 * OpenStack
 * SolusVM
 
+These provider-specific APIs are also supported:
+
+* Luna Node (https://lunanode.com)
+* Digital Ocean
+* Linode
+* Vultr
+
 Payment gateways
 ----------------
 
-Payment is generally accepted via a pay-callback system, where we direct the user to a payment gateway and then wait for a secure callback notification from the gateway that confirms payment.
-Supported gateways:
+Payment is generally accepted via a pay-callback system, where we direct the
+user to a payment gateway and then wait for a secure callback notification from
+the gateway that confirms payment.
+
+Supported payment gateways:
 
 * Paypal
 * Coinbase
@@ -48,4 +65,6 @@ The Lobster project uses Github for coordination.
 
 URL: https://github.com/LunaNode/lobster
 
-Note that per the Apache license, any contribution you submit for inclusion in Lobster shall be under the terms of the Apache license. See Section 5 of the Apache License Version 2.0 for details.
+Note that per the Apache license, any contribution you submit for inclusion in
+Lobster shall be under the terms of the Apache license. See Section 5 of the
+Apache License Version 2.0 for details.
