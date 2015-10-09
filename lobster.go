@@ -69,6 +69,10 @@ func MakeLobster(cfgPath string) *Lobster {
 	return this
 }
 
+func (this *Lobster) RegisterSplashRoute(path string, template string) {
+	this.router.HandleFunc(path, getSplashHandler(template))
+}
+
 func (this *Lobster) RegisterPanelHandler(path string, f PanelHandlerFunc, onlyPost bool) {
 	result := this.router.HandleFunc(path, this.db.WrapHandler(SessionWrap(panelWrap(f))))
 	if onlyPost {
@@ -162,12 +166,6 @@ func (this *Lobster) Init() {
 	decoder.IgnoreUnknownKeys(true)
 
 	// splash/static routes
-	this.router.HandleFunc("/", getSplashHandler("index"))
-	this.router.HandleFunc("/about", getSplashHandler("about"))
-	this.router.HandleFunc("/pricing", getSplashHandler("pricing"))
-	this.router.HandleFunc("/contact", getSplashHandler("contact"))
-	this.router.HandleFunc("/terms", getSplashHandler("terms"))
-	this.router.HandleFunc("/privacy", getSplashHandler("privacy"))
 	this.router.HandleFunc("/message", getSplashHandler("splash_message"))
 	this.router.HandleFunc("/login", this.db.WrapHandler(SessionWrap(getSplashFormHandler("login"))))
 	this.router.HandleFunc("/create", this.db.WrapHandler(SessionWrap(getSplashFormHandler("create"))))

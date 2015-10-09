@@ -1,4 +1,13 @@
 {
+	"splash_routes":
+	{
+		"/": "index",
+		"/about": "about",
+		"/pricing": "pricing",
+		"/contact": "contact",
+		"/terms": "terms",
+		"/privacy": "privacy",
+	},
 	"vm":
 	[
 		{

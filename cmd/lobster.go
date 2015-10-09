@@ -63,10 +63,11 @@ type PaymentConfig struct {
 	ApiSecret string `json:"api_secret"`
 }
 
-type InterfaceConfig struct {
+type JSONConfig struct {
 	Vm []*VmConfig `json:"vm"`
 	Payment []*PaymentConfig `json:"payment"`
 	Module []map[string]string `json:"module"`
+	SplashRoutes map[string]string `json:"splash_routes"`
 }
 
 func main() {
@@ -77,19 +78,19 @@ func main() {
 	app := lobster.MakeLobster(cfgPath)
 	app.Init()
 
-	// load interface configuration
-	interfacePath := cfgPath + ".json"
-	interfaceConfigBytes, err := ioutil.ReadFile(interfacePath)
+	// load json configuration
+	jsonPath := cfgPath + ".json"
+	jsonConfigBytes, err := ioutil.ReadFile(jsonPath)
 	if err != nil {
-		log.Fatalf("Error: failed to read interface configuration file %s: %s", interfacePath, err.Error())
+		log.Fatalf("Error: failed to read json configuration file %s: %s", jsonPath, err.Error())
 	}
-	var interfaceConfig InterfaceConfig
-	err = json.Unmarshal(interfaceConfigBytes, &interfaceConfig)
+	var jsonConfig JSONConfig
+	err = json.Unmarshal(jsonConfigBytes, &jsonConfig)
 	if err != nil {
-		log.Fatalf("Error: failed to parse interface configuration: %s", err.Error())
+		log.Fatalf("Error: failed to parse json configuration: %s", err.Error())
 	}
 
-	for _, vm := range interfaceConfig.Vm {
+	for _, vm := range jsonConfig.Vm {
 		log.Printf("Initializing VM interface %s (type=%s)", vm.Name, vm.Type)
 		var vmi lobster.VmInterface
 		if vm.Type == "openstack" {
@@ -133,7 +134,7 @@ func main() {
 		app.RegisterVmInterface(vm.Name, vmi)
 	}
 
-	for _, payment := range interfaceConfig.Payment {
+	for _, payment := range jsonConfig.Payment {
 		var pi lobster.PaymentInterface
 		if payment.Type == "paypal" {
 			pi = lobster.MakePaypalPayment(app, payment.Business, payment.ReturnUrl)
@@ -147,13 +148,17 @@ func main() {
 		app.RegisterPaymentInterface(payment.Name, pi)
 	}
 
-	for _, module := range interfaceConfig.Module {
+	for _, module := range jsonConfig.Module {
 		t := module["type"]
 		if t == "whmcs" {
 			whmcs.MakeWHMCS(app, module["ip"], module["secret"])
 		} else {
 			log.Fatalf("Encountered unrecognized module type %s", t)
 		}
+	}
+
+	for path, template := range jsonConfig.SplashRoutes {
+		app.RegisterSplashRoute(path, template)
 	}
 
 	app.Run()
