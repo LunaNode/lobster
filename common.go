@@ -84,9 +84,9 @@ func errorHandler(w http.ResponseWriter, r *http.Request, report bool) {
 			runtime.Stack(stackBytes, false)
 
 			if r != nil {
-				reportError(re.(error), fmt.Sprintf("failed on %s (%s)", r.URL.Path, r.RemoteAddr), string(stackBytes))
+				ReportError(re.(error), fmt.Sprintf("failed on %s (%s)", r.URL.Path, r.RemoteAddr), string(stackBytes))
 			} else {
-				reportError(re.(error), "error", string(stackBytes))
+				ReportError(re.(error), "error", string(stackBytes))
 			}
 		}
 

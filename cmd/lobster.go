@@ -1,6 +1,7 @@
 package main
 
 import "github.com/LunaNode/lobster"
+import "github.com/LunaNode/lobster/core/support"
 import "github.com/LunaNode/lobster/vmi/lunanode"
 import "github.com/LunaNode/lobster/vmi/openstack"
 import "github.com/LunaNode/lobster/vmi/solusvm"
@@ -9,7 +10,7 @@ import "github.com/LunaNode/lobster/vmi/fake"
 import "github.com/LunaNode/lobster/vmi/linode"
 import vmlobster "github.com/LunaNode/lobster/vmi/lobster"
 import "github.com/LunaNode/lobster/vmi/vultr"
-import "github.com/LunaNode/lobster/whmcs"
+import "github.com/LunaNode/lobster/module/whmcs"
 
 import "encoding/json"
 import "io/ioutil"
@@ -75,8 +76,10 @@ func main() {
 	if len(os.Args) >= 2 {
 		cfgPath = os.Args[1]
 	}
-	app := lobster.MakeLobster(cfgPath)
-	app.Init()
+	lobster.Setup(cfgPath)
+
+	// associate core
+	support.Setup()
 
 	// load json configuration
 	jsonPath := cfgPath + ".json"
@@ -97,7 +100,6 @@ func main() {
 			vmi = openstack.MakeOpenStack(vm.Url, vm.Username, vm.Password, vm.Tenant, vm.NetworkId)
 		} else if vm.Type == "solusvm" {
 			vmi = &solusvm.SolusVM{
-				Lobster: app,
 				VirtType: vm.VirtType,
 				NodeGroup: vm.NodeGroup,
 				Api: &solusvm.API{
@@ -131,35 +133,35 @@ func main() {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
 		log.Println("... initialized successfully")
-		app.RegisterVmInterface(vm.Name, vmi)
+		lobster.RegisterVmInterface(vm.Name, vmi)
 	}
 
 	for _, payment := range jsonConfig.Payment {
 		var pi lobster.PaymentInterface
 		if payment.Type == "paypal" {
-			pi = lobster.MakePaypalPayment(app, payment.Business, payment.ReturnUrl)
+			pi = lobster.MakePaypalPayment(payment.Business, payment.ReturnUrl)
 		} else if payment.Type == "coinbase" {
-			pi = lobster.MakeCoinbasePayment(app, payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
+			pi = lobster.MakeCoinbasePayment(payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
 		} else if payment.Type == "fake" {
 			pi = new(lobster.FakePayment)
 		} else {
 			log.Fatalf("Encountered unrecognized payment interface type %s", payment.Type)
 		}
-		app.RegisterPaymentInterface(payment.Name, pi)
+		lobster.RegisterPaymentInterface(payment.Name, pi)
 	}
 
 	for _, module := range jsonConfig.Module {
 		t := module["type"]
 		if t == "whmcs" {
-			whmcs.MakeWHMCS(app, module["ip"], module["secret"])
+			whmcs.MakeWHMCS(module["ip"], module["secret"])
 		} else {
 			log.Fatalf("Encountered unrecognized module type %s", t)
 		}
 	}
 
 	for path, template := range jsonConfig.SplashRoutes {
-		app.RegisterSplashRoute(path, template)
+		lobster.RegisterSplashRoute(path, template)
 	}
 
-	app.Run()
+	lobster.Run()
 }

@@ -37,11 +37,9 @@ func TestReset() *Database {
 	return db
 }
 
-func TestLobster() *Lobster {
-	app := new(Lobster)
-	app.router = mux.NewRouter()
-	app.db = MakeDatabase()
-	return app
+func TestSetup() {
+	router = mux.NewRouter()
+	db = MakeDatabase()
 }
 
 // Creates user and returns user id.

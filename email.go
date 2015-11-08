@@ -50,12 +50,6 @@ type VmCreateErrorEmail struct {
 	Name string
 }
 
-type TicketUpdateEmail struct {
-	Id int
-	Subject string
-	Message string
-}
-
 type CoinbaseMispaidEmail struct {
 	OrderId string
 }
@@ -89,7 +83,7 @@ func loadEmail() {
 	emailTemplate = template.Must(template.New("").Funcs(template.FuncMap(templateFuncMap())).ParseFiles(templatePaths...))
 }
 
-func reportError(err error, description string, detail string) {
+func ReportError(err error, description string, detail string) {
 	if err != nil {
 		if detail != "" {
 			log.Println(detail)
@@ -99,7 +93,7 @@ func reportError(err error, description string, detail string) {
 		// the mail operation may itself generate an error, but we don't recursively report it
 		suberr := mail(nil, -1, "error", ErrorEmail{Error: err.Error(), Description: description, Detail: detail}, false)
 		if suberr != nil {
-			log.Printf("reportError: failed to report: %s", suberr)
+			log.Printf("ReportError: failed to report: %s", suberr)
 		}
 	}
 }
@@ -164,12 +158,12 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	return e.Send(cfg.Email.Host, cfg.Email.Port, auth, cfg.Email.NoTLS)
 }
 
-func mailWrap(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) {
+func MailWrap(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) {
 	go func() {
 		defer errorHandler(nil, nil, true)
 		err := mail(db, userId, tmpl, subparams, ccAdmin)
 		if err != nil {
-			reportError(err, "failed to send email", fmt.Sprintf("userid=%d, tmpl=%s, subparam=%v", userId, tmpl, subparams))
+			ReportError(err, "failed to send email", fmt.Sprintf("userid=%d, tmpl=%s, subparam=%v", userId, tmpl, subparams))
 		}
 	}()
 }

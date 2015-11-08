@@ -142,7 +142,7 @@ func TestSessionCSRF(t *testing.T) {
 
 	// valid token
 	v := url.Values{}
-	v.Add("token", csrfGenerate(db, session))
+	v.Add("token", CSRFGenerate(db, session))
 	req, _ = http.NewRequest("POST", "http://example.com/", bytes.NewBufferString(v.Encode()))
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -167,7 +167,7 @@ func TestSessionCSRF(t *testing.T) {
 	// other session token
 	session2 := makeSession(w, db)
 	v = url.Values{}
-	v.Add("token", csrfGenerate(db, session2))
+	v.Add("token", CSRFGenerate(db, session2))
 	req, _ = http.NewRequest("POST", "http://example.com/", bytes.NewBufferString(v.Encode()))
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

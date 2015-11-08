@@ -9,7 +9,6 @@ import "strconv"
 import "strings"
 
 type SolusVM struct {
-	Lobster *lobster.Lobster
 	VirtType string
 	NodeGroup string
 	Api *API
@@ -88,17 +87,14 @@ func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 		if err != nil {
 			return "", err
 		} else {
-			if this.Lobster == nil {
-				return "", errors.New("solusvm module misconfiguration: lobster instance not referenced")
-			}
-			return this.Lobster.HandleWebsockify(vncInfo.Ip + vncInfo.Port, vncInfo.Password), nil
+			return lobster.HandleWebsockify(vncInfo.Ip + vncInfo.Port, vncInfo.Password), nil
 		}
 	} else {
 		consoleInfo, err := this.Api.VmConsole(vmIdentificationInt)
 		if err != nil {
 			return "", err
 		} else {
-			return this.Lobster.HandleWssh(consoleInfo.Ip + ":" + consoleInfo.Port, consoleInfo.Username, consoleInfo.Password), nil
+			return lobster.HandleWssh(consoleInfo.Ip + ":" + consoleInfo.Port, consoleInfo.Username, consoleInfo.Password), nil
 		}
 	}
 }

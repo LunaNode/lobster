@@ -107,7 +107,7 @@ func generateSessionIdentifier(w http.ResponseWriter) string {
 	return sessionIdentifier
 }
 
-func csrfGenerate(db *Database, session *Session) string {
+func CSRFGenerate(db *Database, session *Session) string {
 	tokenBytes := make([]byte, 32)
 	_, err := rand.Read(tokenBytes)
 	checkErr(err)

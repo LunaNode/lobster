@@ -27,11 +27,11 @@ type PaypalPayment struct {
 	returnUrl string
 }
 
-func MakePaypalPayment(lobster *Lobster, business string, returnUrl string) *PaypalPayment {
+func MakePaypalPayment(business string, returnUrl string) *PaypalPayment {
 	this := new(PaypalPayment)
 	this.business = business
 	this.returnUrl = returnUrl
-	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, lobster.GetDatabase().WrapHandler(this.Callback), true)
+	RegisterHttpHandler(PAYPAL_CALLBACK, GetDatabase().WrapHandler(this.Callback), true)
 	return this
 }
 
@@ -52,7 +52,7 @@ func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *D
 func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *Database) {
 	requestBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		reportError(err, "paypal callback read error", fmt.Sprintf("ip: %s", r.RemoteAddr))
+		ReportError(err, "paypal callback read error", fmt.Sprintf("ip: %s", r.RemoteAddr))
 		splashNotFoundHandler(w, r)
 		return
 	}
@@ -75,19 +75,19 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 
 	resp, err := http.Post(PAYPAL_URL, "application/x-www-form-urlencoded", bytes.NewBufferString(validateReq))
 	if err != nil {
-		reportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		splashNotFoundHandler(w, r)
 		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		reportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		splashNotFoundHandler(w, r)
 		return
 	}
 
 	if string(body) != "VERIFIED" || myPost["payment_status"] == "" || myPost["mc_gross"] == "" || myPost["mc_currency"] == "" || myPost["txn_id"] == "" || myPost["receiver_email"] == "" || myPost["payment_status"] == "" || myPost["payer_email"] == "" || myPost["custom"] == "" {
-		reportError(errors.New("missing field or not verified"), "paypal callback bad input or validation", fmt.Sprintf("ip: %s; verify body: %s; requestmap: %v", r.RemoteAddr, body, myPost))
+		ReportError(errors.New("missing field or not verified"), "paypal callback bad input or validation", fmt.Sprintf("ip: %s; verify body: %s; requestmap: %v", r.RemoteAddr, body, myPost))
 		splashNotFoundHandler(w, r)
 		return
 	}
@@ -97,13 +97,13 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	if myPost["payment_status"] != "Completed" {
 		return
 	} else if !strings.HasPrefix(myPost["custom"], "lobster") {
-		reportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	} else if strings.TrimSpace(strings.ToLower(myPost["receiver_email"])) != strings.TrimSpace(strings.ToLower(this.business)) {
-		reportError(errors.New(fmt.Sprintf("invalid payment with receiver_email=%s", myPost["receiver_email"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(errors.New(fmt.Sprintf("invalid payment with receiver_email=%s", myPost["receiver_email"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	} else if myPost["mc_currency"] != cfg.Billing.Currency {
-		reportError(errors.New(fmt.Sprintf("invalid payment with currency=%s", myPost["mc_currency"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(errors.New(fmt.Sprintf("invalid payment with currency=%s", myPost["mc_currency"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 
@@ -112,7 +112,7 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	userIdStr := strings.Split(myPost["custom"], "lobster")[1]
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		reportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 

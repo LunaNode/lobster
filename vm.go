@@ -220,14 +220,14 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 		defer errorHandler(nil, nil, true)
 		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vmGet(db, int(vmId)), image.Identification)
 		if err != nil {
-			reportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
+			ReportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
-			mailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: int(vmId), Name: name}, true)
+			MailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: int(vmId), Name: name}, true)
 			return
 		}
 
 		db.Exec("UPDATE vms SET status = 'active', identification = ? WHERE id = ?", vmIdentification, vmId)
-		mailWrap(db, userId, "vmCreate", VmCreateEmail{Id: int(vmId), Name: name}, true)
+		MailWrap(db, userId, "vmCreate", VmCreateEmail{Id: int(vmId), Name: name}, true)
 	}()
 
 	return int(vmId), nil
@@ -248,7 +248,7 @@ func (vm *VirtualMachine) LoadInfo() {
 	var err error
 	vm.Info, err = vmi.VmInfo(vm)
 	if err != nil {
-		reportError(err, "vmInfo failed", fmt.Sprintf("vm_id=%d, identification=%s", vm.Id, vm.Identification))
+		ReportError(err, "vmInfo failed", fmt.Sprintf("vm_id=%d, identification=%s", vm.Id, vm.Identification))
 		vm.Info = new(VmInfo)
 	}
 
@@ -327,7 +327,7 @@ func (vm *VirtualMachine) Vnc() (string, error) {
 
 		urlTry, err := vmi.VmVnc(vm)
 		if err != nil {
-			reportError(err, "failed to retrieve VNC URL", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
+			ReportError(err, "failed to retrieve VNC URL", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
 			return err
 		} else {
 			url = urlTry
@@ -429,7 +429,7 @@ func (vm *VirtualMachine) Rename(name string) error {
 		// don't worry about back-end errors, but try to rename anyway
 		vmi, ok := vmGetInterface(vm.Region).(VMIRename)
 		if ok {
-			reportError(vmi.VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
+			ReportError(vmi.VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
 		}
 		return nil
 	})
@@ -501,14 +501,14 @@ func (vm *VirtualMachine) Delete(userId int) error {
 
 	if vm.Identification != "" {
 		go func() {
-			reportError(vmGetInterface(vm.Region).VmDelete(vm), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
+			ReportError(vmGetInterface(vm.Region).VmDelete(vm), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
 		}()
 	}
 
 	vmBilling(vm.db, vm.Id, true)
 	vmUpdateAdditionalBandwidth(vm.db, vm)
 	vm.db.Exec("DELETE FROM vms WHERE id = ?", vm.Id)
-	mailWrap(vm.db, userId, "vmDeleted", VmDeletedEmail{Id: vm.Id, Name: vm.Name}, true)
+	MailWrap(vm.db, userId, "vmDeleted", VmDeletedEmail{Id: vm.Id, Name: vm.Name}, true)
 	return nil
 }
 
@@ -700,7 +700,7 @@ func imageDeleteForce(db *Database, imageId int) error {
 
 	err := vmi.ImageDelete(image.Identification)
 	if err != nil {
-		reportError(err, "image force deletion failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
+		ReportError(err, "image force deletion failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
 	}
 	db.Exec("DELETE FROM images WHERE id = ?", image.Id)
 	return nil
@@ -720,7 +720,7 @@ func imageInfo(db *Database, userId int, imageId int) *Image {
 	var err error
 	image.Info, err = vmi.ImageInfo(image.Identification)
 	if err != nil {
-		reportError(err, "imageInfo failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
+		ReportError(err, "imageInfo failed", fmt.Sprintf("image_id=%d, identification=%s", image.Id, image.Identification))
 		image.Info = new(ImageInfo)
 	}
 	return image

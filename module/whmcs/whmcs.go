@@ -12,12 +12,12 @@ const TOKEN_LENGTH = 32
 
 // CREATE TABLE whmcs_tokens (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, token VARCHAR(32) NOT NULL, time TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
-func MakeWHMCS(app *lobster.Lobster, ip string, secret string) *WHMCS {
+func MakeWHMCS(ip string, secret string) *WHMCS {
 	this := new(WHMCS)
 	this.ip = ip
 	this.secret = secret
-	app.RegisterHttpHandler("/whmcs_connector", app.GetDatabase().WrapHandler(this.handleConnector), true)
-	app.RegisterHttpHandler("/whmcs_token", app.GetDatabase().WrapHandler(lobster.SessionWrap(this.handleToken)), false)
+	lobster.RegisterHttpHandler("/whmcs_connector", lobster.GetDatabase().WrapHandler(this.handleConnector), true)
+	lobster.RegisterHttpHandler("/whmcs_token", lobster.GetDatabase().WrapHandler(lobster.SessionWrap(this.handleToken)), false)
 	return this
 }
 

@@ -33,7 +33,7 @@ func authCreate(db *Database, ip string, username string, password string, email
 
 	LogAction(db, userId, ip, "Registered account", "")
 	AntifloodAction(db, ip, "authCreate")
-	mailWrap(db, -1, "accountCreated", AccountCreatedEmail{UserId: int(userId), Username: username, Email: email}, false)
+	MailWrap(db, -1, "accountCreated", AccountCreatedEmail{UserId: int(userId), Username: username, Email: email}, false)
 	return userId, nil
 }
 
@@ -98,7 +98,7 @@ func authChangePassword(db *Database, ip string, userId int, oldPassword string,
 		db.Exec("UPDATE users SET password = ? WHERE id = ?", authMakePassword(newPassword), userId)
 		log.Printf("Successful password change for user_id=%d (%s)", userId, ip)
 		LogAction(db, userId, ip, "Change password", "")
-		mailWrap(db, userId, "authChangePassword", nil, false)
+		MailWrap(db, userId, "authChangePassword", nil, false)
 		return nil
 	} else {
 		AntifloodAction(db, ip, "authCheck")
@@ -136,7 +136,7 @@ func authPwresetRequest(db *Database, ip string, username string, email string) 
 
 	token := utils.Uid(32)
 	db.Exec("INSERT INTO pwreset_tokens (user_id, token) VALUES (?, ?)", userId, token)
-	mailWrap(db, userId, "pwresetRequest", token, false)
+	MailWrap(db, userId, "pwresetRequest", token, false)
 	return nil
 }
 
@@ -160,7 +160,7 @@ func authPwresetSubmit(db *Database, ip string, userId int, token string, passwo
 	db.Exec("UPDATE users SET password = ? WHERE id = ?", authMakePassword(password), userId)
 	log.Printf("Successful password reset for user_id=%d (%s)", userId, ip)
 	LogAction(db, userId, ip, "Reset password", "")
-	mailWrap(db, userId, "authChangePassword", nil, false)
+	MailWrap(db, userId, "authChangePassword", nil, false)
 	return nil
 }
 
@@ -252,7 +252,7 @@ func authPwresetHandler(w http.ResponseWriter, r *http.Request, db *Database, se
 	}
 	params := AuthPwresetParams{
 		Message: message,
-		Token: csrfGenerate(db, session),
+		Token: CSRFGenerate(db, session),
 	}
 
 	if r.URL.Query().Get("user_id") != "" && r.URL.Query().Get("token") != "" {

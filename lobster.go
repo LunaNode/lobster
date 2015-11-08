@@ -22,14 +22,11 @@ var cfg *Config
 var L *i18n.Section
 var LA i18n.SectionFunc
 
-type Lobster struct {
-	router *mux.Router
-	db *Database
-
-	wsMutex sync.Mutex
-	ws *websockify.Websockify
-	ssh *wssh.Wssh
-}
+var router *mux.Router
+var db *Database
+var wsMutex sync.Mutex
+var ws *websockify.Websockify
+var ssh *wssh.Wssh
 
 func LobsterHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -59,101 +56,99 @@ func LogAction(db *Database, userId int, ip string, name string, details string)
 	db.Exec("INSERT INTO actions (user_id, ip, name, details) VALUES (?, ?, ?, ?)", userId, ip, name, details)
 }
 
-func MakeLobster(cfgPath string) *Lobster {
-	this := new(Lobster)
-
-	cfg = LoadConfig(cfgPath)
-	this.router = mux.NewRouter()
-	this.db = MakeDatabase()
-
-	return this
+func RegisterSplashRoute(path string, template string) {
+	router.HandleFunc(path, getSplashHandler(template))
 }
 
-func (this *Lobster) RegisterSplashRoute(path string, template string) {
-	this.router.HandleFunc(path, getSplashHandler(template))
-}
-
-func (this *Lobster) RegisterPanelHandler(path string, f PanelHandlerFunc, onlyPost bool) {
-	result := this.router.HandleFunc(path, this.db.WrapHandler(SessionWrap(panelWrap(f))))
+func RegisterPanelHandler(path string, f PanelHandlerFunc, onlyPost bool) {
+	result := router.HandleFunc(path, db.WrapHandler(SessionWrap(panelWrap(f))))
 	if onlyPost {
 		result.Methods("POST")
 	}
 }
 
-func (this *Lobster) RegisterAPIHandler(path string, f APIHandlerFunc, method string) {
-	this.router.HandleFunc(path, this.db.WrapHandler(apiWrap(f))).Methods(method)
+func RegisterAPIHandler(path string, f APIHandlerFunc, method string) {
+	router.HandleFunc(path, db.WrapHandler(apiWrap(f))).Methods(method)
 }
 
-func (this *Lobster) RegisterAdminHandler(path string, f AdminHandlerFunc, onlyPost bool) {
-	result := this.router.HandleFunc(path, this.db.WrapHandler(SessionWrap(adminWrap(f))))
+func RegisterAdminHandler(path string, f AdminHandlerFunc, onlyPost bool) {
+	result := router.HandleFunc(path, db.WrapHandler(SessionWrap(adminWrap(f))))
 	if onlyPost {
 		result.Methods("POST")
 	}
 }
 
-func (this *Lobster) RegisterHttpHandler(path string, f http.HandlerFunc, onlyPost bool) {
-	result := this.router.HandleFunc(path, f)
+func RegisterHttpHandler(path string, f http.HandlerFunc, onlyPost bool) {
+	result := router.HandleFunc(path, f)
 	if onlyPost {
 		result.Methods("POST")
 	}
 }
 
-func (this *Lobster) RegisterVmInterface(region string, vmi VmInterface) {
+func RegisterVmInterface(region string, vmi VmInterface) {
 	if regionInterfaces[region] != nil {
 		log.Fatalf("Duplicate VM interface for region %s", region)
 	}
 	regionInterfaces[region] = vmi
 }
 
-func (this *Lobster) RegisterPaymentInterface(method string, payInterface PaymentInterface) {
+func RegisterPaymentInterface(method string, payInterface PaymentInterface) {
 	if paymentInterfaces[method] != nil {
 		log.Fatalf("Duplicate payment interface for method %s", method)
 	}
 	paymentInterfaces[method] = payInterface
 }
 
-func (this *Lobster) GetConfig() *Config {
+func GetConfig() *Config {
 	return cfg
 }
 
-func (this *Lobster) GetDatabase() *Database {
-	return this.db
+func GetDatabase() *Database {
+	return db
+}
+
+func GetDecoder() *schema.Decoder {
+	return decoder
 }
 
 // Creates websockify instance if not already setup, initializes token, and returns URL to redirect to
-func (this *Lobster) HandleWebsockify(ipport string, password string) string {
-	this.wsMutex.Lock()
-	defer this.wsMutex.Unlock()
+func HandleWebsockify(ipport string, password string) string {
+	wsMutex.Lock()
+	defer wsMutex.Unlock()
 
-	if this.ws == nil {
-		this.ws = &websockify.Websockify{
+	if ws == nil {
+		ws = &websockify.Websockify{
 			Listen: cfg.Novnc.Listen,
 		}
-		this.ws.Run()
+		ws.Run()
 	}
 
-	token := this.ws.Register(ipport)
+	token := ws.Register(ipport)
 	return strings.Replace(strings.Replace(cfg.Novnc.Url, "TOKEN", token, 1), "PASSWORD", password, 1)
 }
 
 // Creates wssh instance if not already setup, initializes token, and returns URL to redirect to
-func (this *Lobster) HandleWssh(ipport string, username string, password string) string {
-	this.wsMutex.Lock()
-	defer this.wsMutex.Unlock()
+func HandleWssh(ipport string, username string, password string) string {
+	wsMutex.Lock()
+	defer wsMutex.Unlock()
 
-	if this.ssh == nil {
-		this.ssh = &wssh.Wssh{
+	if ssh == nil {
+		ssh = &wssh.Wssh{
 			Debug: cfg.Default.Debug,
 			Listen: cfg.Wssh.Listen,
 		}
-		this.ssh.Run()
+		ssh.Run()
 	}
 
-	token := this.ssh.Register(ipport, username, password)
+	token := ssh.Register(ipport, username, password)
 	return strings.Replace(cfg.Wssh.Url, "TOKEN", token, 1)
 }
 
-func (this *Lobster) Init() {
+func Setup(cfgPath string) {
+	cfg = LoadConfig(cfgPath)
+	router = mux.NewRouter()
+	db = MakeDatabase()
+
 	lang, err := i18n.LoadFile("language/" + cfg.Default.Language + ".json")
 	checkErr(err)
 	LA = lang.S
@@ -161,98 +156,89 @@ func (this *Lobster) Init() {
 
 	loadTemplates()
 	loadEmail()
+	loadPanelWidgets()
 
 	decoder = schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 
 	// splash/static routes
-	this.router.HandleFunc("/message", getSplashHandler("splash_message"))
-	this.router.HandleFunc("/login", this.db.WrapHandler(SessionWrap(getSplashFormHandler("login"))))
-	this.router.HandleFunc("/create", this.db.WrapHandler(SessionWrap(getSplashFormHandler("create"))))
-	this.router.HandleFunc("/pwreset", this.db.WrapHandler(SessionWrap(authPwresetHandler)))
-	this.router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
-	this.router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
+	router.HandleFunc("/message", getSplashHandler("splash_message"))
+	router.HandleFunc("/login", db.WrapHandler(SessionWrap(getSplashFormHandler("login"))))
+	router.HandleFunc("/create", db.WrapHandler(SessionWrap(getSplashFormHandler("create"))))
+	router.HandleFunc("/pwreset", db.WrapHandler(SessionWrap(authPwresetHandler)))
+	router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
+	router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
 
 	// auth routes
-	this.router.HandleFunc("/auth/login", this.db.WrapHandler(SessionWrap(authLoginHandler))).Methods("POST")
-	this.router.HandleFunc("/auth/create", this.db.WrapHandler(SessionWrap(authCreateHandler))).Methods("POST")
-	this.router.HandleFunc("/auth/logout", this.db.WrapHandler(SessionWrap(authLogoutHandler)))
-	this.router.HandleFunc("/auth/pwreset_request", this.db.WrapHandler(SessionWrap(authPwresetRequestHandler))).Methods("POST")
-	this.router.HandleFunc("/auth/pwreset_submit", this.db.WrapHandler(SessionWrap(authPwresetSubmitHandler))).Methods("POST")
+	router.HandleFunc("/auth/login", db.WrapHandler(SessionWrap(authLoginHandler))).Methods("POST")
+	router.HandleFunc("/auth/create", db.WrapHandler(SessionWrap(authCreateHandler))).Methods("POST")
+	router.HandleFunc("/auth/logout", db.WrapHandler(SessionWrap(authLogoutHandler)))
+	router.HandleFunc("/auth/pwreset_request", db.WrapHandler(SessionWrap(authPwresetRequestHandler))).Methods("POST")
+	router.HandleFunc("/auth/pwreset_submit", db.WrapHandler(SessionWrap(authPwresetSubmitHandler))).Methods("POST")
 
 	// panel routes
-	this.router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))
-	this.RegisterPanelHandler("/panel/dashboard", panelDashboard, false)
-	this.RegisterPanelHandler("/panel/vms", panelVirtualMachines, false)
-	this.RegisterPanelHandler("/panel/newvm", panelNewVM, false)
-	this.RegisterPanelHandler("/panel/newvm/{region:[^/]+}", panelNewVMRegion, false)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}", panelVM, false)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/start", panelVMStart, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/stop", panelVMStop, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reboot", panelVMReboot, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/delete", panelVMDelete, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/action/{action:[^/]+}", panelVMAction, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/vnc", panelVMVnc, false)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reimage", panelVMReimage, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/rename", panelVMRename, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/snapshot", panelVMSnapshot, true)
-	this.RegisterPanelHandler("/panel/vm/{id:[0-9]+}/resize", panelVMResize, true)
-	this.RegisterPanelHandler("/panel/billing", panelBilling, false)
-	this.RegisterPanelHandler("/panel/pay", panelPay, false)
-	this.RegisterPanelHandler("/panel/charges", panelCharges, false)
-	this.RegisterPanelHandler("/panel/charges/{year:[0-9]+}/{month:[0-9]+}", panelCharges, false)
-	this.RegisterPanelHandler("/panel/account", panelAccount, false)
-	this.RegisterPanelHandler("/panel/account/passwd", panelAccountPassword, true)
-	this.RegisterPanelHandler("/panel/api/add", panelApiAdd, true)
-	this.RegisterPanelHandler("/panel/api/{id:[0-9]+}/remove", panelApiRemove, true)
-	this.RegisterPanelHandler("/panel/images", panelImages, false)
-	this.RegisterPanelHandler("/panel/images/add", panelImageAdd, true)
-	this.RegisterPanelHandler("/panel/image/{id:[0-9]+}", panelImageDetails, false)
-	this.RegisterPanelHandler("/panel/image/{id:[0-9]+}/remove", panelImageRemove, true)
-	this.RegisterPanelHandler("/panel/support", panelSupport, false)
-	this.RegisterPanelHandler("/panel/support/open", panelSupportOpen, false)
-	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}", panelSupportTicket, false)
-	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/reply", panelSupportTicketReply, true)
-	this.RegisterPanelHandler("/panel/support/{id:[0-9]+}/close", panelSupportTicketClose, true)
-	this.RegisterPanelHandler("/panel/csrftoken", panelToken, false)
+	router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))
+	RegisterPanelHandler("/panel/dashboard", panelDashboard, false)
+	RegisterPanelHandler("/panel/vms", panelVirtualMachines, false)
+	RegisterPanelHandler("/panel/newvm", panelNewVM, false)
+	RegisterPanelHandler("/panel/newvm/{region:[^/]+}", panelNewVMRegion, false)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}", panelVM, false)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/start", panelVMStart, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/stop", panelVMStop, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reboot", panelVMReboot, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/delete", panelVMDelete, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/action/{action:[^/]+}", panelVMAction, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/vnc", panelVMVnc, false)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/reimage", panelVMReimage, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/rename", panelVMRename, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/snapshot", panelVMSnapshot, true)
+	RegisterPanelHandler("/panel/vm/{id:[0-9]+}/resize", panelVMResize, true)
+	RegisterPanelHandler("/panel/billing", panelBilling, false)
+	RegisterPanelHandler("/panel/pay", panelPay, false)
+	RegisterPanelHandler("/panel/charges", panelCharges, false)
+	RegisterPanelHandler("/panel/charges/{year:[0-9]+}/{month:[0-9]+}", panelCharges, false)
+	RegisterPanelHandler("/panel/account", panelAccount, false)
+	RegisterPanelHandler("/panel/account/passwd", panelAccountPassword, true)
+	RegisterPanelHandler("/panel/api/add", panelApiAdd, true)
+	RegisterPanelHandler("/panel/api/{id:[0-9]+}/remove", panelApiRemove, true)
+	RegisterPanelHandler("/panel/images", panelImages, false)
+	RegisterPanelHandler("/panel/images/add", panelImageAdd, true)
+	RegisterPanelHandler("/panel/image/{id:[0-9]+}", panelImageDetails, false)
+	RegisterPanelHandler("/panel/image/{id:[0-9]+}/remove", panelImageRemove, true)
+	RegisterPanelHandler("/panel/csrftoken", panelToken, false)
 
 	// api routes
-	this.RegisterAPIHandler("/api/vms", apiVMList, "GET")
-	this.RegisterAPIHandler("/api/vms", apiVMCreate, "POST")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMInfo, "GET")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/action", apiVMAction, "POST")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/reimage", apiVMReimage, "POST")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/resize", apiVMResize, "POST")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMDelete, "DELETE")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips", apiVMAddresses, "GET")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/add", apiVMAddressAdd, "POST")
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/remove", apiVMAddressRemove, "POST") // use POST instead of DELETE since we need both public/private ip
-	this.RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/{ip:[^/]+}/rdns", apiVMAddressRdns, "POST")
-	this.RegisterAPIHandler("/api/images", apiImageList, "GET")
-	this.RegisterAPIHandler("/api/images", apiImageFetch, "POST")
-	this.RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageInfo, "GET")
-	this.RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageDelete, "DELETE")
-	this.RegisterAPIHandler("/api/plans", apiPlanList, "GET")
+	RegisterAPIHandler("/api/vms", apiVMList, "GET")
+	RegisterAPIHandler("/api/vms", apiVMCreate, "POST")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMInfo, "GET")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/action", apiVMAction, "POST")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/reimage", apiVMReimage, "POST")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/resize", apiVMResize, "POST")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}", apiVMDelete, "DELETE")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips", apiVMAddresses, "GET")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/add", apiVMAddressAdd, "POST")
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/remove", apiVMAddressRemove, "POST") // use POST instead of DELETE since we need both public/private ip
+	RegisterAPIHandler("/api/vms/{id:[0-9]+}/ips/{ip:[^/]+}/rdns", apiVMAddressRdns, "POST")
+	RegisterAPIHandler("/api/images", apiImageList, "GET")
+	RegisterAPIHandler("/api/images", apiImageFetch, "POST")
+	RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageInfo, "GET")
+	RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageDelete, "DELETE")
+	RegisterAPIHandler("/api/plans", apiPlanList, "GET")
 
 	// admin routes
-	this.RegisterAdminHandler("/admin/dashboard", adminDashboard, false)
-	this.RegisterAdminHandler("/admin/users", adminUsers, false)
-	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}", adminUser, false)
-	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/login", adminUserLogin, true)
-	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/credit", adminUserCredit, true)
-	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/password", adminUserPassword, true)
-	this.RegisterAdminHandler("/admin/user/{id:[0-9]+}/disable", adminUserDisable, true)
-	this.RegisterAdminHandler("/admin/support", adminSupport, false)
-	this.RegisterAdminHandler("/admin/support/open/{id:[0-9]+}", adminSupportOpen, false)
-	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}", adminSupportTicket, false)
-	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}/reply", adminSupportTicketReply, true)
-	this.RegisterAdminHandler("/admin/support/{id:[0-9]+}/close", adminSupportTicketClose, true)
-	this.RegisterAdminHandler("/admin/plans", adminPlans, false)
-	this.RegisterAdminHandler("/admin/plans/add", adminPlansAdd, false)
-	this.RegisterAdminHandler("/admin/plan/{id:[0-9]+}/delete", adminPlanDelete, true)
-	this.RegisterAdminHandler("/admin/images", adminImages, false)
-	this.RegisterAdminHandler("/admin/images/add", adminImagesAdd, false)
-	this.RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
+	RegisterAdminHandler("/admin/dashboard", adminDashboard, false)
+	RegisterAdminHandler("/admin/users", adminUsers, false)
+	RegisterAdminHandler("/admin/user/{id:[0-9]+}", adminUser, false)
+	RegisterAdminHandler("/admin/user/{id:[0-9]+}/login", adminUserLogin, true)
+	RegisterAdminHandler("/admin/user/{id:[0-9]+}/credit", adminUserCredit, true)
+	RegisterAdminHandler("/admin/user/{id:[0-9]+}/password", adminUserPassword, true)
+	RegisterAdminHandler("/admin/user/{id:[0-9]+}/disable", adminUserDisable, true)
+	RegisterAdminHandler("/admin/plans", adminPlans, false)
+	RegisterAdminHandler("/admin/plans/add", adminPlansAdd, false)
+	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/delete", adminPlanDelete, true)
+	RegisterAdminHandler("/admin/images", adminImages, false)
+	RegisterAdminHandler("/admin/images/add", adminImagesAdd, false)
+	RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
 
 	// seed math/rand via crypt/rand in case interfaces want to use it for non-secure randomness source
 	// (math/rand is much faster)
@@ -266,70 +252,70 @@ func (this *Lobster) Init() {
 	}
 }
 
-func (this *Lobster) Run() {
+func Run() {
 	// fake cron routine
 	go func() {
 		for {
-			this.cron()
+			cron()
 			time.Sleep(time.Minute)
 		}
 	}()
 
 	go func() {
 		for {
-			this.cached()
+			cached()
 			time.Sleep(5 * time.Second)
 		}
 	}()
 
 	httpServer := &http.Server{
 		Addr: cfg.Http.Addr,
-		Handler: LobsterHandler(context.ClearHandler(this.router)),
+		Handler: LobsterHandler(context.ClearHandler(router)),
 	}
 	log.Fatal(httpServer.ListenAndServe())
 }
 
-func (this *Lobster) cron() {
+func cron() {
 	defer errorHandler(nil, nil, true)
-	vmRows := this.db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL ? HOUR)", BILLING_VM_FREQUENCY)
+	vmRows := db.Query("SELECT id FROM vms WHERE time_billed < DATE_SUB(NOW(), INTERVAL ? HOUR)", BILLING_VM_FREQUENCY)
 	defer vmRows.Close()
 	for vmRows.Next() {
 		var vmId int
 		vmRows.Scan(&vmId)
-		vmBilling(this.db, vmId, false)
+		vmBilling(db, vmId, false)
 	}
 
-	userRows := this.db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+	userRows := db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
 	defer userRows.Close()
 	for userRows.Next() {
 		var userId int
 		userRows.Scan(&userId)
-		userBilling(this.db, userId)
+		userBilling(db, userId)
 	}
 
-	serviceBilling(this.db)
+	serviceBilling(db)
 
 	// cleanup
-	this.db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
-	this.db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
-	this.db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
-	this.db.Exec("DELETE FROM pwreset_tokens WHERE time < DATE_SUB(NOW(), INTERVAL ? MINUTE)", PWRESET_EXPIRE_MINUTES)
+	db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+	db.Exec("DELETE FROM sessions WHERE active_time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+	db.Exec("DELETE FROM antiflood WHERE time < DATE_SUB(NOW(), INTERVAL 2 HOUR)")
+	db.Exec("DELETE FROM pwreset_tokens WHERE time < DATE_SUB(NOW(), INTERVAL ? MINUTE)", PWRESET_EXPIRE_MINUTES)
 }
 
-func (this *Lobster) cached() {
+func cached() {
 	defer errorHandler(nil, nil, true)
-	rows := this.db.Query("SELECT id, user_id FROM images WHERE status = 'pending' ORDER BY RAND() LIMIT 3")
+	rows := db.Query("SELECT id, user_id FROM images WHERE status = 'pending' ORDER BY RAND() LIMIT 3")
 	defer rows.Close()
 	for rows.Next() {
 		var imageId, userId int
 		rows.Scan(&imageId, &userId)
-		imageInfo := imageInfo(this.db, userId, imageId)
+		imageInfo := imageInfo(db, userId, imageId)
 
 		if imageInfo != nil {
 			if imageInfo.Info.Status == ImageError {
-				this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "error", imageId)
+				db.Exec("UPDATE images SET status = ? WHERE id = ?", "error", imageId)
 			} else if imageInfo.Info.Status == ImageActive {
-				this.db.Exec("UPDATE images SET status = ? WHERE id = ?", "active", imageId)
+				db.Exec("UPDATE images SET status = ? WHERE id = ?", "active", imageId)
 			}
 		}
 	}

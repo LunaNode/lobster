@@ -82,7 +82,7 @@ func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Se
 	params.Frame = frameParams
 	params.User = user
 	params.VirtualMachines = vmList(db, userId)
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "admin", "user", params)
 }
 
@@ -146,122 +146,6 @@ func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, sess
 	}
 }
 
-func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
-		return
-	}
-	ticketClose(db, session.UserId, ticketId)
-	LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
-	RedirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), L.Success("ticket_closed"))
-}
-
-type AdminSupportParams struct {
-	Frame FrameParams
-	Tickets []*Ticket
-}
-func adminSupport(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	params := AdminSupportParams{}
-	params.Frame = frameParams
-	params.Tickets = TicketListAll(db)
-	RenderTemplate(w, "admin", "support", params)
-}
-
-type AdminSupportOpenParams struct {
-	Frame FrameParams
-	User *User
-	Token string
-}
-type AdminSupportOpenForm struct {
-	UserId int `schema:"user_id"`
-	Name string `schema:"name"`
-	Message string `schema:"message"`
-}
-func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_user"))
-		return
-	}
-	user := UserDetails(db, userId)
-	if user == nil {
-		RedirectMessage(w, r, "/admin/support", L.FormattedError("user_not_found"))
-		return
-	}
-
-	if r.Method == "POST" {
-		form := new(AdminSupportOpenForm)
-		err := decoder.Decode(form, r.PostForm)
-		if err != nil {
-			http.Redirect(w, r, fmt.Sprintf("/admin/support/open/%d", userId), 303)
-			return
-		}
-
-		ticketId, err := ticketOpen(db, form.UserId, form.Name, form.Message, true)
-		if err != nil {
-			RedirectMessage(w, r, fmt.Sprintf("/admin/support/open/%d", userId), L.FormatError(err))
-		} else {
-			http.Redirect(w, r, fmt.Sprintf("/admin/support/%d", ticketId), 303)
-		}
-		return
-	}
-
-	params := new(AdminSupportOpenParams)
-	params.Frame = frameParams
-	params.User = user
-	params.Token = csrfGenerate(db, session)
-	RenderTemplate(w, "admin", "support_open", params)
-}
-
-type AdminSupportTicketParams struct {
-	Frame FrameParams
-	Ticket *Ticket
-	Token string
-}
-func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
-		return
-	}
-	ticket := TicketDetails(db, session.UserId, ticketId, true)
-	if ticket == nil {
-		RedirectMessage(w, r, "/admin/support", L.FormattedError("ticket_not_found"))
-		return
-	}
-
-	params := AdminSupportTicketParams{}
-	params.Frame = frameParams
-	params.Ticket = ticket
-	params.Token = csrfGenerate(db, session)
-	RenderTemplate(w, "admin", "support_ticket", params)
-}
-
-type AdminSupportTicketReplyForm struct {
-	Message string `schema:"message"`
-}
-func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
-		return
-	}
-	form := new(AdminSupportTicketReplyForm)
-	err = decoder.Decode(form, r.PostForm)
-	if err != nil {
-		http.Redirect(w, r, fmt.Sprintf("/admin/support/%d", ticketId), 303)
-		return
-	}
-
-	err = ticketReply(db, session.UserId, ticketId, form.Message, true)
-	if err != nil {
-		RedirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), L.FormatError(err))
-	} else {
-		http.Redirect(w, r, fmt.Sprintf("/admin/support/%d", ticketId), 303)
-	}
-}
-
 type AdminPlansParams struct {
 	Frame FrameParams
 	Plans []*Plan
@@ -271,7 +155,7 @@ func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *S
 	params := AdminPlansParams{}
 	params.Frame = frameParams
 	params.Plans = planList(db)
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "admin", "plans", params)
 }
 
@@ -316,7 +200,7 @@ func adminImages(w http.ResponseWriter, r *http.Request, db *Database, session *
 	params.Frame = frameParams
 	params.Images = imageListAll(db)
 	params.Regions = regionList()
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "admin", "images", params)
 }
 

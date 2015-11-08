@@ -34,7 +34,7 @@ func getSplashFormHandler(template string) func(w http.ResponseWriter, r *http.R
 		params := SplashTemplateParams{
 			Title: template,
 			Message: message,
-			Token: csrfGenerate(db, session),
+			Token: CSRFGenerate(db, session),
 		}
 
 		RenderTemplate(w, "splash", template, params)

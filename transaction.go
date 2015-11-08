@@ -58,14 +58,14 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	depositMinimum := int64(cfg.Billing.DepositMinimum * BILLING_PRECISION)
 	depositMaximum := int64(cfg.Billing.DepositMaximum * BILLING_PRECISION)
 	if amount < depositMinimum || amount > depositMaximum {
-		reportError(errors.New(fmt.Sprintf("invalid payment of %d cents", amount * 100 / BILLING_PRECISION)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(errors.New(fmt.Sprintf("invalid payment of %d cents", amount * 100 / BILLING_PRECISION)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
 		return
 	}
 
 	// verify user
 	user := UserDetails(db, userId)
 	if user == nil {
-		reportError(errors.New(fmt.Sprintf("invalid user %d", userId)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(errors.New(fmt.Sprintf("invalid user %d", userId)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
 		return
 	}
 
@@ -80,7 +80,7 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	}
 	db.Exec("INSERT INTO transactions (user_id, gateway, gateway_identifier, notes, amount, fee) VALUES (?, ?, ?, ?, ?, ?)", transaction.UserId, transaction.Gateway, transaction.GatewayIdentifier, transaction.Notes, transaction.Amount, transaction.Fee)
 	UserApplyCredit(db, userId, amount, fmt.Sprintf("Transaction %s/%s", gateway, gatewayIdentifier))
-	mailWrap(db, userId, "paymentProcessed", PaymentProcessedEmail(&transaction), true)
+	MailWrap(db, userId, "paymentProcessed", PaymentProcessedEmail(&transaction), true)
 	log.Printf("Processed payment of %d for user %d (%s/%s)", amount, userId, gateway, gatewayIdentifier)
 
 }

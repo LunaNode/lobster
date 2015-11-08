@@ -54,7 +54,7 @@ type PanelDashboardParams struct {
 	VirtualMachines []*VirtualMachine
 	CreditSummary *CreditSummary
 	BandwidthSummary map[string]*BandwidthSummary
-	Tickets []*Ticket
+	WidgetData map[string]interface{}
 }
 func panelDashboard(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelDashboardParams{}
@@ -62,7 +62,10 @@ func panelDashboard(w http.ResponseWriter, r *http.Request, db *Database, sessio
 	params.VirtualMachines = vmList(db, session.UserId)
 	params.CreditSummary = UserCreditSummary(db, session.UserId)
 	params.BandwidthSummary = UserBandwidthSummary(db, session.UserId)
-	params.Tickets = TicketListActive(db, session.UserId)
+	params.WidgetData = make(map[string]interface{})
+	for name, widget := range panelWidgets {
+		params.WidgetData[name] = widget.Prepare(db, session)
+	}
 	RenderTemplate(w, "panel", "dashboard", params)
 }
 
@@ -126,7 +129,7 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 	params.Frame = frameParams
 	params.Region = region
 	params.Plans = planList(db)
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 
 	for _, image := range imageListRegion(db, session.UserId, region) {
 		if image.UserId == -1 {
@@ -166,7 +169,7 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 	params.Vm = vm
 	params.Images = imageListRegion(db, session.UserId, vm.Region)
 	params.Plans = planList(db)
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "panel", "vm", params)
 }
 
@@ -415,7 +418,7 @@ func panelAccount(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params.Frame = frameParams
 	params.User = UserDetails(db, session.UserId)
 	params.Keys = apiList(db, session.UserId)
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "panel", "account", params)
 }
 
@@ -483,7 +486,7 @@ func panelImages(w http.ResponseWriter, r *http.Request, db *Database, session *
 	params := PanelImagesParams{}
 	params.Frame = frameParams
 	params.Regions = regionList()
-	params.Token = csrfGenerate(db, session)
+	params.Token = CSRFGenerate(db, session)
 
 	for _, image := range imageList(db, session.UserId) {
 		if image.UserId == session.UserId {
@@ -555,103 +558,6 @@ func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, ses
 	RenderTemplate(w, "panel", "image_details", params)
 }
 
-type SupportParams struct {
-	Frame FrameParams
-	Tickets []*Ticket
-}
-func panelSupport(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	params := SupportParams{}
-	params.Frame = frameParams
-	params.Tickets = TicketList(db, session.UserId)
-	RenderTemplate(w, "panel", "support", params)
-}
-
-type SupportOpenForm struct {
-	Name string `schema:"name"`
-	Message string `schema:"message"`
-}
-func panelSupportOpen(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	if r.Method == "POST" {
-		form := new(SupportOpenForm)
-		err := decoder.Decode(form, r.PostForm)
-		if err != nil {
-			http.Redirect(w, r, "/panel/support/open", 303)
-			return
-		}
-
-		ticketId, err := ticketOpen(db, session.UserId, form.Name, form.Message, false)
-		if err != nil {
-			RedirectMessage(w, r, "/panel/support/open", L.FormatError(err))
-		} else {
-			LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Open ticket", fmt.Sprintf("Subject: %s; Ticket ID: %d", form.Name, ticketId))
-			http.Redirect(w, r, fmt.Sprintf("/panel/support/%d", ticketId), 303)
-		}
-		return
-	}
-
-	RenderTemplate(w, "panel", "support_open", PanelFormParams{Frame: frameParams, Token: csrfGenerate(db, session)})
-}
-
-type PanelSupportTicketParams struct {
-	Frame FrameParams
-	Ticket *Ticket
-	Token string
-}
-func panelSupportTicket(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/panel/support", L.FormattedError("invalid_ticket"))
-		return
-	}
-	ticket := TicketDetails(db, session.UserId, ticketId, false)
-	if ticket == nil {
-		RedirectMessage(w, r, "/panel/support", L.FormattedError("ticket_not_found"))
-		return
-	}
-
-	params := PanelSupportTicketParams{}
-	params.Frame = frameParams
-	params.Ticket = ticket
-	params.Token = csrfGenerate(db, session)
-	RenderTemplate(w, "panel", "support_ticket", params)
-}
-
-type SupportTicketReplyForm struct {
-	Message string `schema:"message"`
-}
-func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/panel/support", L.FormattedError("invalid_ticket"))
-		return
-	}
-	form := new(SupportTicketReplyForm)
-	err = decoder.Decode(form, r.PostForm)
-	if err != nil {
-		http.Redirect(w, r, fmt.Sprintf("/panel/support/%d", ticketId), 303)
-		return
-	}
-
-	err = ticketReply(db, session.UserId, ticketId, form.Message, false)
-	if err != nil {
-		RedirectMessage(w, r, fmt.Sprintf("/panel/support/%d", ticketId), L.FormatError(err))
-	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Ticket reply", fmt.Sprintf("Ticket ID: %d", ticketId))
-		http.Redirect(w, r, fmt.Sprintf("/panel/support/%d", ticketId), 303)
-	}
-}
-
-func panelSupportTicketClose(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/panel/support", L.FormattedError("invalid_ticket"))
-		return
-	}
-	ticketClose(db, session.UserId, ticketId)
-	LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
-	RedirectMessage(w, r, fmt.Sprintf("/panel/support/%d", ticketId), L.Success("ticket_closed"))
-}
-
 func panelToken(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	w.Write([]byte(csrfGenerate(db, session)))
+	w.Write([]byte(CSRFGenerate(db, session)))
 }
