@@ -1,4 +1,4 @@
-package vmdigitalocean
+package digitalocean
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/utils"

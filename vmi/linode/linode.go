@@ -1,4 +1,4 @@
-package vmlinode
+package linode
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/utils"

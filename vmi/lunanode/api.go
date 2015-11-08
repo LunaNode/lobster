@@ -1,4 +1,4 @@
-package lndynamic
+package lunanode
 
 import "bytes"
 import "crypto/sha512"

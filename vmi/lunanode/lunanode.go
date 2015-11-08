@@ -1,4 +1,4 @@
-package lndynamic
+package lunanode
 
 import "github.com/LunaNode/lobster"
 
@@ -6,15 +6,15 @@ import "errors"
 import "fmt"
 import "strconv"
 
-type LNDynamic struct {
+type LunaNode struct {
 	region string
 	api *API
 
 	vmBandwidth map[string]int64 // for bandwidth accounting
 }
 
-func MakeLNDynamic(region string, apiId string, apiKey string) *LNDynamic {
-	this := new(LNDynamic)
+func MakeLunaNode(region string, apiId string, apiKey string) *LunaNode {
+	this := new(LunaNode)
 	this.region = region
 	api, err := MakeAPI(apiId, apiKey)
 	if err != nil {
@@ -25,7 +25,7 @@ func MakeLNDynamic(region string, apiId string, apiKey string) *LNDynamic {
 	return this
 }
 
-func (this *LNDynamic) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *LunaNode) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	plans, err := this.api.PlanList()
 	if err != nil {
 		return "", err
@@ -53,12 +53,12 @@ func (this *LNDynamic) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 	return fmt.Sprintf("%d", vmId), err
 }
 
-func (this *LNDynamic) VmDelete(vm *lobster.VirtualMachine) error {
+func (this *LunaNode) VmDelete(vm *lobster.VirtualMachine) error {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	return this.api.VmDelete(vmIdentificationInt)
 }
 
-func (this *LNDynamic) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
+func (this *LunaNode) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	apiInfo, err := this.api.VmInfo(vmIdentificationInt)
 	if err != nil {
@@ -77,43 +77,43 @@ func (this *LNDynamic) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, erro
 	return &info, nil
 }
 
-func (this *LNDynamic) VmStart(vm *lobster.VirtualMachine) error {
+func (this *LunaNode) VmStart(vm *lobster.VirtualMachine) error {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	return this.api.VmStart(vmIdentificationInt)
 }
 
-func (this *LNDynamic) VmStop(vm *lobster.VirtualMachine) error {
+func (this *LunaNode) VmStop(vm *lobster.VirtualMachine) error {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	return this.api.VmStop(vmIdentificationInt)
 }
 
-func (this *LNDynamic) VmReboot(vm *lobster.VirtualMachine) error {
+func (this *LunaNode) VmReboot(vm *lobster.VirtualMachine) error {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	return this.api.VmReboot(vmIdentificationInt)
 }
 
-func (this *LNDynamic) VmVnc(vm *lobster.VirtualMachine) (string, error) {
+func (this *LunaNode) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	return this.api.VmVnc(vmIdentificationInt)
 }
 
-func (this *LNDynamic) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
+func (this *LunaNode) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
 }
 
-func (this *LNDynamic) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
+func (this *LunaNode) VmReimage(vm *lobster.VirtualMachine, imageIdentification string) error {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
 	return this.api.VmReimage(vmIdentificationInt, imageIdentificationInt)
 }
 
-func (this *LNDynamic) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
+func (this *LunaNode) VmSnapshot(vm *lobster.VirtualMachine) (string, error) {
 	vmIdentificationInt, _ := strconv.Atoi(vm.Identification)
 	imageId, err := this.api.VmSnapshot(vmIdentificationInt, this.region)
 	return fmt.Sprintf("%d", imageId), err
 }
 
-func (this *LNDynamic) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
+func (this *LunaNode) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	info, err := this.VmInfo(vm)
 	if err != nil {
 		return 0
@@ -132,7 +132,7 @@ func (this *LNDynamic) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 	}
 }
 
-func (this *LNDynamic) ImageFetch(url string, format string) (string, error) {
+func (this *LunaNode) ImageFetch(url string, format string) (string, error) {
 	imageId, err := this.api.ImageFetch(this.region, url, format, false)
 	if err != nil {
 		return "", err
@@ -141,7 +141,7 @@ func (this *LNDynamic) ImageFetch(url string, format string) (string, error) {
 	}
 }
 
-func (this *LNDynamic) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
+func (this *LunaNode) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
 	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
 	image, err := this.api.ImageDetails(imageIdentificationInt)
 	if err != nil {
@@ -163,7 +163,7 @@ func (this *LNDynamic) ImageInfo(imageIdentification string) (*lobster.ImageInfo
 	}
 }
 
-func (this *LNDynamic) ImageDelete(imageIdentification string) error {
+func (this *LunaNode) ImageDelete(imageIdentification string) error {
 	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
 	return this.api.ImageDelete(imageIdentificationInt)
 }

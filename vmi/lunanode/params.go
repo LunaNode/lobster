@@ -1,4 +1,4 @@
-package lndynamic
+package lunanode
 
 const LNDYNAMIC_API_URL = "https://dynamic.lunanode.com/api/{CATEGORY}/{ACTION}/"
 

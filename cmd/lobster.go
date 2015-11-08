@@ -1,14 +1,14 @@
 package main
 
 import "github.com/LunaNode/lobster"
-import "github.com/LunaNode/lobster/lndynamic"
-import "github.com/LunaNode/lobster/lobopenstack"
-import "github.com/LunaNode/lobster/solusvm"
-import "github.com/LunaNode/lobster/vmdigitalocean"
-import "github.com/LunaNode/lobster/vmfake"
-import "github.com/LunaNode/lobster/vmlinode"
-import "github.com/LunaNode/lobster/vmlobster"
-import "github.com/LunaNode/lobster/vmvultr"
+import "github.com/LunaNode/lobster/vmi/lunanode"
+import "github.com/LunaNode/lobster/vmi/openstack"
+import "github.com/LunaNode/lobster/vmi/solusvm"
+import "github.com/LunaNode/lobster/vmi/digitalocean"
+import "github.com/LunaNode/lobster/vmi/fake"
+import "github.com/LunaNode/lobster/vmi/linode"
+import vmlobster "github.com/LunaNode/lobster/vmi/lobster"
+import "github.com/LunaNode/lobster/vmi/vultr"
 import "github.com/LunaNode/lobster/whmcs"
 
 import "encoding/json"
@@ -94,7 +94,7 @@ func main() {
 		log.Printf("Initializing VM interface %s (type=%s)", vm.Name, vm.Type)
 		var vmi lobster.VmInterface
 		if vm.Type == "openstack" {
-			vmi = lobopenstack.MakeOpenStack(vm.Url, vm.Username, vm.Password, vm.Tenant, vm.NetworkId)
+			vmi = openstack.MakeOpenStack(vm.Url, vm.Username, vm.Password, vm.Tenant, vm.NetworkId)
 		} else if vm.Type == "solusvm" {
 			vmi = &solusvm.SolusVM{
 				Lobster: app,
@@ -110,23 +110,23 @@ func main() {
 		} else if vm.Type == "lobster" {
 			vmi = vmlobster.MakeLobster(vm.Region, vm.Url, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "lndynamic" {
-			vmi = lndynamic.MakeLNDynamic(vm.Region, vm.ApiId, vm.ApiKey)
+			vmi = lunanode.MakeLunaNode(vm.Region, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "fake" {
-			vmi = new(vmfake.Fake)
+			vmi = new(fake.Fake)
 		} else if vm.Type == "digitalocean" {
-			vmi = vmdigitalocean.MakeDigitalOcean(vm.Region, vm.ApiId)
+			vmi = digitalocean.MakeDigitalOcean(vm.Region, vm.ApiId)
 		} else if vm.Type == "vultr" {
 			regionId, err := strconv.Atoi(vm.Region)
 			if err != nil {
 				log.Fatalf("Error: invalid region ID for vultr interface: %s", vm.Region)
 			}
-			vmi = vmvultr.MakeVultr(vm.ApiKey, regionId)
+			vmi = vultr.MakeVultr(vm.ApiKey, regionId)
 		} else if vm.Type == "linode" {
 			datacenterId, err := strconv.Atoi(vm.Region)
 			if err != nil {
 				log.Fatalf("Error: invalid datacenter ID for linode interface: %s", vm.Region)
 			}
-			vmi = vmlinode.MakeLinode(vm.ApiKey, datacenterId)
+			vmi = linode.MakeLinode(vm.ApiKey, datacenterId)
 		} else {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}

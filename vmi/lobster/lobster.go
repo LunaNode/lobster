@@ -1,4 +1,4 @@
-package vmlobster
+package lobster
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/api"

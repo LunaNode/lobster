@@ -1,4 +1,4 @@
-package vmfake
+package fake
 
 import "github.com/LunaNode/lobster"
 

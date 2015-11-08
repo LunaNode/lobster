@@ -1,4 +1,4 @@
-package lobopenstack
+package openstack
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/ipaddr"

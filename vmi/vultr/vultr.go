@@ -1,4 +1,4 @@
-package vmvultr
+package vultr
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/utils"
