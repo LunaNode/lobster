@@ -166,6 +166,7 @@ type AdminPlansAddForm struct {
 	Cpu int `schema:"cpu"`
 	Storage int `schema:"storage"`
 	Bandwidth int `schema:"bandwidth"`
+	Global string `schema:"global"`
 }
 func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(AdminPlansAddForm)
@@ -175,8 +176,34 @@ func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 		return
 	}
 
-	planCreate(db, form.Name, int64(form.Price * BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth)
+	planCreate(db, form.Name, int64(form.Price * BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth, form.Global != "")
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_created"))
+}
+
+type AdminPlanParams struct {
+	Frame FrameParams
+	Plan *Plan
+	Regions []string
+	Token string
+}
+func adminPlan(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	plan := planGet(db, planId)
+	if plan == nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("plan_not_found"))
+		return
+	}
+	plan.LoadRegionPlans()
+	params := AdminPlanParams{}
+	params.Frame = frameParams
+	params.Plan = plan
+	params.Regions = regionList()
+	params.Token = CSRFGenerate(db, session)
+	RenderTemplate(w, "admin", "plan", params)
 }
 
 func adminPlanDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
@@ -187,6 +214,30 @@ func adminPlanDelete(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	}
 	planDelete(db, planId)
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_deleted"))
+}
+
+func adminPlanAssociateRegion(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	err = planAssociateRegion(db, planId, r.PostFormValue("region"), r.PostFormValue("identification"))
+	if err != nil {
+		RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.FormatError(err))
+	} else {
+		RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_region_associated"))
+	}
+}
+
+func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planDeassociateRegion(db, planId, mux.Vars(r)["region"])
+	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_region_deassociated"))
 }
 
 type AdminImagesParams struct {

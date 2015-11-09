@@ -40,16 +40,6 @@ type Image struct {
 	Info *ImageInfo
 }
 
-type Plan struct {
-	Id int
-	Name string
-	Price int64
-	Ram int
-	Cpu int
-	Storage int
-	Bandwidth int
-}
-
 // interface objects
 
 type VmInfo struct {
@@ -198,6 +188,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	}
 
 	// validate image ID
+	// the image also determines which region we provision in
 	image := imageGet(db, userId, imageId)
 	if image == nil {
 		return 0, L.Error("image_not_exist")
@@ -206,7 +197,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	}
 
 	// validate plan
-	plan := planGet(db, planId)
+	plan := planGetRegion(db, image.Region, planId)
 	if plan == nil {
 		return 0, L.Error("no_such_plan")
 	}
@@ -218,7 +209,9 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 
 	go func() {
 		defer errorHandler(nil, nil, true)
-		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vmGet(db, int(vmId)), image.Identification)
+		vm := vmGet(db, int(vmId))
+		vm.Plan = *plan // use plan from planGetRegion so that we have the region-specific identification
+		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vm, image.Identification)
 		if err != nil {
 			ReportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
@@ -387,7 +380,7 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 }
 
 func (vm *VirtualMachine) Resize(planId int) error {
-	plan := planGet(vm.db, planId)
+	plan := planGetRegion(vm.db, vm.Region, planId)
 	if plan == nil {
 		return L.Error("no_such_plan")
 	}
@@ -553,38 +546,6 @@ func (vm *VirtualMachine) Metadata(k string, d string) string {
 	} else {
 		return d
 	}
-}
-
-func planListHelper(rows *sql.Rows) []*Plan {
-	defer rows.Close()
-	plans := make([]*Plan, 0)
-	for rows.Next() {
-		plan := Plan{}
-		rows.Scan(&plan.Id, &plan.Name, &plan.Price, &plan.Ram, &plan.Cpu, &plan.Storage, &plan.Bandwidth)
-		plans = append(plans, &plan)
-	}
-	return plans
-}
-
-func planList(db *Database) []*Plan {
-	return planListHelper(db.Query("SELECT id, name, price, ram, cpu, storage, bandwidth FROM plans ORDER BY id"))
-}
-
-func planGet(db *Database, planId int) *Plan {
-	plans := planListHelper(db.Query("SELECT id, name, price, ram, cpu, storage, bandwidth FROM plans WHERE id = ?", planId))
-	if len(plans) == 1 {
-		return plans[0]
-	} else {
-		return nil
-	}
-}
-
-func planCreate(db *Database, name string, price int64, ram int, cpu int, storage int, bandwidth int) {
-	db.Exec("INSERT INTO plans (name, price, ram, cpu, storage, bandwidth) VALUES (?, ?, ?, ?, ?, ?)", name, price, ram, cpu, storage, bandwidth)
-}
-
-func planDelete(db *Database, planId int) {
-	db.Exec("DELETE FROM plans WHERE id = ?", planId)
 }
 
 func imageListHelper(rows *sql.Rows) []*Image {

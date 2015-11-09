@@ -69,10 +69,16 @@ func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, imageIdentificati
 	if err != nil {
 		return "", err
 	}
+
+	plan := vm.Plan.Identification
+	if plan == "" {
+		plan = this.getPlanName(vm.Plan.Ram)
+	}
+
 	createRequest := &godo.DropletCreateRequest{
 		Name: vm.Name,
 		Region: this.region,
-		Size: this.getPlanName(vm.Plan.Ram),
+		Size: plan,
 		Image: godo.DropletCreateImage{
 			ID: image.ID,
 		},

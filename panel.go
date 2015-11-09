@@ -128,7 +128,7 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 	params := PanelNewVMRegionParams{}
 	params.Frame = frameParams
 	params.Region = region
-	params.Plans = planList(db)
+	params.Plans = planListRegion(db, region)
 	params.Token = CSRFGenerate(db, session)
 
 	for _, image := range imageListRegion(db, session.UserId, region) {
@@ -168,7 +168,7 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 	params.Frame = frameParams
 	params.Vm = vm
 	params.Images = imageListRegion(db, session.UserId, vm.Region)
-	params.Plans = planList(db)
+	params.Plans = planListRegion(db, vm.Region)
 	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "panel", "vm", params)
 }

@@ -47,9 +47,15 @@ func (this *Vultr) findMatchingPlan(plan lobster.Plan) (int, error) {
 }
 
 func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
-	planId, err := this.findMatchingPlan(vm.Plan)
-	if err != nil {
-		return "", err
+	var planId int
+	if vm.Plan.Identification != "" {
+		planId, _ = strconv.Atoi(vm.Plan.Identification)
+	} else {
+		var err error
+		planId, err = this.findMatchingPlan(vm.Plan)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	serverOptions := &vultr.ServerOptions{

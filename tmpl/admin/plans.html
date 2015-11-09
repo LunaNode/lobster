@@ -67,6 +67,15 @@
 					</div>
 				</td>
 			</tr>
+			<tr>
+				<td>{{ T "global?" }}</td>
+				<td>
+					<div class="form-group">
+						<input type="checkbox" name="global" value="yes" checked /> {{ T "global?" }}
+						<span class="help-block">{{ T "add_plan_help_global" }}</span>
+					</div>
+				</td>
+			</tr>
 		</table>
 		<button type="submit" class="btn btn-primary">{{ T "add_plan" }}</button>
 		</form>
@@ -92,7 +101,7 @@
 		{{ $token := .Token }}
 		{{ range .Plans }}
 		<tr>
-			<td>{{ .Name }}</td>
+			<td><a href="/admin/plan/{{ .Id }}">{{ .Name }}</a></td>
 			<td>{{ .Price | FormatCredit }}</td>
 			<td>{{ .Ram  }}</td>
 			<td>{{ .Cpu  }}</td>

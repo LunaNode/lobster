@@ -50,37 +50,41 @@ func MakeOpenStack(identityEndpoint string, username string, password string, te
 }
 
 func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
-	flavorOpts := flavors.ListOpts{
-		MinDisk: vm.Plan.Storage,
-		MinRAM: vm.Plan.Ram,
-	}
-	flavorPager := flavors.ListDetail(this.ComputeClient, flavorOpts)
-	var matchFlavor *flavors.Flavor
-	err := flavorPager.EachPage(func(page pagination.Page) (bool, error) {
-		flavorList, err := flavors.ExtractFlavors(page)
-		if err != nil {
-			return false, err
+	flavorID := vm.Plan.Identification
+	if flavorID == "" {
+		flavorOpts := flavors.ListOpts{
+			MinDisk: vm.Plan.Storage,
+			MinRAM: vm.Plan.Ram,
 		}
-
-		for _, flavor := range flavorList {
-			if flavor.Disk == vm.Plan.Storage && flavor.RAM == vm.Plan.Ram && flavor.VCPUs == vm.Plan.Cpu {
-				matchFlavor = &flavor
-				return false, nil
+		flavorPager := flavors.ListDetail(this.ComputeClient, flavorOpts)
+		var matchFlavor *flavors.Flavor
+		err := flavorPager.EachPage(func(page pagination.Page) (bool, error) {
+			flavorList, err := flavors.ExtractFlavors(page)
+			if err != nil {
+				return false, err
 			}
+
+			for _, flavor := range flavorList {
+				if flavor.Disk == vm.Plan.Storage && flavor.RAM == vm.Plan.Ram && flavor.VCPUs == vm.Plan.Cpu {
+					matchFlavor = &flavor
+					return false, nil
+				}
+			}
+			return true, nil
+		})
+		if err != nil {
+			return "", err
+		} else if matchFlavor == nil {
+			return "", errors.New("plan not available in this region")
 		}
-		return true, nil
-	})
-	if err != nil {
-		return "", err
-	} else if matchFlavor == nil {
-		return "", errors.New("plan not available in this region")
+		flavorID = matchFlavor.ID
 	}
 
 	password := utils.Uid(16)
 	opts := servers.CreateOpts{
 		Name: vm.Name,
 		ImageRef: imageIdentification,
-		FlavorRef: matchFlavor.ID,
+		FlavorRef: flavorID,
 		Networks: []servers.Network{servers.Network{UUID: this.networkId}},
 		AdminPass: password,
 		UserData: []byte("#cloud-config\npassword: " + password + "\nchpasswd: { expire: False }\nssh_pwauth: True\n"),

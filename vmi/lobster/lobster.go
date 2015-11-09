@@ -43,15 +43,21 @@ func (this *Lobster) findMatchingPlan(ram int, storage int, cpu int) (*api.Plan,
 }
 
 func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
-	matchPlan, err := this.findMatchingPlan(vm.Plan.Ram, vm.Plan.Storage, vm.Plan.Cpu)
-	if err != nil {
-		return "", err
-	} else if matchPlan == nil {
-		return "", errors.New("plan not available in this region")
+	var plan int
+	if vm.Plan.Identification != "" {
+		plan, _ = strconv.Atoi(vm.Plan.Identification)
+	} else {
+		matchPlan, err := this.findMatchingPlan(vm.Plan.Ram, vm.Plan.Storage, vm.Plan.Cpu)
+		if err != nil {
+			return "", err
+		} else if matchPlan == nil {
+			return "", errors.New("plan not available in this region")
+		}
+		plan = matchPlan.Id
 	}
 
 	imageId, _ := strconv.Atoi(imageIdentification)
-	vmId, err := this.client.VmCreate(vm.Name, matchPlan.Id, imageId)
+	vmId, err := this.client.VmCreate(vm.Name, plan, imageId)
 	return fmt.Sprintf("%d", vmId), err
 }
 

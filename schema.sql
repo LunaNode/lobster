@@ -120,7 +120,14 @@ CREATE TABLE plans (
 	ram INT NOT NULL,
 	cpu INT NOT NULL,
 	storage INT NOT NULL,
-	bandwidth INT NOT NULL
+	bandwidth INT NOT NULL,
+	global TINYINT(1) NOT NULL DEFAULT 1
+);
+
+CREATE TABLE region_plans (
+	plan_id INT NOT NULL,
+	region VARCHAR(64) NOT NULL,
+	identification VARCHAR(128) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE images (

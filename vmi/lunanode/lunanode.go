@@ -26,28 +26,33 @@ func MakeLunaNode(region string, apiId string, apiKey string) *LunaNode {
 }
 
 func (this *LunaNode) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
-	plans, err := this.api.PlanList()
-	if err != nil {
-		return "", err
-	}
-
-	var matchPlan *APIPlan
-	for _, apiPlan := range plans {
-		cpu, _ := strconv.Atoi(apiPlan.Vcpu)
-		ram, _ := strconv.Atoi(apiPlan.Ram)
-		storage, _ := strconv.Atoi(apiPlan.Storage)
-
-		if cpu == vm.Plan.Cpu && ram == vm.Plan.Ram && storage == vm.Plan.Storage {
-			matchPlan = apiPlan
-			break
+	var planIdentification int
+	if vm.Plan.Identification != "" {
+		planIdentification, _ = strconv.Atoi(vm.Plan.Identification)
+	} else {
+		plans, err := this.api.PlanList()
+		if err != nil {
+			return "", err
 		}
+
+		var matchPlan *APIPlan
+		for _, apiPlan := range plans {
+			cpu, _ := strconv.Atoi(apiPlan.Vcpu)
+			ram, _ := strconv.Atoi(apiPlan.Ram)
+			storage, _ := strconv.Atoi(apiPlan.Storage)
+
+			if cpu == vm.Plan.Cpu && ram == vm.Plan.Ram && storage == vm.Plan.Storage {
+				matchPlan = apiPlan
+				break
+			}
+		}
+
+		if matchPlan == nil {
+			return "", errors.New("plan not available in this region")
+		}
+		planIdentification, _ = strconv.Atoi(matchPlan.Id)
 	}
 
-	if matchPlan == nil {
-		return "", errors.New("plan not available in this region")
-	}
-
-	planIdentification, _ := strconv.Atoi(matchPlan.Id)
 	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
 	vmId, err := this.api.VmCreateImage(this.region, vm.Name, planIdentification, imageIdentificationInt)
 	return fmt.Sprintf("%d", vmId), err

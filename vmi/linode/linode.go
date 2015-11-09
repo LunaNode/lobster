@@ -50,9 +50,15 @@ func (this *Linode) findKernel() (int, error) {
 }
 
 func (this *Linode) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
-	planID, err := this.findMatchingPlan(vm.Plan)
-	if err != nil {
-		return "", err
+	var planID int
+	if vm.Plan.Identification != "" {
+		planID, _ = strconv.Atoi(vm.Plan.Identification)
+	} else {
+		var err error
+		planID, err = this.findMatchingPlan(vm.Plan)
+		if err != nil {
+			return "", err
+		}
 	}
 	kernelID, err := this.findKernel()
 	if err != nil {

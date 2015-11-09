@@ -24,6 +24,7 @@
 			"ticket_not_found": "image not found",
 			"vm_not_found": "VM not found",
 			"image_not_found": "image not found",
+			"plan_not_found": "plan not found",
 
 			"password_mismatch": "passwords do not match",
 			"new_password_mismatch": "new passwords do not match",
@@ -76,6 +77,8 @@
 			"plan_created": "Plan created successfully.",
 			"image_deleted": "Image deleted.",
 			"plan_deleted": "Plan deleted successfully.",
+			"plan_region_associated": "The region has been associated with this plan.",
+			"plan_region_deassociated": "The region has been de-associated from this plan.",
 			"api_deleted": "API key deleted successfully.",
 			"vm_deleted": "VM deleted successfully.",
 			"api_added": "API key added successfully. The API ID is [%s] and the secret key is [%s].",
@@ -226,6 +229,7 @@
 			"id": "ID",
 			"limit": "Limit",
 			"admin?": "Admin?",
+			"global?": "Global?",
 			"yes": "Yes",
 			"no": "No",
 			"adjust_credit": "Adjust credit",
@@ -248,7 +252,12 @@
 			"pwreset_request": "Password reset request",
 			"submit": "Submit",
 			"pwreset_complete": "Complete password reset",
-			"pwreset_submit_help": "Enter a new password below to complete the password reset process. Once approved, you will be able to login to your account with the new password."
+			"pwreset_submit_help": "Enter a new password below to complete the password reset process. Once approved, you will be able to login to your account with the new password.",
+			"no_region_plans": "There are no regions associated with this plan.",
+			"associate_region_plan_identification_help": "An optional string used by the VM interface to identify this plan; if left blank, the VM interace will attempt to find a matching plan based on the RAM, vCPU, and storage allocations.",
+			"associate_region_plan": "Associate region with plan",
+			"deassociate": "Deassociate",
+			"add_plan_help_global": "Global plans are available in all regions. Non-global plans can be associated with specific regions; additionally, for non-global plans, you can provide region-specific VM interface plan identifiers to override automatic VM interface plan detection."
 		}
 	}, "payment_fake": {
 		"message": {
