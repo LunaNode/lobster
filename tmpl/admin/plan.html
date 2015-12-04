@@ -1,0 +1,116 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">{{ T "plan" }}: {{ .Plan.Name }}</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+			<tr>
+				<th>{{ T "id" }}</th>
+				<td>{{ .Plan.Id }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "name" }}</th>
+				<td>{{ .Plan.Name }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "price" }}</th>
+				<td>{{ .Plan.Price | FormatCredit }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "memory" }}</th>
+				<td>{{ .Plan.Ram }} MB</td>
+			</tr>
+			<tr>
+				<th>{{ T "vcpus" }}</th>
+				<td>{{ .Plan.Cpu }}</td>
+			</tr>
+			<tr>
+				<th>{{ T "storage" }}</th>
+				<td>{{ .Plan.Storage }} GB</td>
+			</tr>
+			<tr>
+				<th>{{ T "bandwidth" }}</th>
+				<td>{{ .Plan.Bandwidth }} GB</td>
+			</tr>
+			<tr>
+				<th>{{ T "global?" }}</th>
+				<td>
+					{{ if .Plan.Global }}
+						{{ T "yes" }}
+					{{ else }}
+						{{ T "no" }}
+					{{ end }}
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+{{ if not .Plan.Global }}
+<div class="row">
+	<div class="col-lg-12">
+		<form method="POST" action="/admin/plan/{{ .Plan.Id }}/associate">
+		<input type="hidden" name="token" value="{{ .Token }}" />
+		<table class="table table-striped">
+			<tr>
+				<td>{{ T "region" }}</td>
+				<td>
+					<select class="form-control" name="region">
+						{{ range .Regions }}
+							<option value="{{ . }}">{{ . | Title }}</option>
+						{{ end }}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ T "identification" }}</td>
+				<td>
+					<div class="form-group">
+						<input class="form-control" type="text" name="identification" />
+						<span class="help-block">{{ T "associate_region_plan_identification_help" }}</span>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<button type="submit" class="btn btn-primary">{{ T "associate_region_plan" }}</button>
+		</form>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ if .Plan.RegionPlans }}
+		<table class="table table-striped">
+		<tr>
+			<th>{{ T "region" }}</th>
+			<th>{{ T "identification" }}</th>
+			<th>{{ T "action" }}</th>
+		</tr>
+		{{ $token := .Token }}
+		{{ $planId := .Plan.Id }}
+		{{ range $region, $identification := .Plan.RegionPlans }}
+		<tr>
+			<td>{{ $region | Title }}</td>
+			<td>{{ $identification }}</td>
+			<td>
+				<form method="POST" action="/admin/plan/{{ $planId }}/deassociate/{{ $region }}">
+					<input type="hidden" name="token" value="{{ $token }}" />
+					<button type="submit" class="btn btn-danger">{{ T "deassociate" }}</button>
+				</form>
+			</td>
+		</tr>
+		{{ end }}
+		</table>
+		{{ else }}
+		<p>{{ T "no_region_plans" }}</p>
+		{{ end }}
+	</div>
+</div>
+{{ end }}
+{{ template "footer.html" .Frame }}
