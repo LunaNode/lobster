@@ -97,13 +97,13 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	if myPost["payment_status"] != "Completed" {
 		return
 	} else if !strings.HasPrefix(myPost["custom"], "lobster") {
-		ReportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(fmt.Errorf("invalid payment with custom=%s", myPost["custom"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	} else if strings.TrimSpace(strings.ToLower(myPost["receiver_email"])) != strings.TrimSpace(strings.ToLower(this.business)) {
-		ReportError(errors.New(fmt.Sprintf("invalid payment with receiver_email=%s", myPost["receiver_email"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(fmt.Errorf("invalid payment with receiver_email=%s", myPost["receiver_email"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	} else if myPost["mc_currency"] != cfg.Billing.Currency {
-		ReportError(errors.New(fmt.Sprintf("invalid payment with currency=%s", myPost["mc_currency"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(fmt.Errorf("invalid payment with currency=%s", myPost["mc_currency"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 
@@ -112,7 +112,7 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	userIdStr := strings.Split(myPost["custom"], "lobster")[1]
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		ReportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", myPost["custom"])), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		ReportError(fmt.Errorf("invalid payment with custom=%s", myPost["custom"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 

@@ -23,9 +23,9 @@ type API struct {
 
 func MakeAPI(id string, key string) (*API, error) {
 	if len(id) != 16 {
-		return nil, errors.New(fmt.Sprintf("API ID length must be 16, but parameter has length %d", len(id)))
+		return nil, fmt.Errorf("API ID length must be 16, but parameter has length %d", len(id))
 	} else if len(key) != 128 {
-		return nil, errors.New(fmt.Sprintf("API key length must be 128, but parameter has length %d", len(key)))
+		return nil, fmt.Errorf("API key length must be 128, but parameter has length %d", len(key))
 	}
 
 	this := new(API)
@@ -380,7 +380,7 @@ func (this *API) VolumeCreate(region string, size int, imageIdentification int, 
 		}
 	}
 
-	return 0, errors.New(fmt.Sprintf("volume creation timeout exceeded (%d seconds)", timeout.Seconds()))
+	return 0, fmt.Errorf("volume creation timeout exceeded (%d seconds)", timeout.Seconds())
 }
 
 func (this *API) VolumeDelete(region string, volumeIdentification int) error {

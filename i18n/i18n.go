@@ -77,7 +77,7 @@ func (this *Section) Errorf(id string, a ...interface{}) error {
 	if !ok {
 		return errors.New(id + " " + fmt.Sprint(a...))
 	} else {
-		return errors.New(fmt.Sprintf(format, a...))
+		return fmt.Errorf(format, a...)
 	}
 }
 

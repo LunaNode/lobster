@@ -65,7 +65,7 @@ type ApiActionRestriction struct {
 func apiCreate(db *Database, userId int, label string, restrictAction string, restrictIp string) (*ApiKey, error) {
 	// validate restrictAction
 	if len(restrictAction) > MAX_API_RESTRICTION {
-		return nil, errors.New(fmt.Sprintf("action restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION))
+		return nil, fmt.Errorf("action restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION)
 	} else if restrictAction != "" {
 		var actionRestrictions []*ApiActionRestriction
 		err := json.Unmarshal([]byte(restrictAction), &actionRestrictions)
@@ -76,7 +76,7 @@ func apiCreate(db *Database, userId int, label string, restrictAction string, re
 
 	// validate restrictIp
 	if len(restrictIp) > MAX_API_RESTRICTION {
-		return nil, errors.New(fmt.Sprintf("IP restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION))
+		return nil, fmt.Errorf("IP restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION)
 	} else if restrictIp != "" {
 		_, err := ipaddr.ParseNetworks(restrictIp)
 		if err != nil {
@@ -102,7 +102,7 @@ type APIHandlerFunc func(http.ResponseWriter, *http.Request, *Database, int, []b
 func apiCheck(db *Database, path string, method string, authorization string, request []byte, ip string) (int, error) {
 	authParts := strings.Split(authorization, ":")
 	if len(authParts) != 4 {
-		return 0, errors.New(fmt.Sprintf("bad authorization: expected 4 semicolon-delimited parts, only found %d", len(authParts)))
+		return 0, fmt.Errorf("bad authorization: expected 4 semicolon-delimited parts, only found %d", len(authParts))
 	}
 
 	apiId := authParts[0]

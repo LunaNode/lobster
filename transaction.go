@@ -1,7 +1,6 @@
 package lobster
 
 import "database/sql"
-import "errors"
 import "fmt"
 import "log"
 import "time"
@@ -58,14 +57,14 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	depositMinimum := int64(cfg.Billing.DepositMinimum * BILLING_PRECISION)
 	depositMaximum := int64(cfg.Billing.DepositMaximum * BILLING_PRECISION)
 	if amount < depositMinimum || amount > depositMaximum {
-		ReportError(errors.New(fmt.Sprintf("invalid payment of %d cents", amount * 100 / BILLING_PRECISION)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(fmt.Errorf("invalid payment of %d cents", amount * 100 / BILLING_PRECISION), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
 		return
 	}
 
 	// verify user
 	user := UserDetails(db, userId)
 	if user == nil {
-		ReportError(errors.New(fmt.Sprintf("invalid user %d", userId)), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(fmt.Errorf("invalid user %d", userId), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
 		return
 	}
 

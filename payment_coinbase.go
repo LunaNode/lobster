@@ -3,7 +3,6 @@ package lobster
 import "github.com/fabioberger/coinbase-go"
 
 import "encoding/json"
-import "errors"
 import "fmt"
 import "io/ioutil"
 import "log"
@@ -88,11 +87,11 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	}
 
 	if data.Order.TotalNative.CurrencyIso != cfg.Billing.Currency {
-		ReportError(errors.New(fmt.Sprintf("invalid currency %s", data.Order.TotalNative.CurrencyIso)), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		ReportError(fmt.Errorf("invalid currency %s", data.Order.TotalNative.CurrencyIso), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return
 	} else if !strings.HasPrefix(data.Order.Custom, "lobster") {
-		ReportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", data.Order.Custom)), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		ReportError(fmt.Errorf("invalid payment with custom=%s", data.Order.Custom), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return
 	}
@@ -100,7 +99,7 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	userIdStr := strings.Split(data.Order.Custom, "lobster")[1]
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		ReportError(errors.New(fmt.Sprintf("invalid payment with custom=%s", data.Order.Custom)), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		ReportError(fmt.Errorf("invalid payment with custom=%s", data.Order.Custom), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return
 	}

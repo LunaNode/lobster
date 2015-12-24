@@ -1,6 +1,5 @@
 package ipaddr
 
-import "errors"
 import "fmt"
 import "net"
 import "strings"
@@ -57,7 +56,7 @@ func ParseNetworks(s string) ([]*net.IPNet, error) {
 			if network != nil {
 				networks = append(networks, network)
 			} else {
-				return nil, errors.New(fmt.Sprintf("failed to parse \"%s\" as IP/CIDR", part))
+				return nil, fmt.Errorf("failed to parse \"%s\" as IP/CIDR", part)
 			}
 		}
 	}
