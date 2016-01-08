@@ -689,6 +689,31 @@ func imageInfo(db *Database, userId int, imageId int) *Image {
 	return image
 }
 
+func imageAutopopulate(db *Database, region string) error {
+	if _, ok := regionInterfaces[region]; !ok {
+		return fmt.Errorf("specified region %s does not exist", region)
+	}
+	vmi, ok := regionInterfaces[region].(VMIImages)
+	if !ok {
+		return L.Error("operation_unsupported")
+	}
+	images, err := vmi.ImageList()
+	if err != nil {
+		return err
+	}
+
+	// add images that aren't already having matching identification in database
+	for _, image := range images {
+		var count int
+		db.QueryRow("SELECT COUNT(*) FROM images WHERE region = ? AND identification = ?", region, image.Identification).Scan(&count)
+		if count == 0 {
+			imageAdd(db, image.Name, region, image.Identification)
+		}
+	}
+
+	return nil
+}
+
 // vmUpdateAdditionalBandwidth is called on VM deletion or resize, to add the VM's bandwidth to user's bandwidth pool
 func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 	// determine how much of the plan bandwidth to add to the user's bandwidth pool for current month

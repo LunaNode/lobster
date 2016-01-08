@@ -168,3 +168,7 @@ func (this *Fake) ImageInfo(imageIdentification string) (*lobster.ImageInfo, err
 func (this *Fake) ImageDelete(imageIdentification string) error {
 	return nil
 }
+
+func (this *Fake) ImageList() ([]*lobster.Image, error) {
+	return nil, nil
+}

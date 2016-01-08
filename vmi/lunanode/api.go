@@ -229,33 +229,14 @@ func (this *API) VmSnapshot(vmIdentification int, region string) (int, error) {
 	params := make(map[string]string)
 	params["vm_id"] = fmt.Sprintf("%d", vmIdentification)
 	params["name"] = imageLabel
-	var response APIGenericResponse
+	var response APIImageCreateResponse
 	err := this.request("vm", "snapshot", params, &response)
 	if err != nil {
 		return 0, err
+	} else {
+		id, _ := strconv.Atoi(response.Id)
+		return id, nil
 	}
-
-	// find the image ID based on label
-	params = make(map[string]string)
-	params["region"] = region
-	var listResponse APIImageListResponse
-	err = this.request("image", "list", params, &listResponse)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, image := range listResponse.Images {
-		if strings.Contains(image.Name, imageLabel) {
-			imageId, err := strconv.Atoi(image.Id)
-			if err != nil {
-				return 0, err
-			} else {
-				return imageId, nil
-			}
-		}
-	}
-
-	return 0, errors.New("backend reported successful snapshot creation, but not found in list")
 }
 
 // images
@@ -271,33 +252,14 @@ func (this *API) ImageFetch(region string, location string, format string, virti
 	if virtio {
 		params["virtio"] = "yes"
 	}
-	var response APIGenericResponse
+	var response APIImageCreateResponse
 	err := this.request("image", "fetch", params, &response)
 	if err != nil {
 		return 0, err
+	} else {
+		id, _ := strconv.Atoi(response.Id)
+		return id, nil
 	}
-
-	// find the image ID based on label
-	params = make(map[string]string)
-	params["region"] = region
-	var listResponse APIImageListResponse
-	err = this.request("image", "list", params, &listResponse)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, image := range listResponse.Images {
-		if strings.Contains(image.Name, imageLabel) {
-			imageId, err := strconv.Atoi(image.Id)
-			if err != nil {
-				return 0, err
-			} else {
-				return imageId, nil
-			}
-		}
-	}
-
-	return 0, errors.New("backend reported successful image creation, but not found in list")
 }
 
 func (this *API) ImageDetails(imageIdentification int) (*APIImage, error) {
@@ -317,6 +279,18 @@ func (this *API) ImageDelete(imageIdentification int) error {
 	params["image_id"] = fmt.Sprintf("%d", imageIdentification)
 	var response APIGenericResponse
 	return this.request("image", "delete", params, &response)
+}
+
+func (this *API) ImageList(region string) ([]*APIImage, error) {
+	params := make(map[string]string)
+	params["region"] = region
+	var listResponse APIImageListResponse
+	err := this.request("image", "list", params, &listResponse)
+	if err != nil {
+		return nil, err
+	} else {
+		return listResponse.Images, nil
+	}
 }
 
 // volumes

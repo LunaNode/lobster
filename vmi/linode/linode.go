@@ -236,6 +236,21 @@ func (this *Linode) ImageDelete(imageIdentification string) error {
 	return this.client.DeleteImage(imageID)
 }
 
+func (this *Linode) ImageList() ([]*lobster.Image, error) {
+	distributions, err := this.client.ListDistributions()
+	if err != nil {
+		return nil, err
+	}
+	images := make([]*lobster.Image, len(distributions))
+	for i, distribution := range distributions {
+		images[i] = &lobster.Image{
+			Name: distribution.Label,
+			Identification: fmt.Sprintf("distribution:%d", distribution.ID),
+		}
+	}
+	return images, nil
+}
+
 func (this *Linode) PlanList() ([]*lobster.Plan, error) {
 	apiPlans, err := this.client.ListPlans()
 	if err != nil {

@@ -285,6 +285,21 @@ func (this *DigitalOcean) ImageDelete(imageIdentification string) error {
 	return err
 }
 
+func (this *DigitalOcean) ImageList() ([]*lobster.Image, error) {
+	apiImages, _, err := this.client.Images.ListDistribution(&godo.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	images := make([]*lobster.Image, len(apiImages))
+	for i, apiImage := range apiImages {
+		images[i] = &lobster.Image{
+			Name: fmt.Sprintf("%s %s", apiImage.Distribution, apiImage.Name),
+			Identification: apiImage.Slug,
+		}
+	}
+	return images, nil
+}
+
 func (this *DigitalOcean) PlanList() ([]*lobster.Plan, error) {
 	sizes, _, err := this.client.Sizes.List(&godo.ListOptions{})
 	if err != nil {

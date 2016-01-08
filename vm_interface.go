@@ -60,6 +60,10 @@ type VMIImages interface {
 
 	ImageInfo(imageIdentification string) (*ImageInfo, error)
 	ImageDelete(imageIdentification string) error
+
+	// List public images in backend.
+	// Only Name, Identification should be set.
+	ImageList() ([]*Image, error)
 }
 
 type VMIPlans interface {

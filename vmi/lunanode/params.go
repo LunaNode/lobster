@@ -49,6 +49,10 @@ type APIImageDetailsResponse struct {
 	Image *APIImage `json:"details"`
 }
 
+type APIImageCreateResponse struct {
+	Id string `json:"image_id"`
+}
+
 // volumes
 
 type APIVolume struct {

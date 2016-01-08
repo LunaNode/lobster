@@ -298,3 +298,13 @@ func adminImageDelete(w http.ResponseWriter, r *http.Request, db *Database, sess
 		RedirectMessage(w, r, "/admin/images", L.Success("image_deleted"))
 	}
 }
+
+func adminImagesAutopopulate(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	err := imageAutopopulate(db, r.PostFormValue("region"))
+	if err != nil {
+		RedirectMessage(w, r, "/admin/images", L.FormatError(err))
+		return
+	} else {
+		RedirectMessage(w, r, "/admin/images", L.Success("image_autopopulate_success"))
+	}
+}

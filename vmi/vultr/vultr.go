@@ -206,6 +206,21 @@ func (this *Vultr) ImageDelete(imageIdentification string) error {
 	return this.client.DeleteSnapshot(imageParts[1])
 }
 
+func (this *Vultr) ImageList() ([]*lobster.Image, error) {
+	osList, err := this.client.GetOS()
+	if err != nil {
+		return nil, err
+	}
+	images := make([]*lobster.Image, len(osList))
+	for i, os := range osList {
+		images[i] = &lobster.Image{
+			Name: os.Name,
+			Identification: fmt.Sprintf("os:%d", os.ID),
+		}
+	}
+	return images, nil
+}
+
 func (this *Vultr) PlanList() ([]*lobster.Plan, error) {
 	apiPlans, err := this.client.GetPlans()
 	if err != nil {

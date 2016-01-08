@@ -273,6 +273,10 @@ func (this *OpenStack) ImageDelete(imageIdentification string) error {
 	}
 }
 
+func (this *OpenStack) ImageList() ([]*lobster.Image, error) {
+	return nil, nil
+}
+
 func (this *OpenStack) PlanList() ([]*lobster.Plan, error) {
 	var plans []*lobster.Plan
 	flavorPager := flavors.ListDetail(this.ComputeClient, flavors.ListOpts{})

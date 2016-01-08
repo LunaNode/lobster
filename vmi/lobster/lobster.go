@@ -241,6 +241,23 @@ func (this *Lobster) ImageDelete(imageIdentification string) error {
 	return this.client.ImageDelete(imageIdentificationInt)
 }
 
+func (this *Lobster) ImageList() ([]*lobster.Image, error) {
+	apiImages, err := this.client.ImageList()
+	if err != nil {
+		return nil, err
+	}
+	var images []*lobster.Image
+	for _, apiImage := range apiImages {
+		if apiImage.Region == this.region {
+			images = append(images, &lobster.Image{
+				Name: apiImage.Name,
+				Identification: fmt.Sprintf("%d", apiImage.Id),
+			})
+		}
+	}
+	return images, nil
+}
+
 func (this *Lobster) PlanList() ([]*lobster.Plan, error) {
 	apiPlans, err := this.client.PlanList()
 	if err != nil {

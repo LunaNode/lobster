@@ -173,6 +173,21 @@ func (this *LunaNode) ImageDelete(imageIdentification string) error {
 	return this.api.ImageDelete(imageIdentificationInt)
 }
 
+func (this *LunaNode) ImageList() ([]*lobster.Image, error) {
+	apiImages, err := this.api.ImageList(this.region)
+	if err != nil {
+		return nil, err
+	}
+	images := make([]*lobster.Image, len(apiImages))
+	for i, apiImage := range apiImages {
+		images[i] = &lobster.Image{
+			Name: apiImage.Name,
+			Identification: apiImage.Id,
+		}
+	}
+	return images, nil
+}
+
 func (this *LunaNode) PlanList() ([]*lobster.Plan, error) {
 	apiPlans, err := this.api.PlanList()
 	if err != nil {

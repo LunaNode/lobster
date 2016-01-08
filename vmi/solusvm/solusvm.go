@@ -222,3 +222,7 @@ func (this *SolusVM) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 		return info.BandwidthUsed - currentBandwidth
 	}
 }
+
+func (this *SolusVM) ImageList() ([]*lobster.Image, error) {
+	return nil, nil
+}

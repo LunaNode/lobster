@@ -182,6 +182,16 @@ func (this *Client) VmAddressRdns(vmId int, ip string, hostname string) error {
 	return this.request("POST", fmt.Sprintf("vms/%d/ips/%s/rdns", vmId, ip), request, nil)
 }
 
+func (this *Client) ImageList() ([]*Image, error) {
+	var response ImageListResponse
+	err := this.request("GET", "images", nil, &response)
+	if err != nil {
+		return nil, err
+	} else {
+		return response.Images, nil
+	}
+}
+
 func (this *Client) ImageFetch(region string, name string, url string, format string) (int, error) {
 	request := ImageFetchRequest{
 		Region: region,

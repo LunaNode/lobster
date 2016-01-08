@@ -243,6 +243,7 @@ func Setup(cfgPath string) {
 	RegisterAdminHandler("/admin/images", adminImages, false)
 	RegisterAdminHandler("/admin/images/add", adminImagesAdd, true)
 	RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
+	RegisterAdminHandler("/admin/images/autopopulate", adminImagesAutopopulate, true)
 
 	// seed math/rand via crypt/rand in case interfaces want to use it for non-secure randomness source
 	// (math/rand is much faster)
