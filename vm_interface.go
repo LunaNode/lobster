@@ -62,6 +62,10 @@ type VMIImages interface {
 	ImageDelete(imageIdentification string) error
 }
 
+type VMIPlans interface {
+	PlanList() ([]*Plan, error)
+}
+
 // Note: before calling the VmInterface, we will make sure that the user actually owns the virtual machine
 // with the given identification, and same for images. However, VmInterface is responsible for checking any
 // other input, e.g. action strings, action parameters, image formats, image URLs.

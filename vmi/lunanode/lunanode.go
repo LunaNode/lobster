@@ -172,3 +172,22 @@ func (this *LunaNode) ImageDelete(imageIdentification string) error {
 	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
 	return this.api.ImageDelete(imageIdentificationInt)
 }
+
+func (this *LunaNode) PlanList() ([]*lobster.Plan, error) {
+	apiPlans, err := this.api.PlanList()
+	if err != nil {
+		return nil, err
+	}
+	plans := make([]*lobster.Plan, len(apiPlans))
+	for i, apiPlan := range apiPlans {
+		plans[i] = &lobster.Plan{
+			Name: apiPlan.Name,
+			Identification: apiPlan.Id,
+		}
+		plans[i].Ram, _ = strconv.Atoi(apiPlan.Ram)
+		plans[i].Cpu, _ = strconv.Atoi(apiPlan.Vcpu)
+		plans[i].Storage, _ = strconv.Atoi(apiPlan.Storage)
+		plans[i].Bandwidth, _ = strconv.Atoi(apiPlan.Bandwidth)
+	}
+	return plans, nil
+}

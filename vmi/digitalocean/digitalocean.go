@@ -284,3 +284,22 @@ func (this *DigitalOcean) ImageDelete(imageIdentification string) error {
 	_, err = this.client.Images.Delete(image.ID)
 	return err
 }
+
+func (this *DigitalOcean) PlanList() ([]*lobster.Plan, error) {
+	sizes, _, err := this.client.Sizes.List(&godo.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	plans := make([]*lobster.Plan, len(sizes))
+	for i, size := range sizes {
+		plans[i] = &lobster.Plan{
+			Name: size.Slug,
+			Ram: size.Memory,
+			Cpu: size.Vcpus,
+			Storage: size.Disk,
+			Bandwidth: int(size.Transfer * 1024),
+			Identification: size.Slug,
+		}
+	}
+	return plans, nil
+}

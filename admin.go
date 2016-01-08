@@ -149,12 +149,14 @@ func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, sess
 type AdminPlansParams struct {
 	Frame FrameParams
 	Plans []*Plan
+	Regions []string
 	Token string
 }
 func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := AdminPlansParams{}
 	params.Frame = frameParams
 	params.Plans = planList(db)
+	params.Regions = regionList()
 	params.Token = CSRFGenerate(db, session)
 	RenderTemplate(w, "admin", "plans", params)
 }
@@ -178,6 +180,16 @@ func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 
 	planCreate(db, form.Name, int64(form.Price * BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth, form.Global != "")
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_created"))
+}
+
+func adminPlansAutopopulate(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+	err := planAutopopulate(db, r.PostFormValue("region"))
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormatError(err))
+		return
+	} else {
+		RedirectMessage(w, r, "/admin/plans", L.Success("plan_autopopulate_success"))
+	}
 }
 
 type AdminPlanParams struct {

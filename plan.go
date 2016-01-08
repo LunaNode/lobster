@@ -73,8 +73,11 @@ func planGetRegion(db *Database, region string, planId int) *Plan {
 	}
 }
 
-func planCreate(db *Database, name string, price int64, ram int, cpu int, storage int, bandwidth int, global bool) {
-	db.Exec("INSERT INTO plans (name, price, ram, cpu, storage, bandwidth, global) VALUES (?, ?, ?, ?, ?, ?, ?)", name, price, ram, cpu, storage, bandwidth, global)
+func planCreate(db *Database, name string, price int64, ram int, cpu int, storage int, bandwidth int, global bool) int {
+	result := db.Exec("INSERT INTO plans (name, price, ram, cpu, storage, bandwidth, global) VALUES (?, ?, ?, ?, ?, ?, ?)", name, price, ram, cpu, storage, bandwidth, global)
+	planId, err := result.LastInsertId()
+	checkErr(err)
+	return int(planId)
 }
 
 func planDelete(db *Database, planId int) {
@@ -99,4 +102,30 @@ func planAssociateRegion(db *Database, planId int, region string, identification
 
 func planDeassociateRegion(db *Database, planId int, region string) {
 	db.Exec("DELETE FROM region_plans WHERE plan_id = ? AND region = ?", planId, region)
+}
+
+func planAutopopulate(db *Database, region string) error {
+	if _, ok := regionInterfaces[region]; !ok {
+		return fmt.Errorf("specified region %s does not exist", region)
+	}
+	vmi, ok := regionInterfaces[region].(VMIPlans)
+	if !ok {
+		return L.Error("region_plans_unsupported")
+	}
+	plans, err := vmi.PlanList()
+	if err != nil {
+		return err
+	}
+
+	// add plans that aren't already having matching identification in database
+	for _, plan := range plans {
+		var count int
+		db.QueryRow("SELECT COUNT(*) FROM region_plans WHERE region = ? AND identification = ?", region, plan.Identification).Scan(&count)
+		if count == 0 {
+			planId := planCreate(db, plan.Name, plan.Price, plan.Ram, plan.Cpu, plan.Storage, plan.Bandwidth, false)
+			planAssociateRegion(db, planId, region, plan.Identification)
+		}
+	}
+
+	return nil
 }

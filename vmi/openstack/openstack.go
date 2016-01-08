@@ -272,3 +272,29 @@ func (this *OpenStack) ImageDelete(imageIdentification string) error {
 		return nil
 	}
 }
+
+func (this *OpenStack) PlanList() ([]*lobster.Plan, error) {
+	var plans []*lobster.Plan
+	flavorPager := flavors.ListDetail(this.ComputeClient, flavors.ListOpts{})
+	err := flavorPager.EachPage(func(page pagination.Page) (bool, error) {
+		flavorList, err := flavors.ExtractFlavors(page)
+		if err != nil {
+			return false, err
+		}
+
+		for _, flavor := range flavorList {
+			plans = append(plans, &lobster.Plan{
+				Name: flavor.Name,
+				Ram: flavor.RAM,
+				Cpu: flavor.VCPUs,
+				Storage: flavor.Disk,
+				Identification: flavor.ID,
+			})
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return plans, nil
+}

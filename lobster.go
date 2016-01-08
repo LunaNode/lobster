@@ -234,13 +234,14 @@ func Setup(cfgPath string) {
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/password", adminUserPassword, true)
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/disable", adminUserDisable, true)
 	RegisterAdminHandler("/admin/plans", adminPlans, false)
-	RegisterAdminHandler("/admin/plans/add", adminPlansAdd, false)
+	RegisterAdminHandler("/admin/plans/add", adminPlansAdd, true)
+	RegisterAdminHandler("/admin/plans/autopopulate", adminPlansAutopopulate, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}", adminPlan, false)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/delete", adminPlanDelete, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/associate", adminPlanAssociateRegion, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/deassociate/{region:[^/]+}", adminPlanDeassociateRegion, true)
 	RegisterAdminHandler("/admin/images", adminImages, false)
-	RegisterAdminHandler("/admin/images/add", adminImagesAdd, false)
+	RegisterAdminHandler("/admin/images/add", adminImagesAdd, true)
 	RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
 
 	// seed math/rand via crypt/rand in case interfaces want to use it for non-secure randomness source

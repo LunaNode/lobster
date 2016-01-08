@@ -235,3 +235,22 @@ func (this *Linode) ImageDelete(imageIdentification string) error {
 	imageID, _ := strconv.Atoi(imageParts[1])
 	return this.client.DeleteImage(imageID)
 }
+
+func (this *Linode) PlanList() ([]*lobster.Plan, error) {
+	apiPlans, err := this.client.ListPlans()
+	if err != nil {
+		return nil, err
+	}
+	plans := make([]*lobster.Plan, len(apiPlans))
+	for i, apiPlan := range apiPlans {
+		plans[i] = &lobster.Plan{
+			Name: apiPlan.Label,
+			Ram: apiPlan.RAM,
+			Cpu: apiPlan.Cores,
+			Storage: apiPlan.Disk,
+			Bandwidth: apiPlan.Bandwidth,
+			Identification: fmt.Sprintf("%d", apiPlan.ID),
+		}
+	}
+	return plans, nil
+}

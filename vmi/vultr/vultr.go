@@ -205,3 +205,34 @@ func (this *Vultr) ImageDelete(imageIdentification string) error {
 	}
 	return this.client.DeleteSnapshot(imageParts[1])
 }
+
+func (this *Vultr) PlanList() ([]*lobster.Plan, error) {
+	apiPlans, err := this.client.GetPlans()
+	if err != nil {
+		return nil, err
+	}
+	regionPlanIds, err := this.client.GetAvailablePlansForRegion(this.regionId)
+	if err != nil {
+		return nil, err
+	}
+	regionPlans := make(map[int]bool)
+	for _, planId := range regionPlanIds {
+		regionPlans[planId] = true
+	}
+
+	var plans []*lobster.Plan
+	for _, apiPlan := range apiPlans {
+		if regionPlans[apiPlan.ID] {
+			plan := &lobster.Plan{
+				Name: apiPlan.Name,
+				Ram: apiPlan.RAM,
+				Cpu: apiPlan.VCpus,
+				Storage: apiPlan.Disk,
+				Identification: fmt.Sprintf("%d", apiPlan.ID),
+			}
+			plan.Bandwidth, _ = strconv.Atoi(apiPlan.Bandwidth)
+			plans = append(plans, plan)
+		}
+	}
+	return plans, nil
+}

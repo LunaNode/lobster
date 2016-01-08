@@ -240,3 +240,22 @@ func (this *Lobster) ImageDelete(imageIdentification string) error {
 	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
 	return this.client.ImageDelete(imageIdentificationInt)
 }
+
+func (this *Lobster) PlanList() ([]*lobster.Plan, error) {
+	apiPlans, err := this.client.PlanList()
+	if err != nil {
+		return nil, err
+	}
+	plans := make([]*lobster.Plan, len(apiPlans))
+	for i, apiPlan := range apiPlans {
+		plans[i] = &lobster.Plan{
+			Name: apiPlan.Name,
+			Ram: apiPlan.Ram,
+			Cpu: apiPlan.Cpu,
+			Storage: apiPlan.Storage,
+			Bandwidth: apiPlan.Bandwidth,
+			Identification: fmt.Sprintf("%d", apiPlan.Id),
+		}
+	}
+	return plans, nil
+}
