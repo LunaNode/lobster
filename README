@@ -8,6 +8,8 @@ Lobster is a simple hourly billing panel for virtual machine services. Lobster
 does not manage virtual machines directly -- instead, it relies on backends that
 it communicates with through VM interfaces; several backends are supported.
 
+See https://github.com/LunaNode/lobster/wiki/GettingStarted to get started.
+
 Regions
 -------
 
