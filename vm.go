@@ -4,6 +4,7 @@ import "database/sql"
 import "errors"
 import "fmt"
 import "log"
+import "sort"
 import "strings"
 import "time"
 
@@ -150,6 +151,7 @@ func regionList() []string {
 	for region, _ := range regionInterfaces {
 		regions = append(regions, region)
 	}
+	sort.Sort(sort.StringSlice(regions))
 	return regions
 }
 
