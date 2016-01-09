@@ -5,6 +5,7 @@ import "github.com/LunaNode/lobster/core/support"
 import "github.com/LunaNode/lobster/vmi/lunanode"
 import "github.com/LunaNode/lobster/vmi/openstack"
 import "github.com/LunaNode/lobster/vmi/solusvm"
+import "github.com/LunaNode/lobster/vmi/cloudstack"
 import "github.com/LunaNode/lobster/vmi/digitalocean"
 import "github.com/LunaNode/lobster/vmi/fake"
 import "github.com/LunaNode/lobster/vmi/linode"
@@ -21,15 +22,18 @@ import "strconv"
 type VmConfig struct {
 	Name string `json:"name"`
 
-	// one of solusvm, openstack, lobster, lndynamic, fake, digitalocean, vultr, linode
+	// one of solusvm, openstack, cloudstack, lobster, lndynamic, fake, digitalocean, vultr, linode
 	Type string `json:"type"`
 
-	// API options (used by solusvm, lobster, lndynamic, digitalocean, vultr, linode)
+	// API options (used by solusvm, cloudstack, lobster, lndynamic, digitalocean, vultr, linode)
 	ApiId string `json:"api_id"`
 	ApiKey string `json:"api_key"`
 
-	// URL (used by solusvm, lobster, openstack)
+	// URL (used by solusvm, lobster, openstack, cloudstack)
 	Url string `json:"url"`
+
+	// network ID (used by openstack, cloudstack)
+	NetworkId string `json:"network_id"`
 
 	// solusvm options
 	VirtType string `json:"virt_type"`
@@ -40,7 +44,10 @@ type VmConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Tenant string `json:"tenant"`
-	NetworkId string `json:"network_id"`
+
+	// cloudstack options
+	SecretKey string `json:"secret_key"`
+	ZoneID string `json:"zone_id"`
 
 	// region option (used by lobster, lndynamic, digitalocean, vultr, linode)
 	Region string `json:"region"`
@@ -111,6 +118,8 @@ func main() {
 			}
 		} else if vm.Type == "lobster" {
 			vmi = vmlobster.MakeLobster(vm.Region, vm.Url, vm.ApiId, vm.ApiKey)
+		} else if vm.Type == "cloudstack" {
+			vmi = cloudstack.MakeCloudStack(vm.Url, vm.ZoneID, vm.NetworkId, vm.ApiKey, vm.SecretKey)
 		} else if vm.Type == "lndynamic" {
 			vmi = lunanode.MakeLunaNode(vm.Region, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "fake" {
