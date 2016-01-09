@@ -2,7 +2,6 @@ package support
 
 import "github.com/LunaNode/lobster"
 
-import "database/sql"
 import "log"
 import "time"
 
@@ -24,18 +23,39 @@ type Ticket struct {
 }
 
 func TicketList(db *lobster.Database, userId int) []*Ticket {
-	return ticketListHelper(db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets WHERE user_id = ? ORDER BY modify_time DESC", userId))
+	return ticketListHelper(
+		db.Query(
+			"SELECT id, user_id, name, status, time, modify_time "+
+				"FROM tickets "+
+				"WHERE user_id = ? ORDER BY modify_time DESC",
+			userId,
+		),
+	)
 }
 
 func TicketListActive(db *lobster.Database, userId int) []*Ticket {
-	return ticketListHelper(db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets WHERE user_id = ? AND (status = 'open' OR status = 'answered') ORDER BY modify_time DESC", userId))
+	return ticketListHelper(
+		db.Query(
+			"SELECT id, user_id, name, status, time, modify_time "+
+				"FROM tickets "+
+				"WHERE user_id = ? AND (status = 'open' OR status = 'answered') "+
+				"ORDER BY modify_time DESC",
+			userId,
+		),
+	)
 }
 
 func TicketListAll(db *lobster.Database) []*Ticket {
-	return ticketListHelper(db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets ORDER BY FIELD(status, 'open', 'answered', 'closed'), modify_time DESC"))
+	return ticketListHelper(
+		db.Query(
+			"SELECT id, user_id, name, status, time, modify_time " +
+				"FROM tickets " +
+				"ORDER BY FIELD(status, 'open', 'answered', 'closed'), modify_time DESC",
+		),
+	)
 }
 
-func ticketListHelper(rows *sql.Rows) []*Ticket {
+func ticketListHelper(rows lobster.Rows) []*Ticket {
 	tickets := make([]*Ticket, 0)
 	defer rows.Close()
 	for rows.Next() {
@@ -47,7 +67,7 @@ func ticketListHelper(rows *sql.Rows) []*Ticket {
 }
 
 func TicketDetails(db *lobster.Database, userId int, ticketId int, staff bool) *Ticket {
-	var rows *sql.Rows
+	var rows lobster.Rows
 	if staff {
 		rows = db.Query("SELECT id, user_id, name, status, time, modify_time FROM tickets WHERE id = ?", ticketId)
 	} else {
@@ -83,18 +103,15 @@ func ticketOpen(db *lobster.Database, userId int, name string, message string, s
 	}
 
 	result := db.Exec("INSERT INTO tickets (user_id, name, status, modify_time) VALUES (?, ?, 'open', NOW())", userId, name)
-	ticketId, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
+	ticketId := result.LastInsertId()
 	db.Exec("INSERT INTO ticket_messages (ticket_id, staff, message) VALUES (?, ?, ?)", ticketId, staff, message)
 	if staff {
-		lobster.MailWrap(db, userId, "ticketOpen", TicketUpdateEmail{Id: int(ticketId), Subject: name, Message: message}, false)
+		lobster.MailWrap(db, userId, "ticketOpen", TicketUpdateEmail{Id: ticketId, Subject: name, Message: message}, false)
 	} else {
-		lobster.MailWrap(db, -1, "ticketOpen", TicketUpdateEmail{Id: int(ticketId), Subject: name, Message: message}, false)
+		lobster.MailWrap(db, -1, "ticketOpen", TicketUpdateEmail{Id: ticketId, Subject: name, Message: message}, false)
 	}
 	log.Printf("Ticket opened for user %d: %s", userId, name)
-	return int(ticketId), nil
+	return ticketId, nil
 }
 
 func ticketReply(db *lobster.Database, userId int, ticketId int, message string, staff bool) error {
