@@ -13,7 +13,6 @@ import "time"
 
 func TestWebsockify(t *testing.T) {
 	TestReset()
-	app := TestLobster()
 
 	// create fake listener
 	ln, _ := net.Listen("tcp", "127.0.0.1:0")
@@ -60,7 +59,7 @@ func TestWebsockify(t *testing.T) {
 
 	// connect via websocket
 	// HandleWebsockify returns only the token with the testing Novnc.Url configuration
-	token := app.HandleWebsockify(fmt.Sprintf("127.0.0.1:%d", port), "foo")
+	token := HandleWebsockify(fmt.Sprintf("127.0.0.1:%d", port), "foo")
 	ws, _, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:6080/websockify", http.Header{"Cookie": {"token=" + token}})
 	if err != nil {
 		t.Fatal(err)

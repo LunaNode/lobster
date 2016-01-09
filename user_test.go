@@ -27,7 +27,7 @@ func TestBillingBandwidth(t *testing.T) {
 	// basic overage billing
 	var gbUsage int64 = 1000
 	result := db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_used) VALUES (?, 'test', ?)", userId, gbUsage*1024*1024*1024)
-	regionBandwidthId, _ := result.LastInsertId()
+	regionBandwidthId := result.LastInsertId()
 	testForceUserBilling(db, userId)
 	expectedCharge := int64(cfg.Billing.BandwidthOverageFee*BILLING_PRECISION) * gbUsage
 	if !testVerifyCharge(db, userId, "bw-test", expectedCharge) {
