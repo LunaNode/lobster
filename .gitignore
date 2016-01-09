@@ -1,0 +1,4 @@
+.gitignore
+/lobster
+lobster.cfg
+lobster.cfg.json
