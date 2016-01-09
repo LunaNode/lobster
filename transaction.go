@@ -25,7 +25,7 @@ func transactionListHelper(rows Rows) []*Transaction {
 	}
 	return transactions
 }
-func TransactionList(db *Database) []*Transaction {
+func TransactionList() []*Transaction {
 	return transactionListHelper(
 		db.Query(
 			"SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time " +
@@ -33,7 +33,7 @@ func TransactionList(db *Database) []*Transaction {
 		),
 	)
 }
-func TransactionGet(db *Database, transactionId int) *Transaction {
+func TransactionGet(transactionId int) *Transaction {
 	transactions := transactionListHelper(
 		db.Query(
 			"SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time "+
@@ -47,7 +47,7 @@ func TransactionGet(db *Database, transactionId int) *Transaction {
 		return nil
 	}
 }
-func TransactionGetByGateway(db *Database, gateway string, gatewayIdentifier string) *Transaction {
+func TransactionGetByGateway(gateway string, gatewayIdentifier string) *Transaction {
 	transactions := transactionListHelper(
 		db.Query(
 			"SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time "+
@@ -63,9 +63,9 @@ func TransactionGetByGateway(db *Database, gateway string, gatewayIdentifier str
 	}
 }
 
-func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier string, notes string, amount int64, fee int64) {
+func TransactionAdd(userId int, gateway string, gatewayIdentifier string, notes string, amount int64, fee int64) {
 	// verify not duplicate
-	if TransactionGetByGateway(db, gateway, gatewayIdentifier) != nil {
+	if TransactionGetByGateway(gateway, gatewayIdentifier) != nil {
 		log.Printf("Duplicate transaction %s/%s (amount=%d)", gateway, gatewayIdentifier, amount)
 		return
 	}
@@ -83,7 +83,7 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	}
 
 	// verify user
-	user := UserDetails(db, userId)
+	user := UserDetails(userId)
 	if user == nil {
 		ReportError(
 			fmt.Errorf("invalid user %d", userId),
@@ -108,8 +108,8 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 		transaction.UserId, transaction.Gateway, transaction.GatewayIdentifier,
 		transaction.Notes, transaction.Amount, transaction.Fee,
 	)
-	UserApplyCredit(db, userId, amount, fmt.Sprintf("Transaction %s/%s", gateway, gatewayIdentifier))
-	MailWrap(db, userId, "paymentProcessed", PaymentProcessedEmail(&transaction), true)
+	UserApplyCredit(userId, amount, fmt.Sprintf("Transaction %s/%s", gateway, gatewayIdentifier))
+	MailWrap(userId, "paymentProcessed", PaymentProcessedEmail(&transaction), true)
 	log.Printf("Processed payment of %d for user %d (%s/%s)", amount, userId, gateway, gatewayIdentifier)
 
 }

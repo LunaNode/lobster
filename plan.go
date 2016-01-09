@@ -18,15 +18,13 @@ type Plan struct {
 	// loadable region bindings, if not global
 	// maps from region to identification
 	RegionPlans map[string]string
-
-	db *Database
 }
 
 func (plan *Plan) LoadRegionPlans() {
 	if plan.Global {
 		return
 	}
-	rows := plan.db.Query("SELECT region, identification FROM region_plans WHERE plan_id = ?", plan.Id)
+	rows := db.Query("SELECT region, identification FROM region_plans WHERE plan_id = ?", plan.Id)
 	plan.RegionPlans = make(map[string]string)
 	for rows.Next() {
 		var region, identification string
@@ -35,11 +33,11 @@ func (plan *Plan) LoadRegionPlans() {
 	}
 }
 
-func planListHelper(db *Database, rows Rows) []*Plan {
+func planListHelper(rows Rows) []*Plan {
 	defer rows.Close()
 	plans := make([]*Plan, 0)
 	for rows.Next() {
-		plan := Plan{db: db}
+		var plan Plan
 		rows.Scan(
 			&plan.Id,
 			&plan.Name,
@@ -56,19 +54,17 @@ func planListHelper(db *Database, rows Rows) []*Plan {
 	return plans
 }
 
-func planList(db *Database) []*Plan {
+func planList() []*Plan {
 	return planListHelper(
-		db,
 		db.Query(
-			"SELECT id, name, price, ram, cpu, storage, bandwidth, global, '' "+
+			"SELECT id, name, price, ram, cpu, storage, bandwidth, global, '' " +
 				"FROM plans ORDER BY id",
 		),
 	)
 }
 
-func planListRegion(db *Database, region string) []*Plan {
+func planListRegion(region string) []*Plan {
 	return planListHelper(
-		db,
 		db.Query(
 			"SELECT plans.id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage,"+
 				" plans.bandwidth, plans.global, IFNULL(region_plans.identification, '') "+
@@ -80,9 +76,8 @@ func planListRegion(db *Database, region string) []*Plan {
 	)
 }
 
-func planGet(db *Database, planId int) *Plan {
+func planGet(planId int) *Plan {
 	plans := planListHelper(
-		db,
 		db.Query(
 			"SELECT plans.id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage,"+
 				" plans.bandwidth, plans.global, '' "+
@@ -97,9 +92,8 @@ func planGet(db *Database, planId int) *Plan {
 	}
 }
 
-func planGetRegion(db *Database, region string, planId int) *Plan {
+func planGetRegion(region string, planId int) *Plan {
 	plans := planListHelper(
-		db,
 		db.Query(
 			"SELECT plans.id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage,"+
 				" plans.bandwidth, plans.global, IFNULL(region_plans.identification, '') "+
@@ -115,7 +109,7 @@ func planGetRegion(db *Database, region string, planId int) *Plan {
 	}
 }
 
-func planCreate(db *Database, name string, price int64, ram int, cpu int, storage int, bandwidth int, global bool) int {
+func planCreate(name string, price int64, ram int, cpu int, storage int, bandwidth int, global bool) int {
 	result := db.Exec(
 		"INSERT INTO plans (name, price, ram, cpu, storage, bandwidth, global) "+
 			"VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -124,11 +118,11 @@ func planCreate(db *Database, name string, price int64, ram int, cpu int, storag
 	return result.LastInsertId()
 }
 
-func planDelete(db *Database, planId int) {
+func planDelete(planId int) {
 	db.Exec("DELETE FROM plans WHERE id = ?", planId)
 }
 
-func planAssociateRegion(db *Database, planId int, region string, identification string) error {
+func planAssociateRegion(planId int, region string, identification string) error {
 	if _, ok := regionInterfaces[region]; !ok {
 		return fmt.Errorf("specified region %s does not exist", region)
 	}
@@ -144,11 +138,11 @@ func planAssociateRegion(db *Database, planId int, region string, identification
 	return nil
 }
 
-func planDeassociateRegion(db *Database, planId int, region string) {
+func planDeassociateRegion(planId int, region string) {
 	db.Exec("DELETE FROM region_plans WHERE plan_id = ? AND region = ?", planId, region)
 }
 
-func planAutopopulate(db *Database, region string) error {
+func planAutopopulate(region string) error {
 	if _, ok := regionInterfaces[region]; !ok {
 		return fmt.Errorf("specified region %s does not exist", region)
 	}
@@ -169,8 +163,8 @@ func planAutopopulate(db *Database, region string) error {
 			region, plan.Identification,
 		).Scan(&count)
 		if count == 0 {
-			planId := planCreate(db, plan.Name, plan.Price, plan.Ram, plan.Cpu, plan.Storage, plan.Bandwidth, false)
-			planAssociateRegion(db, planId, region, plan.Identification)
+			planId := planCreate(plan.Name, plan.Price, plan.Ram, plan.Cpu, plan.Storage, plan.Bandwidth, false)
+			planAssociateRegion(planId, region, plan.Identification)
 		}
 	}
 

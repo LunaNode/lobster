@@ -1,6 +1,6 @@
 package lobster
 
-func AntifloodAction(db *Database, ip string, action string) {
+func AntifloodAction(ip string, action string) {
 	rows := db.Query("SELECT id FROM antiflood WHERE ip = ? AND action = ? AND time > DATE_SUB(NOW(), INTERVAL 1 HOUR)", ip, action)
 	defer rows.Close()
 
@@ -13,7 +13,7 @@ func AntifloodAction(db *Database, ip string, action string) {
 	}
 }
 
-func AntifloodCheck(db *Database, ip string, action string, maxCount int) bool {
+func AntifloodCheck(ip string, action string, maxCount int) bool {
 	var countBad int
 	db.QueryRow(
 		"SELECT COUNT(*) FROM antiflood "+

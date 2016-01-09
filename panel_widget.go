@@ -2,13 +2,13 @@ package lobster
 
 type PanelWidget interface {
 	// returns struct that will be passed to the panel dashboard template
-	Prepare(db *Database, session *Session) interface{}
+	Prepare(session *Session) interface{}
 }
 
-type PanelWidgetFunc func(*Database, *Session) interface{}
+type PanelWidgetFunc func(*Session) interface{}
 
-func (f PanelWidgetFunc) Prepare(db *Database, session *Session) interface{} {
-	return f(db, session)
+func (f PanelWidgetFunc) Prepare(session *Session) interface{} {
+	return f(session)
 }
 
 var panelWidgets map[string]PanelWidget

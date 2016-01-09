@@ -8,18 +8,18 @@ import "testing"
 
 func TestSessionBasic(t *testing.T) {
 	var seenUserId int
-	fakeHandler := func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+	fakeHandler := func(w http.ResponseWriter, r *http.Request, session *Session) {
 		seenUserId = session.UserId
 	}
 
-	db := TestReset()
-	userId := TestUser(db)
+	TestReset()
+	userId := TestUser()
 	w := httptest.NewRecorder()
-	session := makeSession(w, db)
+	session := makeSession(w)
 	req, _ := http.NewRequest("GET", "http://example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	db.Exec("UPDATE sessions SET user_id = ?", userId)
-	SessionWrap(fakeHandler)(w, req, db)
+	SessionWrap(fakeHandler)(w, req)
 
 	if seenUserId != userId {
 		t.Fatalf("Expected session user id %d but got %d", userId, seenUserId)
@@ -41,23 +41,23 @@ func TestSessionLogin(t *testing.T) {
 	//   (check both cookie and that new handler on old session doesn't get logged in)
 	// then verify in next handler that session preserves user ID
 	// note: we use server for this test since it makes parsing Set-Cookie easier
-	db := TestReset()
-	userId := TestUser(db)
+	TestReset()
+	userId := TestUser()
 
 	var seenUserId int
-	fakeHandler := func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+	fakeHandler := func(w http.ResponseWriter, r *http.Request, session *Session) {
 		seenUserId = session.UserId
 	}
 
-	loginHandler := func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+	loginHandler := func(w http.ResponseWriter, r *http.Request, session *Session) {
 		session.UserId = userId
 	}
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			db.WrapHandler(SessionWrap(fakeHandler))(w, r)
+			SessionWrap(fakeHandler)(w, r)
 		} else if r.URL.Path == "/login" {
-			db.WrapHandler(SessionWrap(loginHandler))(w, r)
+			SessionWrap(loginHandler)(w, r)
 		} else {
 			t.Errorf("Unexpected request path %s", r.URL.Path)
 		}
@@ -125,16 +125,16 @@ func TestSessionCSRF(t *testing.T) {
 	// try no token, valid token, reuse token, and other session token
 	// only valid token should work
 	// on fail we expect 303 redirect
-	db := TestReset()
+	TestReset()
 	w := httptest.NewRecorder()
-	session := makeSession(w, db)
-	fakeHandler := func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {}
+	session := makeSession(w)
+	fakeHandler := func(w http.ResponseWriter, r *http.Request, session *Session) {}
 
 	// no token
 	req, _ := http.NewRequest("POST", "http://example.com/", nil)
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	w = httptest.NewRecorder()
-	SessionWrap(fakeHandler)(w, req, db)
+	SessionWrap(fakeHandler)(w, req)
 
 	if w.Code != 303 {
 		t.Error("CSRF protection allowed no token")
@@ -142,12 +142,12 @@ func TestSessionCSRF(t *testing.T) {
 
 	// valid token
 	v := url.Values{}
-	v.Add("token", CSRFGenerate(db, session))
+	v.Add("token", CSRFGenerate(session))
 	req, _ = http.NewRequest("POST", "http://example.com/", bytes.NewBufferString(v.Encode()))
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w = httptest.NewRecorder()
-	SessionWrap(fakeHandler)(w, req, db)
+	SessionWrap(fakeHandler)(w, req)
 
 	if w.Code != 200 {
 		t.Error("CSRF protection disallowed valid token")
@@ -158,21 +158,21 @@ func TestSessionCSRF(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w = httptest.NewRecorder()
-	SessionWrap(fakeHandler)(w, req, db)
+	SessionWrap(fakeHandler)(w, req)
 
 	if w.Code != 303 {
 		t.Error("CSRF protection allowed reused token")
 	}
 
 	// other session token
-	session2 := makeSession(w, db)
+	session2 := makeSession(w)
 	v = url.Values{}
-	v.Add("token", CSRFGenerate(db, session2))
+	v.Add("token", CSRFGenerate(session2))
 	req, _ = http.NewRequest("POST", "http://example.com/", bytes.NewBufferString(v.Encode()))
 	req.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: session.Id})
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w = httptest.NewRecorder()
-	SessionWrap(fakeHandler)(w, req, db)
+	SessionWrap(fakeHandler)(w, req)
 
 	if w.Code != 303 {
 		t.Error("CSRF protection allowed token from another session")

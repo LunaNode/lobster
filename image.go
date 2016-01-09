@@ -45,32 +45,62 @@ func imageListHelper(rows Rows) []*Image {
 
 const IMAGE_QUERY = "SELECT id, user_id, region, name, identification, status, source_vm FROM images"
 
-func imageListAll(db *Database) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY + " ORDER BY user_id, name"))
+func imageListAll() []*Image {
+	return imageListHelper(
+		db.Query(
+			IMAGE_QUERY + " ORDER BY user_id, name",
+		),
+	)
 }
 
-func imageList(db *Database, userId int) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY+" WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
+func imageList(userId int) []*Image {
+	return imageListHelper(
+		db.Query(
+			IMAGE_QUERY+" WHERE user_id = -1 OR user_id = ? ORDER BY name",
+			userId,
+		),
+	)
 }
 
-func imageListRegion(db *Database, userId int, region string) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY+" WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
+func imageListRegion(userId int, region string) []*Image {
+	return imageListHelper(
+		db.Query(
+			IMAGE_QUERY+" WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name",
+			userId, region,
+		),
+	)
 }
 
-func imageListVmPending(db *Database, vmId int) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY+" WHERE source_vm = ? AND status = 'pending'", vmId))
+func imageListVmPending(vmId int) []*Image {
+	return imageListHelper(
+		db.Query(
+			IMAGE_QUERY+" WHERE source_vm = ? AND status = 'pending'",
+			vmId,
+		),
+	)
 }
 
-func imageGet(db *Database, userId int, imageId int) *Image {
-	images := imageListHelper(db.Query(IMAGE_QUERY+" WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
+func imageGet(userId int, imageId int) *Image {
+	images := imageListHelper(
+		db.Query(
+			IMAGE_QUERY+" WHERE id = ? AND (user_id = -1 OR user_id = ?)",
+			imageId, userId,
+		),
+	)
 	if len(images) == 1 {
 		return images[0]
 	} else {
 		return nil
 	}
 }
-func imageGetForce(db *Database, imageId int) *Image {
-	images := imageListHelper(db.Query("SELECT id, user_id, region, name, identification, status FROM images WHERE id = ?", imageId))
+func imageGetForce(imageId int) *Image {
+	images := imageListHelper(
+		db.Query(
+			"SELECT id, user_id, region, name, identification, status "+
+				"FROM images WHERE id = ?",
+			imageId,
+		),
+	)
 	if len(images) == 1 {
 		return images[0]
 	} else {
@@ -78,9 +108,9 @@ func imageGetForce(db *Database, imageId int) *Image {
 	}
 }
 
-func imageFetch(db *Database, userId int, region string, name string, url string, format string) (int, error) {
+func imageFetch(userId int, region string, name string, url string, format string) (int, error) {
 	// validate credit
-	user := UserDetails(db, userId)
+	user := UserDetails(userId)
 	if user == nil {
 		return 0, L.Error("invalid_account")
 	} else if user.Credit < MINIMUM_CREDIT {
@@ -102,17 +132,24 @@ func imageFetch(db *Database, userId int, region string, name string, url string
 	if err != nil {
 		return 0, err
 	} else {
-		result := db.Exec("INSERT INTO images (user_id, region, name, identification, status) VALUES (?, ?, ?, ?, 'pending')", userId, region, name, imageIdentification)
+		result := db.Exec(
+			"INSERT INTO images (user_id, region, name, identification, status) "+
+				"VALUES (?, ?, ?, ?, 'pending')",
+			userId, region, name, imageIdentification,
+		)
 		return result.LastInsertId(), nil
 	}
 }
 
-func imageAdd(db *Database, name string, region string, identification string) {
-	db.Exec("INSERT INTO images (name, region, identification) VALUES (?, ?, ?)", name, region, identification)
+func imageAdd(name string, region string, identification string) {
+	db.Exec(
+		"INSERT INTO images (name, region, identification) VALUES (?, ?, ?)",
+		name, region, identification,
+	)
 }
 
-func imageDelete(db *Database, userId int, imageId int) error {
-	image := imageGet(db, userId, imageId)
+func imageDelete(userId int, imageId int) error {
+	image := imageGet(userId, imageId)
 	if image == nil || image.UserId != userId {
 		return L.Error("invalid_image")
 	}
@@ -131,8 +168,8 @@ func imageDelete(db *Database, userId int, imageId int) error {
 	}
 }
 
-func imageDeleteForce(db *Database, imageId int) error {
-	image := imageGetForce(db, imageId)
+func imageDeleteForce(imageId int) error {
+	image := imageGetForce(imageId)
 	if image == nil {
 		return L.Error("invalid_image")
 	}
@@ -150,8 +187,8 @@ func imageDeleteForce(db *Database, imageId int) error {
 	return nil
 }
 
-func imageInfo(db *Database, userId int, imageId int) *Image {
-	image := imageGet(db, userId, imageId)
+func imageInfo(userId int, imageId int) *Image {
+	image := imageGet(userId, imageId)
 	if image == nil || image.UserId != userId {
 		return nil
 	}
@@ -170,7 +207,7 @@ func imageInfo(db *Database, userId int, imageId int) *Image {
 	return image
 }
 
-func imageAutopopulate(db *Database, region string) error {
+func imageAutopopulate(region string) error {
 	if _, ok := regionInterfaces[region]; !ok {
 		return fmt.Errorf("specified region %s does not exist", region)
 	}
@@ -191,7 +228,7 @@ func imageAutopopulate(db *Database, region string) error {
 			region, image.Identification,
 		).Scan(&count)
 		if count == 0 {
-			imageAdd(db, image.Name, region, image.Identification)
+			imageAdd(image.Name, region, image.Identification)
 		}
 	}
 

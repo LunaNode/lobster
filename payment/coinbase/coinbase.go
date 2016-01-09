@@ -23,11 +23,11 @@ func MakeCoinbasePayment(callbackSecret string, apiKey string, apiSecret string)
 	this.callbackSecret = callbackSecret
 	this.apiKey = apiKey
 	this.apiSecret = apiSecret
-	lobster.RegisterHttpHandler("/coinbase_callback_"+this.callbackSecret, lobster.GetDatabase().WrapHandler(this.callback), true)
+	lobster.RegisterHttpHandler("/coinbase_callback_"+this.callbackSecret, this.callback, true)
 	return this
 }
 
-func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db *lobster.Database, frameParams lobster.FrameParams, userId int, username string, amount float64) {
+func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, frameParams lobster.FrameParams, userId int, username string, amount float64) {
 	cfg := lobster.GetConfig()
 	if cfg.Default.Debug {
 		log.Printf("Creating Coinbase button for %s (id=%d) with amount $%.2f", username, userId, amount)
@@ -77,7 +77,7 @@ type CoinbaseMispaidEmail struct {
 	OrderId string
 }
 
-func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db *lobster.Database) {
+func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request) {
 	cfg := lobster.GetConfig()
 
 	requestBytes, err := ioutil.ReadAll(r.Body)
@@ -114,9 +114,9 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	}
 
 	if data.Order.Status == "completed" {
-		lobster.TransactionAdd(db, userId, "coinbase", data.Order.Id, "Bitcoin transaction: "+data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents)*lobster.BILLING_PRECISION/100, 0)
+		lobster.TransactionAdd(userId, "coinbase", data.Order.Id, "Bitcoin transaction: "+data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents)*lobster.BILLING_PRECISION/100, 0)
 	} else if data.Order.Status == "mispaid" {
-		lobster.MailWrap(db, -1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
+		lobster.MailWrap(-1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
 	}
 
 	w.WriteHeader(200)

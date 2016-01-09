@@ -4,7 +4,6 @@ import _ "github.com/go-sql-driver/mysql"
 
 import "database/sql"
 import "log"
-import "net/http"
 
 type Database struct {
 	db *sql.DB
@@ -51,13 +50,6 @@ func (this *Database) Exec(q string, args ...interface{}) Result {
 	result, err := this.db.Exec(q, args...)
 	checkErr(err)
 	return Result{result}
-}
-
-func (this *Database) WrapHandler(handler func(http.ResponseWriter, *http.Request, *Database)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer errorHandler(w, r, true)
-		handler(w, r, this)
-	}
 }
 
 type Rows struct {

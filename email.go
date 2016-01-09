@@ -87,19 +87,19 @@ func ReportError(err error, description string, detail string) {
 		log.Printf(fmt.Sprintf("%s: error: %s", description, err))
 
 		// the mail operation may itself generate an error, but we don't recursively report it
-		suberr := mail(nil, -1, "error", ErrorEmail{Error: err.Error(), Description: description, Detail: detail}, false)
+		suberr := mail(-1, "error", ErrorEmail{Error: err.Error(), Description: description, Detail: detail}, false)
 		if suberr != nil {
 			log.Printf("ReportError: failed to report: %s", suberr)
 		}
 	}
 }
 
-func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) error {
+func mail(userId int, tmpl string, subparams interface{}, ccAdmin bool) error {
 	toAddress := cfg.Default.AdminEmail
 	username := "N/A"
 
-	if userId >= 0 && db != nil {
-		user := UserDetails(db, userId)
+	if userId >= 0 {
+		user := UserDetails(userId)
 		if user == nil {
 			return errors.New("user does not exist")
 		}
@@ -154,10 +154,10 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	return e.Send(cfg.Email.Host, cfg.Email.Port, auth, cfg.Email.NoTLS)
 }
 
-func MailWrap(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin bool) {
+func MailWrap(userId int, tmpl string, subparams interface{}, ccAdmin bool) {
 	go func() {
 		defer errorHandler(nil, nil, true)
-		err := mail(db, userId, tmpl, subparams, ccAdmin)
+		err := mail(userId, tmpl, subparams, ccAdmin)
 		if err != nil {
 			ReportError(err, "failed to send email", fmt.Sprintf("userid=%d, tmpl=%s, subparam=%v", userId, tmpl, subparams))
 		}

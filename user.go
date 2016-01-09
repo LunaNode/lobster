@@ -27,7 +27,7 @@ type Charge struct {
 	Amount int64
 }
 
-func UserList(db *Database) []*User {
+func UserList() []*User {
 	var users []*User
 	rows := db.Query("SELECT id, username, email, time_created, credit, vm_limit, last_billing_notify, status, admin FROM users ORDER BY id")
 	defer rows.Close()
@@ -39,7 +39,7 @@ func UserList(db *Database) []*User {
 	return users
 }
 
-func UserDetails(db *Database, userId int) *User {
+func UserDetails(userId int) *User {
 	user := &User{}
 	rows := db.Query("SELECT id, username, email, time_created, credit, vm_limit, last_billing_notify, status, admin FROM users WHERE id = ?", userId)
 	if !rows.Next() {
@@ -50,7 +50,7 @@ func UserDetails(db *Database, userId int) *User {
 	return user
 }
 
-func UserCreate(db *Database, username string, password string, email string) (int, error) {
+func UserCreate(username string, password string, email string) (int, error) {
 	if email != "" && !govalidator.IsEmail(email) {
 		return 0, L.Error("invalid_email")
 	}
@@ -87,7 +87,7 @@ func UserCreate(db *Database, username string, password string, email string) (i
 	return result.LastInsertId(), nil
 }
 
-func ChargeList(db *Database, userId int, year int, month time.Month) []*Charge {
+func ChargeList(userId int, year int, month time.Month) []*Charge {
 	timeStart := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	timeEnd := timeStart.AddDate(0, 1, 0)
 	var charges []*Charge
@@ -101,24 +101,24 @@ func ChargeList(db *Database, userId int, year int, month time.Month) []*Charge 
 	return charges
 }
 
-func UserApplyCredit(db *Database, userId int, amount int64, detail string) {
+func UserApplyCredit(userId int, amount int64, detail string) {
 	db.Exec("INSERT INTO charges (user_id, name, time, amount, detail) VALUES (?, ?, CURDATE(), ?, ?)", userId, "Credit updated", -amount, detail)
 	db.Exec("UPDATE users SET status = 'active' WHERE id = ? AND status = 'new'", userId)
-	userAdjustCredit(db, userId, amount)
+	userAdjustCredit(userId, amount)
 
-	user := UserDetails(db, userId)
+	user := UserDetails(userId)
 	if user.Credit > 0 {
-		vms := vmList(db, userId)
+		vms := vmList(userId)
 		for _, vm := range vms {
 			if vm.Suspended == "auto" {
 				ReportError(vm.Unsuspend(), "failed to unsuspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
-				MailWrap(db, userId, "vmUnsuspend", VmUnsuspendEmail{Name: vm.Name}, false)
+				MailWrap(userId, "vmUnsuspend", VmUnsuspendEmail{Name: vm.Name}, false)
 			}
 		}
 	}
 }
 
-func UserApplyCharge(db *Database, userId int, name string, detail string, k string, amount int64) {
+func UserApplyCharge(userId int, name string, detail string, k string, amount int64) {
 	rows := db.Query("SELECT id FROM charges WHERE user_id = ? AND k = ? AND time = CURDATE()", userId, k)
 
 	if rows.Next() {
@@ -130,10 +130,10 @@ func UserApplyCharge(db *Database, userId int, name string, detail string, k str
 		db.Exec("INSERT INTO charges (user_id, name, amount, time, detail, k) VALUES (?, ?, ?, CURDATE(), ?, ?)", userId, name, amount, detail, k)
 	}
 
-	userAdjustCredit(db, userId, -amount)
+	userAdjustCredit(userId, -amount)
 }
 
-func userAdjustCredit(db *Database, userId int, amount int64) {
+func userAdjustCredit(userId int, amount int64) {
 	db.Exec("UPDATE users SET credit = credit + ? WHERE id = ?", amount, userId)
 }
 
@@ -146,14 +146,14 @@ type CreditSummary struct {
 	Status        string
 }
 
-func UserCreditSummary(db *Database, userId int) *CreditSummary {
-	user := UserDetails(db, userId)
+func UserCreditSummary(userId int) *CreditSummary {
+	user := UserDetails(userId)
 	if user == nil {
 		return nil
 	}
 
 	summary := CreditSummary{Credit: user.Credit}
-	vms := vmList(db, userId)
+	vms := vmList(userId)
 	for _, vm := range vms {
 		summary.Hourly += vm.Plan.Price
 	}
@@ -188,7 +188,7 @@ type BandwidthSummary struct {
 	ActualPercent   float64
 }
 
-func UserBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary {
+func UserBandwidthSummary(userId int) map[string]*BandwidthSummary {
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	monthEnd := monthStart.AddDate(0, 1, 0)
@@ -204,7 +204,7 @@ func UserBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary
 
 		// add in bandwidth from active vms in this region
 		// each one adds bandwidth proportional to the time it was provisioned relative to beginning of month
-		for _, vm := range vmListRegion(db, userId, region) {
+		for _, vm := range vmListRegion(userId, region) {
 			planBandwidthBytes := gigaToBytes(vm.Plan.Bandwidth)
 			if vm.CreatedTime.After(monthStart) {
 				timeRemaining := monthEnd.Sub(vm.CreatedTime)
@@ -222,11 +222,11 @@ func UserBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary
 	return bw
 }
 
-func userBilling(db *Database, userId int) {
+func userBilling(userId int) {
 	// bill/notify for bandwidth usage
 	creditPerGB := int64(cfg.Billing.BandwidthOverageFee * BILLING_PRECISION)
 
-	for region, summary := range UserBandwidthSummary(db, userId) {
+	for region, summary := range UserBandwidthSummary(userId) {
 		if summary.Used > gigaToBytes(200) {
 			// first do billing
 			// we provide some leeway on bandwidth to avoid confusion in edge cases
@@ -237,7 +237,7 @@ func userBilling(db *Database, userId int) {
 			if summary.Used > summary.Allocated+gigaToBytes(50) {
 				gbOver := int((summary.Used - summary.Allocated - summary.Billed) / 1024 / 1024 / 1024)
 				if gbOver > 0 {
-					UserApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-"+region, creditPerGB*int64(gbOver))
+					UserApplyCharge(userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-"+region, creditPerGB*int64(gbOver))
 					db.Exec("UPDATE region_bandwidth SET bandwidth_billed = bandwidth_billed + ? WHERE user_id = ? AND region = ?", gigaToBytes(gbOver), userId, region)
 				}
 			}
@@ -260,7 +260,7 @@ func userBilling(db *Database, userId int) {
 						Region:      region,
 						Fee:         creditPerGB,
 					}
-					MailWrap(db, userId, tmpl, emailParams, false)
+					MailWrap(userId, tmpl, emailParams, false)
 				}
 			}
 		}
@@ -278,24 +278,24 @@ func userBilling(db *Database, userId int) {
 	var billingLowCount int    // how many reminders regarding low account balance have been sent
 	rows.Scan(&credit, &email, &lastBilledHoursAgo, &billingLowCount)
 	rows.Close()
-	hourly := UserCreditSummary(db, userId).Hourly
+	hourly := UserCreditSummary(userId).Hourly
 
 	if credit <= hourly*168 {
 		if credit < 0 && billingLowCount >= 5 {
 			if credit < -168*hourly && lastBilledHoursAgo > 0 && lastBilledHoursAgo <= 48 {
 				// terminte the account
-				vms := vmList(db, userId)
+				vms := vmList(userId)
 				for _, vm := range vms {
 					ReportError(vm.Delete(userId), "failed to delete VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
 				}
-				MailWrap(db, userId, "userTerminate", nil, false)
+				MailWrap(userId, "userTerminate", nil, false)
 			} else {
 				// suspend
-				vms := vmList(db, userId)
+				vms := vmList(userId)
 				for _, vm := range vms {
 					ReportError(vm.Suspend(true), "failed to suspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
 				}
-				MailWrap(db, userId, "userSuspend", nil, false)
+				MailWrap(userId, "userSuspend", nil, false)
 			}
 		} else {
 			// send low credit warning
@@ -309,7 +309,7 @@ func userBilling(db *Database, userId int) {
 			if credit < 0 {
 				tmpl = "userNegativeCredit"
 			}
-			MailWrap(db, userId, tmpl, params, false)
+			MailWrap(userId, tmpl, params, false)
 		}
 
 		db.Exec("UPDATE users SET last_billing_notify = NOW(), billing_low_count = billing_low_count + 1 WHERE id = ?", userId)

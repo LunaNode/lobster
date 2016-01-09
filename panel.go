@@ -24,10 +24,10 @@ type PanelFormParams struct {
 	Token string
 }
 
-type PanelHandlerFunc func(http.ResponseWriter, *http.Request, *Database, *Session, FrameParams)
+type PanelHandlerFunc func(http.ResponseWriter, *http.Request, *Session, FrameParams)
 
-func panelWrap(h PanelHandlerFunc) func(http.ResponseWriter, *http.Request, *Database, *Session) {
-	return func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+func panelWrap(h PanelHandlerFunc) func(http.ResponseWriter, *http.Request, *Session) {
+	return func(w http.ResponseWriter, r *http.Request, session *Session) {
 		if !session.IsLoggedIn() {
 			http.Redirect(w, r, "/login", 303)
 		} else {
@@ -44,7 +44,7 @@ func panelWrap(h PanelHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 					frameParams.Message.Type = "info"
 				}
 			}
-			h(w, r, db, session, frameParams)
+			h(w, r, session, frameParams)
 		}
 	}
 }
@@ -57,15 +57,15 @@ type PanelDashboardParams struct {
 	WidgetData       map[string]interface{}
 }
 
-func panelDashboard(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelDashboard(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := PanelDashboardParams{}
 	params.Frame = frameParams
-	params.VirtualMachines = vmList(db, session.UserId)
-	params.CreditSummary = UserCreditSummary(db, session.UserId)
-	params.BandwidthSummary = UserBandwidthSummary(db, session.UserId)
+	params.VirtualMachines = vmList(session.UserId)
+	params.CreditSummary = UserCreditSummary(session.UserId)
+	params.BandwidthSummary = UserBandwidthSummary(session.UserId)
 	params.WidgetData = make(map[string]interface{})
 	for name, widget := range panelWidgets {
-		params.WidgetData[name] = widget.Prepare(db, session)
+		params.WidgetData[name] = widget.Prepare(session)
 	}
 	RenderTemplate(w, "panel", "dashboard", params)
 }
@@ -75,10 +75,10 @@ type PanelVirtualMachinesParams struct {
 	VirtualMachines []*VirtualMachine
 }
 
-func panelVirtualMachines(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelVirtualMachines(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := PanelVirtualMachinesParams{}
 	params.Frame = frameParams
-	params.VirtualMachines = vmList(db, session.UserId)
+	params.VirtualMachines = vmList(session.UserId)
 	RenderTemplate(w, "panel", "vms", params)
 }
 
@@ -87,7 +87,7 @@ type PanelNewVMParams struct {
 	Regions []string
 }
 
-func panelNewVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelNewVM(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := PanelNewVMParams{}
 	params.Frame = frameParams
 	params.Regions = regionList()
@@ -108,7 +108,7 @@ type NewVMRegionForm struct {
 	ImageId int    `schema:"image_id"`
 }
 
-func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelNewVMRegion(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	region := mux.Vars(r)["region"]
 
 	if r.Method == "POST" {
@@ -119,11 +119,11 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 			return
 		}
 
-		vmId, err := vmCreate(db, session.UserId, form.Name, form.PlanId, form.ImageId)
+		vmId, err := vmCreate(session.UserId, form.Name, form.PlanId, form.ImageId)
 		if err != nil {
 			RedirectMessage(w, r, "/panel/newvm/"+region, L.FormatError(err))
 		} else {
-			LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Create VM", fmt.Sprintf("Name: %s, Plan: %d, Image: %d", form.Name, form.PlanId, form.ImageId))
+			LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Create VM", fmt.Sprintf("Name: %s, Plan: %d, Image: %d", form.Name, form.PlanId, form.ImageId))
 			http.Redirect(w, r, fmt.Sprintf("/panel/vm/%d", vmId), 303)
 		}
 		return
@@ -132,10 +132,10 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 	params := PanelNewVMRegionParams{}
 	params.Frame = frameParams
 	params.Region = region
-	params.Plans = planListRegion(db, region)
-	params.Token = CSRFGenerate(db, session)
+	params.Plans = planListRegion(region)
+	params.Token = CSRFGenerate(session)
 
-	for _, image := range imageListRegion(db, session.UserId, region) {
+	for _, image := range imageListRegion(session.UserId, region) {
 		if image.UserId == -1 {
 			params.PublicImages = append(params.PublicImages, image)
 		} else {
@@ -154,13 +154,13 @@ type PanelVMParams struct {
 	Token  string
 }
 
-func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelVM(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormattedError("invalid_vm"))
 		return
 	}
-	vm := vmGetUser(db, session.UserId, vmId)
+	vm := vmGetUser(session.UserId, vmId)
 	if vm == nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormattedError("vm_not_found"))
 		return
@@ -172,27 +172,27 @@ func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Sess
 	params := PanelVMParams{}
 	params.Frame = frameParams
 	params.Vm = vm
-	params.Images = imageListRegion(db, session.UserId, vm.Region)
-	params.Plans = planListRegion(db, vm.Region)
-	params.Token = CSRFGenerate(db, session)
+	params.Images = imageListRegion(session.UserId, vm.Region)
+	params.Plans = planListRegion(vm.Region)
+	params.Token = CSRFGenerate(session)
 	RenderTemplate(w, "panel", "vm", params)
 }
 
 // virtual machine actions
-func panelVMProcess(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) (*VirtualMachine, error) {
+func panelVMProcess(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) (*VirtualMachine, error) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		return nil, errors.New("invalid VM ID")
 	}
-	vm := vmGetUser(db, session.UserId, vmId)
+	vm := vmGetUser(session.UserId, vmId)
 	if vm == nil {
 		return nil, errors.New("VM does not exist")
 	}
 	return vm, nil
 }
 
-func panelVMStart(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMStart(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -200,12 +200,12 @@ func panelVMStart(w http.ResponseWriter, r *http.Request, db *Database, session 
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Start VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Start VM", fmt.Sprintf("VM ID: %d", vm.Id))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("vm_started"))
 	}
 }
-func panelVMStop(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMStop(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -213,12 +213,12 @@ func panelVMStop(w http.ResponseWriter, r *http.Request, db *Database, session *
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Stop VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Stop VM", fmt.Sprintf("VM ID: %d", vm.Id))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("vm_stopped"))
 	}
 }
-func panelVMReboot(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMReboot(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -226,12 +226,12 @@ func panelVMReboot(w http.ResponseWriter, r *http.Request, db *Database, session
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Reboot VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Reboot VM", fmt.Sprintf("VM ID: %d", vm.Id))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("vm_rebooted"))
 	}
 }
-func panelVMDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMDelete(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -239,12 +239,12 @@ func panelVMDelete(w http.ResponseWriter, r *http.Request, db *Database, session
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Delete VM", fmt.Sprintf("VM ID: %d", vm.Id))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Delete VM", fmt.Sprintf("VM ID: %d", vm.Id))
 		RedirectMessage(w, r, "/panel/vms", L.Success("vm_deleted"))
 	}
 }
-func panelVMAction(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMAction(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -254,13 +254,13 @@ func panelVMAction(w http.ResponseWriter, r *http.Request, db *Database, session
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "VM action", fmt.Sprintf("VM ID: %d; Action: %s", vm.Id, action))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "VM action", fmt.Sprintf("VM ID: %d; Action: %s", vm.Id, action))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Successf("vm_action_success", action))
 	}
 }
 
-func panelVMVnc(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMVnc(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -276,7 +276,7 @@ type VMReimageForm struct {
 	Image int `schema:"image"`
 }
 
-func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelVMReimage(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormattedError("invalid_vm"))
@@ -290,17 +290,17 @@ func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, sessio
 		return
 	}
 
-	err = vmReimage(db, session.UserId, vmId, form.Image)
+	err = vmReimage(session.UserId, vmId, form.Image)
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Re-image VM", fmt.Sprintf("VM ID: %d; Image: %d", vmId, form.Image))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Re-image VM", fmt.Sprintf("VM ID: %d; Image: %d", vmId, form.Image))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vmId), L.Success("vm_reimaging"))
 	}
 }
 
-func panelVMSnapshot(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMSnapshot(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -309,7 +309,7 @@ func panelVMSnapshot(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Snapshot", fmt.Sprintf("VM ID: %d; Name: %s", vm.Id, r.PostFormValue("name")))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Snapshot", fmt.Sprintf("VM ID: %d; Name: %s", vm.Id, r.PostFormValue("name")))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("snapshot_creating"))
 	}
 }
@@ -318,8 +318,8 @@ type VMResizeForm struct {
 	PlanId int `schema:"plan_id"`
 }
 
-func panelVMResize(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMResize(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -335,13 +335,13 @@ func panelVMResize(w http.ResponseWriter, r *http.Request, db *Database, session
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Resize", fmt.Sprintf("VM ID: %d; New Plan: %s", vm.Id, form.PlanId))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Resize", fmt.Sprintf("VM ID: %d; New Plan: %s", vm.Id, form.PlanId))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("vm_resized"))
 	}
 }
 
-func panelVMRename(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, db, session, frameParams)
+func panelVMRename(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := panelVMProcess(w, r, session, frameParams)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -349,7 +349,7 @@ func panelVMRename(w http.ResponseWriter, r *http.Request, db *Database, session
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Rename VM", fmt.Sprintf("VM ID: %d; Name: %d", vm.Id, r.PostFormValue("name")))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Rename VM", fmt.Sprintf("VM ID: %d; Name: %d", vm.Id, r.PostFormValue("name")))
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.Success("vm_renamed"))
 	}
 }
@@ -360,10 +360,10 @@ type PanelBillingParams struct {
 	PaymentMethods []string
 }
 
-func panelBilling(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelBilling(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := PanelBillingParams{}
 	params.Frame = frameParams
-	params.CreditSummary = UserCreditSummary(db, session.UserId)
+	params.CreditSummary = UserCreditSummary(session.UserId)
 	params.PaymentMethods = paymentMethodList()
 	RenderTemplate(w, "panel", "billing", params)
 }
@@ -373,7 +373,7 @@ type PayForm struct {
 	Amount  float64 `schema:"amount"`
 }
 
-func panelPay(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelPay(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	form := new(PayForm)
 	err := decoder.Decode(form, r.Form)
 	if err != nil {
@@ -381,8 +381,8 @@ func panelPay(w http.ResponseWriter, r *http.Request, db *Database, session *Ses
 		return
 	}
 
-	user := UserDetails(db, session.UserId)
-	paymentHandle(form.Gateway, w, r, db, frameParams, session.UserId, user.Username, form.Amount)
+	user := UserDetails(session.UserId)
+	paymentHandle(form.Gateway, w, r, frameParams, session.UserId, user.Username, form.Amount)
 }
 
 type PanelChargesParams struct {
@@ -395,7 +395,7 @@ type PanelChargesParams struct {
 	Next     time.Time
 }
 
-func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelCharges(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	year, err := strconv.Atoi(mux.Vars(r)["year"])
 	if err != nil {
 		year = time.Now().Year()
@@ -411,7 +411,7 @@ func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session 
 	params.Frame = frameParams
 	params.Year = year
 	params.Month = time.Month(month)
-	params.Charges = ChargeList(db, session.UserId, params.Year, params.Month)
+	params.Charges = ChargeList(session.UserId, params.Year, params.Month)
 	params.Previous = requestTime.AddDate(0, -1, 0)
 	params.Next = requestTime.AddDate(0, 1, 0)
 	RenderTemplate(w, "panel", "charges", params)
@@ -424,12 +424,12 @@ type PanelAccountParams struct {
 	Token string
 }
 
-func panelAccount(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelAccount(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := PanelAccountParams{}
 	params.Frame = frameParams
-	params.User = UserDetails(db, session.UserId)
-	params.Keys = apiList(db, session.UserId)
-	params.Token = CSRFGenerate(db, session)
+	params.User = UserDetails(session.UserId)
+	params.Keys = apiList(session.UserId)
+	params.Token = CSRFGenerate(session)
 	RenderTemplate(w, "panel", "account", params)
 }
 
@@ -439,7 +439,7 @@ type AccountPasswordForm struct {
 	NewPasswordConfirm string `schema:"new_password_confirm"`
 }
 
-func panelAccountPassword(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelAccountPassword(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	form := new(AccountPasswordForm)
 	err := decoder.Decode(form, r.PostForm)
 	if err != nil {
@@ -449,7 +449,7 @@ func panelAccountPassword(w http.ResponseWriter, r *http.Request, db *Database, 
 		RedirectMessage(w, r, "/panel/account", L.FormattedError("new_password_mismatch"))
 	}
 
-	err = authChangePassword(db, ExtractIP(r.RemoteAddr), session.UserId, form.OldPassword, form.NewPassword)
+	err = authChangePassword(ExtractIP(r.RemoteAddr), session.UserId, form.OldPassword, form.NewPassword)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/account", L.FormatError(err))
 	} else {
@@ -463,7 +463,7 @@ type ApiAddForm struct {
 	RestrictIp     string `schema:"restrict_ip"`
 }
 
-func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelApiAdd(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	form := new(ApiAddForm)
 	err := decoder.Decode(form, r.PostForm)
 	if err != nil {
@@ -471,7 +471,7 @@ func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *
 		return
 	}
 
-	key, err := apiCreate(db, session.UserId, form.Label, form.RestrictAction, form.RestrictIp)
+	key, err := apiCreate(session.UserId, form.Label, form.RestrictAction, form.RestrictIp)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/account", L.FormatError(err))
 	} else {
@@ -479,13 +479,13 @@ func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *
 	}
 }
 
-func panelApiRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelApiRemove(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/account", L.FormattedError("invalid_id"))
 		return
 	}
-	apiDelete(db, session.UserId, id)
+	apiDelete(session.UserId, id)
 	RedirectMessage(w, r, "/panel/account", L.Success("api_deleted"))
 }
 
@@ -496,13 +496,13 @@ type PanelImagesParams struct {
 	Token   string
 }
 
-func panelImages(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelImages(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := PanelImagesParams{}
 	params.Frame = frameParams
 	params.Regions = regionList()
-	params.Token = CSRFGenerate(db, session)
+	params.Token = CSRFGenerate(session)
 
-	for _, image := range imageList(db, session.UserId) {
+	for _, image := range imageList(session.UserId) {
 		if image.UserId == session.UserId {
 			params.Images = append(params.Images, image)
 		}
@@ -518,7 +518,7 @@ type ImageAddForm struct {
 	Format   string `schema:"format"`
 }
 
-func panelImageAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelImageAdd(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	form := new(ImageAddForm)
 	err := decoder.Decode(form, r.PostForm)
 	if err != nil {
@@ -526,27 +526,27 @@ func panelImageAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 		return
 	}
 
-	_, err = imageFetch(db, session.UserId, form.Region, form.Name, form.Location, form.Format)
+	_, err = imageFetch(session.UserId, form.Region, form.Name, form.Location, form.Format)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Add image", fmt.Sprintf("Location: %s; Format: %s; Name: %s", form.Location, form.Format, form.Name))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Add image", fmt.Sprintf("Location: %s; Format: %s; Name: %s", form.Location, form.Format, form.Name))
 		RedirectMessage(w, r, "/panel/images", L.Success("image_downloading"))
 	}
 }
 
-func panelImageRemove(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelImageRemove(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormattedError("invalid_image"))
 		return
 	}
 
-	err = imageDelete(db, session.UserId, imageId)
+	err = imageDelete(session.UserId, imageId)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormatError(err))
 	} else {
-		LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Remove image", fmt.Sprintf("ID: %d", imageId))
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Remove image", fmt.Sprintf("ID: %d", imageId))
 		RedirectMessage(w, r, "/panel/images", L.Success("image_deleted"))
 	}
 }
@@ -556,13 +556,13 @@ type PanelImageDetailsParams struct {
 	Image *Image
 }
 
-func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func panelImageDetails(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/panel/images", L.FormattedError("invalid_image"))
 		return
 	}
-	image := imageInfo(db, session.UserId, imageId)
+	image := imageInfo(session.UserId, imageId)
 	if image == nil {
 		RedirectMessage(w, r, "/panel/images", L.FormattedError("image_not_found"))
 		return
@@ -574,6 +574,6 @@ func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, ses
 	RenderTemplate(w, "panel", "image_details", params)
 }
 
-func panelToken(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	w.Write([]byte(CSRFGenerate(db, session)))
+func panelToken(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	w.Write([]byte(CSRFGenerate(session)))
 }

@@ -31,8 +31,8 @@ func (this *Session) Reset() {
 	this.OriginalId = 0
 }
 
-func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Database, session *Session)) func(w http.ResponseWriter, r *http.Request, db *Database) {
-	return func(w http.ResponseWriter, r *http.Request, db *Database) {
+func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, session *Session)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
 		// determine session identifier and grab session; or generate a new one
@@ -49,11 +49,11 @@ func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 			} else {
 				// invalid session identifier! need to generate new session
 				log.Printf("Invalid session identifier from %s", r.RemoteAddr)
-				session = makeSession(w, db)
+				session = makeSession(w)
 				sessionNew = true
 			}
 		} else {
-			session = makeSession(w, db)
+			session = makeSession(w)
 			sessionNew = true
 		}
 
@@ -66,7 +66,7 @@ func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 		}
 
 		// CSRF protection
-		if r.Method == "POST" && !csrfCheck(db, session, r.PostForm.Get("token")) {
+		if r.Method == "POST" && !csrfCheck(session, r.PostForm.Get("token")) {
 			log.Printf("Invalid CSRF token from %s", r.RemoteAddr)
 			http.Redirect(w, r, "/panel/dashboard", 303)
 			return
@@ -74,7 +74,7 @@ func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 
 		// call handler but remember current session
 		originalSession := session.clone()
-		handler(w, r, db, session)
+		handler(w, r, session)
 
 		// writeback session
 		if originalSession.UserId == 0 && session.UserId != 0 && !sessionNew {
@@ -86,7 +86,7 @@ func SessionWrap(handler func(w http.ResponseWriter, r *http.Request, db *Databa
 	}
 }
 
-func makeSession(w http.ResponseWriter, db *Database) *Session {
+func makeSession(w http.ResponseWriter) *Session {
 	newSession := &Session{Id: generateSessionIdentifier(w)}
 	db.Exec("INSERT INTO sessions (uid, user_id, admin, original_id, regenerate) VALUES (?, ?, ?, ?, ?)", newSession.Id, newSession.UserId, newSession.Admin, newSession.OriginalId, newSession.Regenerate)
 	return newSession
@@ -107,7 +107,7 @@ func generateSessionIdentifier(w http.ResponseWriter) string {
 	return sessionIdentifier
 }
 
-func CSRFGenerate(db *Database, session *Session) string {
+func CSRFGenerate(session *Session) string {
 	tokenBytes := make([]byte, 32)
 	_, err := rand.Read(tokenBytes)
 	checkErr(err)
@@ -116,7 +116,7 @@ func CSRFGenerate(db *Database, session *Session) string {
 	return token
 }
 
-func csrfCheck(db *Database, session *Session, token string) bool {
+func csrfCheck(session *Session, token string) bool {
 	var numMatch int
 	db.QueryRow("SELECT COUNT(*) FROM form_tokens WHERE session_uid = ? AND token = ?", session.Id, token).Scan(&numMatch)
 

@@ -14,11 +14,13 @@ type TicketUpdateEmail struct {
 var decoder *schema.Decoder
 var L *i18n.Section
 var cfg *lobster.Config
+var db *lobster.Database
 
 func Setup() {
 	decoder = lobster.GetDecoder()
 	L = lobster.L
 	cfg = lobster.GetConfig()
+	db = lobster.GetDatabase()
 
 	lobster.RegisterPanelHandler("/panel/support", panelSupport, false)
 	lobster.RegisterPanelHandler("/panel/support/open", panelSupportOpen, false)
@@ -32,7 +34,7 @@ func Setup() {
 	lobster.RegisterAdminHandler("/admin/support/{id:[0-9]+}/reply", adminSupportTicketReply, true)
 	lobster.RegisterAdminHandler("/admin/support/{id:[0-9]+}/close", adminSupportTicketClose, true)
 
-	lobster.RegisterPanelWidget("Support", lobster.PanelWidgetFunc(func(db *lobster.Database, session *lobster.Session) interface{} {
-		return TicketListActive(db, session.UserId)
+	lobster.RegisterPanelWidget("Support", lobster.PanelWidgetFunc(func(session *lobster.Session) interface{} {
+		return TicketListActive(session.UserId)
 	}))
 }

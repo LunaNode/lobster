@@ -25,7 +25,6 @@ type VirtualMachine struct {
 
 	Info      *VmInfo
 	Addresses []*IpAddress
-	db        *Database
 }
 
 // interface objects
@@ -81,10 +80,10 @@ const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identifi
 	"FROM vms, plans " +
 	"WHERE vms.plan_id = plans.id"
 
-func vmListHelper(db *Database, rows Rows) []*VirtualMachine {
+func vmListHelper(rows Rows) []*VirtualMachine {
 	vms := make([]*VirtualMachine, 0)
 	for rows.Next() {
-		vm := VirtualMachine{db: db}
+		var vm VirtualMachine
 		rows.Scan(
 			&vm.Id,
 			&vm.UserId,
@@ -110,16 +109,16 @@ func vmListHelper(db *Database, rows Rows) []*VirtualMachine {
 	return vms
 }
 
-func vmList(db *Database, userId int) []*VirtualMachine {
-	return vmListHelper(db, db.Query(VM_QUERY+" AND vms.user_id = ? ORDER BY id DESC", userId))
+func vmList(userId int) []*VirtualMachine {
+	return vmListHelper(db.Query(VM_QUERY+" AND vms.user_id = ? ORDER BY id DESC", userId))
 }
 
-func vmListRegion(db *Database, userId int, region string) []*VirtualMachine {
-	return vmListHelper(db, db.Query(VM_QUERY+" AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
+func vmListRegion(userId int, region string) []*VirtualMachine {
+	return vmListHelper(db.Query(VM_QUERY+" AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
 }
 
-func vmGet(db *Database, vmId int) *VirtualMachine {
-	vms := vmListHelper(db, db.Query(VM_QUERY+" AND vms.id = ? ORDER BY id DESC", vmId))
+func vmGet(vmId int) *VirtualMachine {
+	vms := vmListHelper(db.Query(VM_QUERY+" AND vms.id = ? ORDER BY id DESC", vmId))
 	if len(vms) == 1 {
 		return vms[0]
 	} else {
@@ -127,8 +126,8 @@ func vmGet(db *Database, vmId int) *VirtualMachine {
 	}
 }
 
-func vmGetUser(db *Database, userId int, vmId int) *VirtualMachine {
-	vms := vmListHelper(db, db.Query(VM_QUERY+" AND vms.id = ? AND vms.user_id = ? ORDER BY id DESC", vmId, userId))
+func vmGetUser(userId int, vmId int) *VirtualMachine {
+	vms := vmListHelper(db.Query(VM_QUERY+" AND vms.id = ? AND vms.user_id = ? ORDER BY id DESC", vmId, userId))
 	if len(vms) == 1 {
 		return vms[0]
 	} else {
@@ -165,9 +164,9 @@ func vmNameOk(name string) error {
 	}
 }
 
-func vmCreate(db *Database, userId int, name string, planId int, imageId int) (int, error) {
+func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 	// validate credit
-	user := UserDetails(db, userId)
+	user := UserDetails(userId)
 	if user == nil {
 		return 0, L.Error("invalid_account")
 	} else if user.Credit < MINIMUM_CREDIT {
@@ -189,7 +188,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 
 	// validate image ID
 	// the image also determines which region we provision in
-	image := imageGet(db, userId, imageId)
+	image := imageGet(userId, imageId)
 	if image == nil {
 		return 0, L.Error("image_not_exist")
 	} else if image.Status != "active" {
@@ -197,7 +196,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 	}
 
 	// validate plan
-	plan := planGetRegion(db, image.Region, planId)
+	plan := planGetRegion(image.Region, planId)
 	if plan == nil {
 		return 0, L.Error("no_such_plan")
 	}
@@ -208,7 +207,7 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 
 	go func() {
 		defer errorHandler(nil, nil, true)
-		vm := vmGet(db, vmId)
+		vm := vmGet(vmId)
 		vm.Plan = *plan // use plan from planGetRegion so that we have the region-specific identification
 		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vm, image.Identification)
 		if err != nil {
@@ -218,12 +217,12 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 				fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification),
 			)
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
-			MailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: vmId, Name: name}, true)
+			MailWrap(userId, "vmCreateError", VmCreateErrorEmail{Id: vmId, Name: name}, true)
 			return
 		}
 
 		db.Exec("UPDATE vms SET status = 'active', identification = ? WHERE id = ?", vmIdentification, vmId)
-		MailWrap(db, userId, "vmCreate", VmCreateEmail{Id: vmId, Name: name}, true)
+		MailWrap(userId, "vmCreate", VmCreateEmail{Id: vmId, Name: name}, true)
 	}()
 
 	return vmId, nil
@@ -258,7 +257,7 @@ func (vm *VirtualMachine) LoadInfo() {
 			vm.Info.PrivateIp = L.T("pending")
 		}
 	} else {
-		vm.db.Exec("UPDATE vms SET external_ip = ?, private_ip = ? WHERE id = ?", vm.Info.Ip, vm.Info.PrivateIp, vm.Id)
+		db.Exec("UPDATE vms SET external_ip = ?, private_ip = ? WHERE id = ?", vm.Info.Ip, vm.Info.PrivateIp, vm.Id)
 	}
 	if vm.Info.Status == "" {
 		vm.Info.Status = L.T("unknown")
@@ -272,7 +271,7 @@ func (vm *VirtualMachine) LoadInfo() {
 		_, vm.Info.CanAddresses = vmi.(VMIAddresses)
 	}
 
-	vm.Info.PendingSnapshots = imageListVmPending(vm.db, vm.Id)
+	vm.Info.PendingSnapshots = imageListVmPending(vm.Id)
 }
 
 // Attempt to apply function on the provided VM.
@@ -333,16 +332,16 @@ func (vm *VirtualMachine) Vnc() (string, error) {
 	return url, err
 }
 
-func vmReimage(db *Database, userId int, vmId int, imageId int) error {
+func vmReimage(userId int, vmId int, imageId int) error {
 	// validate image ID
-	image := imageGet(db, userId, imageId)
+	image := imageGet(userId, imageId)
 	if image == nil {
 		return L.Error("image_not_exist")
 	} else if image.Status != "active" {
 		return L.Error("image_not_ready")
 	}
 
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		return L.Error("invalid_vm")
 	}
@@ -372,7 +371,7 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 			if err != nil {
 				return err
 			}
-			result := vm.db.Exec(
+			result := db.Exec(
 				"INSERT INTO images (user_id, region, name, identification, status, source_vm) "+
 					"VALUES (?, ?, ?, ?, 'pending', ?)",
 				vm.UserId, vm.Region, name, imageIdentification, vm.Id,
@@ -387,7 +386,7 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 }
 
 func (vm *VirtualMachine) Resize(planId int) error {
-	plan := planGetRegion(vm.db, vm.Region, planId)
+	plan := planGetRegion(vm.Region, planId)
 	if plan == nil {
 		return L.Error("no_such_plan")
 	}
@@ -405,8 +404,8 @@ func (vm *VirtualMachine) Resize(planId int) error {
 			//   a) old plan's allocation for the time provisioned so far this month
 			//   b) new plan's allocation for the remainder of the month
 			// we handle this by treating it as a deletion and re-creation of the VM, i.e. call vmUpdateAdditionalBandwidth and reset VM creation time
-			vmUpdateAdditionalBandwidth(vm.db, vm)
-			vm.db.Exec("UPDATE vms SET plan_id = ?, time_created = NOW() WHERE id = ?", plan.Id, vm.Id)
+			vmUpdateAdditionalBandwidth(vm)
+			db.Exec("UPDATE vms SET plan_id = ?, time_created = NOW() WHERE id = ?", plan.Id, vm.Id)
 			return nil
 		} else {
 			return L.Error("vm_resize_unsupported")
@@ -424,7 +423,7 @@ func (vm *VirtualMachine) Rename(name string) error {
 	log.Printf("vmRename(%d, %s)", vm.Id, name)
 
 	return vm.do(func(vm *VirtualMachine) error {
-		vm.db.Exec("UPDATE vms SET name = ? WHERE id = ?", name, vm.Id)
+		db.Exec("UPDATE vms SET name = ? WHERE id = ?", name, vm.Id)
 
 		// don't worry about back-end errors, but try to rename anyway
 		vmi, ok := vmGetInterface(vm.Region).(VMIRename)
@@ -513,10 +512,10 @@ func (vm *VirtualMachine) Delete(userId int) error {
 		}()
 	}
 
-	vmBilling(vm.db, vm.Id, true)
-	vmUpdateAdditionalBandwidth(vm.db, vm)
-	vm.db.Exec("DELETE FROM vms WHERE id = ?", vm.Id)
-	MailWrap(vm.db, userId, "vmDeleted", VmDeletedEmail{Id: vm.Id, Name: vm.Name}, true)
+	vmBilling(vm.Id, true)
+	vmUpdateAdditionalBandwidth(vm)
+	db.Exec("DELETE FROM vms WHERE id = ?", vm.Id)
+	MailWrap(userId, "vmDeleted", VmDeletedEmail{Id: vm.Id, Name: vm.Name}, true)
 	return nil
 }
 
@@ -526,33 +525,33 @@ func (vm *VirtualMachine) Suspend(auto bool) error {
 		return err
 	}
 	if auto {
-		vm.db.Exec("UPDATE vms SET suspended = 'auto' WHERE id = ? AND suspended = 'no'", vm.Id)
+		db.Exec("UPDATE vms SET suspended = 'auto' WHERE id = ? AND suspended = 'no'", vm.Id)
 	} else {
-		vm.db.Exec("UPDATE vms SET suspended = 'manual' WHERE id = ?", vm.Id)
+		db.Exec("UPDATE vms SET suspended = 'manual' WHERE id = ?", vm.Id)
 	}
 	return nil
 }
 
 func (vm *VirtualMachine) Unsuspend() error {
-	vm.db.Exec("UPDATE vms SET suspended = 'no' WHERE id = ?", vm.Id)
+	db.Exec("UPDATE vms SET suspended = 'no' WHERE id = ?", vm.Id)
 	return vm.Start()
 }
 
 func (vm *VirtualMachine) SetMetadata(k string, v string) {
-	rows := vm.db.Query("SELECT id FROM vm_metadata WHERE vm_id = ? AND k = ?", vm.Id, k)
+	rows := db.Query("SELECT id FROM vm_metadata WHERE vm_id = ? AND k = ?", vm.Id, k)
 	if rows.Next() {
 		var rowId int
 		rows.Scan(&rowId)
 		rows.Close()
-		vm.db.Exec("UPDATE vm_metadata SET v = ? WHERE id = ?", v, rowId)
+		db.Exec("UPDATE vm_metadata SET v = ? WHERE id = ?", v, rowId)
 	} else {
-		vm.db.Exec("INSERT INTO vm_metadata (vm_id, k, v) VALUES (?, ?, ?)", vm.Id, k, v)
+		db.Exec("INSERT INTO vm_metadata (vm_id, k, v) VALUES (?, ?, ?)", vm.Id, k, v)
 	}
 }
 
 // Returns the metadata value if set, or d (default) otherwise.
 func (vm *VirtualMachine) Metadata(k string, d string) string {
-	rows := vm.db.Query("SELECT v FROM vm_metadata WHERE vm_id = ? AND k = ?", vm.Id, k)
+	rows := db.Query("SELECT v FROM vm_metadata WHERE vm_id = ? AND k = ?", vm.Id, k)
 	if rows.Next() {
 		var v string
 		rows.Scan(&v)
@@ -564,7 +563,7 @@ func (vm *VirtualMachine) Metadata(k string, d string) string {
 }
 
 // vmUpdateAdditionalBandwidth is called on VM deletion or resize, to add the VM's bandwidth to user's bandwidth pool
-func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
+func vmUpdateAdditionalBandwidth(vm *VirtualMachine) {
 	// determine how much of the plan bandwidth to add to the user's bandwidth pool for current month
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
@@ -607,7 +606,7 @@ func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 // terminating should be set to true if the VM is about to be deleted, so that we:
 //  a) bill for the last used interval
 //  b) enforce BILLING_VM_MINIMUM
-func vmBilling(db *Database, vmId int, terminating bool) {
+func vmBilling(vmId int, terminating bool) {
 	db.Exec("UPDATE vms SET time_billed = time_created WHERE time_billed = 0")
 	rows := db.Query("SELECT TIMESTAMPDIFF(MINUTE, time_billed, NOW()) FROM vms WHERE id = ?", vmId)
 
@@ -641,7 +640,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 		return
 	}
 
-	vm := vmGet(db, vmId)
+	vm := vmGet(vmId)
 	if vm == nil {
 		log.Printf("vmBilling: vm id=%d disappeared during execution", vmId)
 		return
@@ -650,7 +649,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 	}
 
 	amount := int64(intervals) * int64(vm.Plan.Price)
-	UserApplyCharge(db, vm.UserId, vm.Name, "Plan: "+vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
+	UserApplyCharge(vm.UserId, vm.Name, "Plan: "+vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
 	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? MINUTE) WHERE id = ?", intervals*cfg.Billing.BillingInterval, vmId)
 
 	// also bill for bandwidth usage
@@ -674,7 +673,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 }
 
 // Bills for used storage space and other resources hourly.
-func serviceBilling(db *Database) {
+func serviceBilling() {
 	db.Exec("UPDATE users SET time_billed = NOW() WHERE time_billed = 0")
 	rows := db.Query(
 		"SELECT id, TIMESTAMPDIFF(HOUR, time_billed, NOW()) " +
@@ -690,9 +689,9 @@ func serviceBilling(db *Database) {
 
 		// bill storage space
 		var storageBytes int64 = 0
-		for _, image := range imageList(db, userId) {
+		for _, image := range imageList(userId) {
 			if image.UserId == userId {
-				details := imageInfo(db, userId, image.Id)
+				details := imageInfo(userId, image.Id)
 				if details != nil && details.Info.Size > 0 {
 					storageBytes += details.Info.Size
 				}
@@ -704,7 +703,7 @@ func serviceBilling(db *Database) {
 		if hourlyCharge > 0 {
 			totalCharge := hourlyCharge * int64(hours)
 			log.Printf("Charging user %d for %d bytes (amount=%.5f)", userId, storageBytes, float64(totalCharge)/BILLING_PRECISION)
-			UserApplyCharge(db, userId, "Image storage space", fmt.Sprintf("%d MB", storageBytes/1000/1000), "storage", totalCharge)
+			UserApplyCharge(userId, "Image storage space", fmt.Sprintf("%d MB", storageBytes/1000/1000), "storage", totalCharge)
 		}
 
 		db.Exec("UPDATE users SET time_billed = DATE_ADD(time_billed, INTERVAL ? HOUR) WHERE id = ?", hours, userId)

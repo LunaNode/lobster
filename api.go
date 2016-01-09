@@ -43,12 +43,27 @@ func apiListHelper(rows Rows) []*ApiKey {
 	return keys
 }
 
-func apiList(db *Database, userId int) []*ApiKey {
-	return apiListHelper(db.Query("SELECT id, label, user_id, api_id, time_created, nonce FROM api_keys WHERE user_id = ? ORDER BY label", userId))
+func apiList(userId int) []*ApiKey {
+	return apiListHelper(
+		db.Query(
+			"SELECT id, label, user_id, api_id, time_created, nonce "+
+				"FROM api_keys "+
+				"WHERE user_id = ? "+
+				"ORDER BY label",
+			userId,
+		),
+	)
 }
 
-func apiGet(db *Database, userId int, id int) *ApiKey {
-	keys := apiListHelper(db.Query("SELECT id, label, user_id, api_id, time_created, nonce FROM api_keys WHERE user_id = ? AND id = ?", userId, id))
+func apiGet(userId int, id int) *ApiKey {
+	keys := apiListHelper(
+		db.Query(
+			"SELECT id, label, user_id, api_id, time_created, nonce "+
+				"FROM api_keys "+
+				"WHERE user_id = ? AND id = ?",
+			userId, id,
+		),
+	)
 	if len(keys) == 1 {
 		return keys[0]
 	} else {
@@ -61,7 +76,7 @@ type ApiActionRestriction struct {
 	Method string `json:"method"`
 }
 
-func apiCreate(db *Database, userId int, label string, restrictAction string, restrictIp string) (*ApiKey, error) {
+func apiCreate(userId int, label string, restrictAction string, restrictIp string) (*ApiKey, error) {
 	// validate restrictAction
 	if len(restrictAction) > MAX_API_RESTRICTION {
 		return nil, fmt.Errorf("action restriction JSON content cannot exceed %d characters", MAX_API_RESTRICTION)
@@ -85,19 +100,23 @@ func apiCreate(db *Database, userId int, label string, restrictAction string, re
 
 	apiId := utils.Uid(16)
 	apiKey := utils.Uid(128)
-	result := db.Exec("INSERT INTO api_keys (label, user_id, api_id, api_key, restrict_action, restrict_ip) VALUES (?, ?, ?, ?, ?, ?)", label, userId, apiId, apiKey, restrictAction, restrictIp)
-	key := apiGet(db, userId, result.LastInsertId())
+	result := db.Exec(
+		"INSERT INTO api_keys (label, user_id, api_id, api_key, restrict_action, restrict_ip) "+
+			"VALUES (?, ?, ?, ?, ?, ?)",
+		label, userId, apiId, apiKey, restrictAction, restrictIp,
+	)
+	key := apiGet(userId, result.LastInsertId())
 	key.ApiKey = apiKey
 	return key, nil
 }
 
-func apiDelete(db *Database, userId int, id int) {
+func apiDelete(userId int, id int) {
 	db.Exec("DELETE FROM api_keys WHERE user_id = ? AND id = ?", userId, id)
 }
 
-type APIHandlerFunc func(http.ResponseWriter, *http.Request, *Database, int, []byte)
+type APIHandlerFunc func(http.ResponseWriter, *http.Request, int, []byte)
 
-func apiCheck(db *Database, path string, method string, authorization string, request []byte, ip string) (int, error) {
+func apiCheck(path string, method string, authorization string, request []byte, ip string) (int, error) {
 	authParts := strings.Split(authorization, ":")
 	if len(authParts) != 4 {
 		return 0, fmt.Errorf("bad authorization: expected 4 semicolon-delimited parts, only found %d", len(authParts))
@@ -112,7 +131,12 @@ func apiCheck(db *Database, path string, method string, authorization string, re
 		return 0, errors.New("bad authorization: id, partial key, or signature has bad length; or signature not hex-encoded")
 	}
 
-	rows := db.Query("SELECT api_keys.user_id, api_keys.api_key, api_keys.restrict_action, api_keys.restrict_ip FROM users, api_keys WHERE api_keys.api_id = ? AND api_keys.nonce < ? AND api_keys.user_id = users.id AND users.status != 'disabled'", apiId, nonce)
+	rows := db.Query(
+		"SELECT api_keys.user_id, api_keys.api_key, api_keys.restrict_action, api_keys.restrict_ip "+
+			"FROM users, api_keys "+
+			"WHERE api_keys.api_id = ? AND api_keys.nonce < ? AND api_keys.user_id = users.id AND users.status != 'disabled'",
+		apiId, nonce,
+	)
 	defer rows.Close()
 	if !rows.Next() {
 		return 0, errors.New("authentication failure")
@@ -165,8 +189,8 @@ func apiCheck(db *Database, path string, method string, authorization string, re
 	}
 }
 
-func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Database) {
-	return func(w http.ResponseWriter, r *http.Request, db *Database) {
+func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		authorization := r.Header.Get("Authorization")
 		if authorization == "" {
 			http.Error(w, "Missing Authorization header", 401)
@@ -192,23 +216,23 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 		request := buf[:n]
 
 		if authParts[0] == "lobster" {
-			userId, err := apiCheck(db, apiPath, r.Method, authParts[1], request, ExtractIP(r.RemoteAddr))
+			userId, err := apiCheck(apiPath, r.Method, authParts[1], request, ExtractIP(r.RemoteAddr))
 			if err != nil {
 				http.Error(w, err.Error(), 401)
 				return
 			}
-			h(w, r, db, userId, request)
+			h(w, r, userId, request)
 		} else if authParts[0] == "session" {
 			// we modify request properties to ensure that session applies CSRF protection
 			// TODO: this is a bit hacky
 			r.Method = "POST"
 			r.PostForm = url.Values{}
 			r.PostForm.Set("token", authParts[1])
-			SessionWrap(func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+			SessionWrap(func(w http.ResponseWriter, r *http.Request, session *Session) {
 				if session.IsLoggedIn() {
-					h(w, r, db, session.UserId, request)
+					h(w, r, session.UserId, request)
 				}
-			})(w, r, db)
+			})(w, r)
 		}
 	}
 }
@@ -295,9 +319,9 @@ func copyPlan(src *Plan, dst *api.Plan) {
 	dst.Bandwidth = src.Bandwidth
 }
 
-func apiVMList(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMList(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	var response api.VMListResponse
-	for _, vm := range vmList(db, userId) {
+	for _, vm := range vmList(userId) {
 		vmCopy := new(api.VirtualMachine)
 		copyVM(vm, vmCopy)
 		response.VirtualMachines = append(response.VirtualMachines, vmCopy)
@@ -305,7 +329,7 @@ func apiVMList(w http.ResponseWriter, r *http.Request, db *Database, userId int,
 	apiResponse(w, 200, &response)
 }
 
-func apiVMCreate(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMCreate(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	var request api.VMCreateRequest
 
 	err := json.Unmarshal(requestBytes, &request)
@@ -314,7 +338,7 @@ func apiVMCreate(w http.ResponseWriter, r *http.Request, db *Database, userId in
 		return
 	}
 
-	vmId, err := vmCreate(db, userId, request.Name, request.PlanId, request.ImageId)
+	vmId, err := vmCreate(userId, request.Name, request.PlanId, request.ImageId)
 	if err != nil {
 		http.Error(w, "Create failed: "+err.Error(), 400)
 		return
@@ -323,13 +347,13 @@ func apiVMCreate(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	}
 }
 
-func apiVMInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMInfo(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -344,13 +368,13 @@ func apiVMInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int,
 	apiResponse(w, 201, response)
 }
 
-func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMAction(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -396,13 +420,13 @@ func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	}
 }
 
-func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMReimage(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -415,7 +439,7 @@ func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId i
 		return
 	}
 
-	err = vmReimage(db, userId, vm.Id, request.ImageId)
+	err = vmReimage(userId, vm.Id, request.ImageId)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 	} else {
@@ -423,13 +447,13 @@ func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId i
 	}
 }
 
-func apiVMResize(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMResize(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -450,13 +474,13 @@ func apiVMResize(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	}
 }
 
-func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMDelete(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -470,13 +494,13 @@ func apiVMDelete(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	}
 }
 
-func apiVMAddresses(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMAddresses(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, int(vmId))
+	vm := vmGetUser(userId, int(vmId))
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -495,13 +519,13 @@ func apiVMAddresses(w http.ResponseWriter, r *http.Request, db *Database, userId
 	apiResponse(w, 200, &response)
 }
 
-func apiVMAddressAdd(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMAddressAdd(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -515,13 +539,13 @@ func apiVMAddressAdd(w http.ResponseWriter, r *http.Request, db *Database, userI
 	}
 }
 
-func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -542,13 +566,13 @@ func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, db *Database, us
 	}
 }
 
-func apiVMAddressRdns(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiVMAddressRdns(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid VM ID", 400)
 		return
 	}
-	vm := vmGetUser(db, userId, vmId)
+	vm := vmGetUser(userId, vmId)
 	if vm == nil {
 		http.Error(w, "No virtual machine with that ID", 404)
 		return
@@ -569,9 +593,9 @@ func apiVMAddressRdns(w http.ResponseWriter, r *http.Request, db *Database, user
 	}
 }
 
-func apiImageList(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiImageList(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	var response api.ImageListResponse
-	for _, image := range imageList(db, userId) {
+	for _, image := range imageList(userId) {
 		imageCopy := new(api.Image)
 		copyImage(image, imageCopy)
 		response.Images = append(response.Images, imageCopy)
@@ -579,7 +603,7 @@ func apiImageList(w http.ResponseWriter, r *http.Request, db *Database, userId i
 	apiResponse(w, 200, &response)
 }
 
-func apiImageFetch(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiImageFetch(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	var request api.ImageFetchRequest
 
 	err := json.Unmarshal(requestBytes, &request)
@@ -588,7 +612,7 @@ func apiImageFetch(w http.ResponseWriter, r *http.Request, db *Database, userId 
 		return
 	}
 
-	imageId, err := imageFetch(db, userId, request.Region, request.Name, request.Url, request.Format)
+	imageId, err := imageFetch(userId, request.Region, request.Name, request.Url, request.Format)
 	if err != nil {
 		http.Error(w, "Fetch failed: "+err.Error(), 400)
 		return
@@ -597,13 +621,13 @@ func apiImageFetch(w http.ResponseWriter, r *http.Request, db *Database, userId 
 	}
 }
 
-func apiImageInfo(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiImageInfo(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid image ID", 400)
 		return
 	}
-	image := imageInfo(db, userId, imageId)
+	image := imageInfo(userId, imageId)
 	if image == nil {
 		http.Error(w, "No image with that ID", 404)
 		return
@@ -617,14 +641,14 @@ func apiImageInfo(w http.ResponseWriter, r *http.Request, db *Database, userId i
 	apiResponse(w, 201, response)
 }
 
-func apiImageDelete(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiImageDelete(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid image ID", 400)
 		return
 	}
 
-	err = imageDelete(db, userId, imageId)
+	err = imageDelete(userId, imageId)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 	} else {
@@ -632,9 +656,9 @@ func apiImageDelete(w http.ResponseWriter, r *http.Request, db *Database, userId
 	}
 }
 
-func apiPlanList(w http.ResponseWriter, r *http.Request, db *Database, userId int, requestBytes []byte) {
+func apiPlanList(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	var response api.PlanListResponse
-	for _, plan := range planList(db) {
+	for _, plan := range planList() {
 		planCopy := new(api.Plan)
 		copyPlan(plan, planCopy)
 		response.Plans = append(response.Plans, planCopy)

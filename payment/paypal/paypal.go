@@ -33,11 +33,11 @@ func MakePaypalPayment(business string, returnUrl string) *PaypalPayment {
 	this := new(PaypalPayment)
 	this.business = business
 	this.returnUrl = returnUrl
-	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, lobster.GetDatabase().WrapHandler(this.Callback), true)
+	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, this.Callback, true)
 	return this
 }
 
-func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *lobster.Database, frameParams lobster.FrameParams, userId int, username string, amount float64) {
+func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, frameParams lobster.FrameParams, userId int, username string, amount float64) {
 	cfg := lobster.GetConfig()
 	frameParams.Scripts = append(frameParams.Scripts, "paypal")
 	params := &PaypalTemplateParams{
@@ -52,7 +52,7 @@ func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *l
 	lobster.RenderTemplate(w, "panel", "paypal", params)
 }
 
-func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *lobster.Database) {
+func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request) {
 	cfg := lobster.GetConfig()
 	requestBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -120,5 +120,5 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 		return
 	}
 
-	lobster.TransactionAdd(db, userId, "paypal", transactionId, "Transaction "+transactionId, int64(paymentAmount*lobster.BILLING_PRECISION), 0)
+	lobster.TransactionAdd(userId, "paypal", transactionId, "Transaction "+transactionId, int64(paymentAmount*lobster.BILLING_PRECISION), 0)
 }

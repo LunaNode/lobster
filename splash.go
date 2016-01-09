@@ -24,8 +24,8 @@ func getSplashHandler(template string) func(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func getSplashFormHandler(template string) func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
-	return func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+func getSplashFormHandler(template string) func(w http.ResponseWriter, r *http.Request, session *Session) {
+	return func(w http.ResponseWriter, r *http.Request, session *Session) {
 		message := ""
 		if r.URL.Query()["message"] != nil {
 			message = r.URL.Query()["message"][0]
@@ -34,7 +34,7 @@ func getSplashFormHandler(template string) func(w http.ResponseWriter, r *http.R
 		params := SplashTemplateParams{
 			Title:   template,
 			Message: message,
-			Token:   CSRFGenerate(db, session),
+			Token:   CSRFGenerate(session),
 		}
 
 		RenderTemplate(w, "splash", template, params)

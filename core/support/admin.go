@@ -8,14 +8,14 @@ import "fmt"
 import "net/http"
 import "strconv"
 
-func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
+func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		lobster.RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
 		return
 	}
-	ticketClose(db, session.UserId, ticketId)
-	lobster.LogAction(db, session.UserId, lobster.ExtractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
+	ticketClose(session.UserId, ticketId)
+	lobster.LogAction(session.UserId, lobster.ExtractIP(r.RemoteAddr), "Close ticket", fmt.Sprintf("Ticket ID: %d", ticketId))
 	lobster.RedirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), L.Success("ticket_closed"))
 }
 
@@ -24,10 +24,10 @@ type AdminSupportParams struct {
 	Tickets []*Ticket
 }
 
-func adminSupport(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
+func adminSupport(w http.ResponseWriter, r *http.Request, session *lobster.Session, frameParams lobster.FrameParams) {
 	params := AdminSupportParams{}
 	params.Frame = frameParams
-	params.Tickets = TicketListAll(db)
+	params.Tickets = TicketListAll()
 	lobster.RenderTemplate(w, "admin", "support", params)
 }
 
@@ -42,13 +42,13 @@ type AdminSupportOpenForm struct {
 	Message string `schema:"message"`
 }
 
-func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
+func adminSupportOpen(w http.ResponseWriter, r *http.Request, session *lobster.Session, frameParams lobster.FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		lobster.RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_user"))
 		return
 	}
-	user := lobster.UserDetails(db, userId)
+	user := lobster.UserDetails(userId)
 	if user == nil {
 		lobster.RedirectMessage(w, r, "/admin/support", L.FormattedError("user_not_found"))
 		return
@@ -62,7 +62,7 @@ func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Databa
 			return
 		}
 
-		ticketId, err := ticketOpen(db, form.UserId, form.Name, form.Message, true)
+		ticketId, err := ticketOpen(form.UserId, form.Name, form.Message, true)
 		if err != nil {
 			lobster.RedirectMessage(w, r, fmt.Sprintf("/admin/support/open/%d", userId), L.FormatError(err))
 		} else {
@@ -74,7 +74,7 @@ func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Databa
 	params := new(AdminSupportOpenParams)
 	params.Frame = frameParams
 	params.User = user
-	params.Token = lobster.CSRFGenerate(db, session)
+	params.Token = lobster.CSRFGenerate(session)
 	lobster.RenderTemplate(w, "admin", "support_open", params)
 }
 
@@ -84,13 +84,13 @@ type AdminSupportTicketParams struct {
 	Token  string
 }
 
-func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
+func adminSupportTicket(w http.ResponseWriter, r *http.Request, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		lobster.RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
 		return
 	}
-	ticket := TicketDetails(db, session.UserId, ticketId, true)
+	ticket := TicketDetails(session.UserId, ticketId, true)
 	if ticket == nil {
 		lobster.RedirectMessage(w, r, "/admin/support", L.FormattedError("ticket_not_found"))
 		return
@@ -99,7 +99,7 @@ func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *lobster.Data
 	params := AdminSupportTicketParams{}
 	params.Frame = frameParams
 	params.Ticket = ticket
-	params.Token = lobster.CSRFGenerate(db, session)
+	params.Token = lobster.CSRFGenerate(session)
 	lobster.RenderTemplate(w, "admin", "support_ticket", params)
 }
 
@@ -107,7 +107,7 @@ type AdminSupportTicketReplyForm struct {
 	Message string `schema:"message"`
 }
 
-func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
+func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		lobster.RedirectMessage(w, r, "/admin/support", L.FormattedError("invalid_ticket"))
@@ -120,7 +120,7 @@ func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *lobster
 		return
 	}
 
-	err = ticketReply(db, session.UserId, ticketId, form.Message, true)
+	err = ticketReply(session.UserId, ticketId, form.Message, true)
 	if err != nil {
 		lobster.RedirectMessage(w, r, fmt.Sprintf("/admin/support/%d", ticketId), L.FormatError(err))
 	} else {

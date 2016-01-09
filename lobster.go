@@ -30,6 +30,8 @@ var ssh *wssh.Wssh
 
 func LobsterHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer errorHandler(w, r, true)
+
 		// replace proxy IP if set
 		if cfg.Default.ProxyHeader != "" {
 			actualIP := r.Header.Get(cfg.Default.ProxyHeader)
@@ -52,7 +54,7 @@ func RedirectHandler(target string) func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func LogAction(db *Database, userId int, ip string, name string, details string) {
+func LogAction(userId int, ip string, name string, details string) {
 	db.Exec("INSERT INTO actions (user_id, ip, name, details) VALUES (?, ?, ?, ?)", userId, ip, name, details)
 }
 
@@ -61,18 +63,18 @@ func RegisterSplashRoute(path string, template string) {
 }
 
 func RegisterPanelHandler(path string, f PanelHandlerFunc, onlyPost bool) {
-	result := router.HandleFunc(path, db.WrapHandler(SessionWrap(panelWrap(f))))
+	result := router.HandleFunc(path, SessionWrap(panelWrap(f)))
 	if onlyPost {
 		result.Methods("POST")
 	}
 }
 
 func RegisterAPIHandler(path string, f APIHandlerFunc, method string) {
-	router.HandleFunc(path, db.WrapHandler(apiWrap(f))).Methods(method)
+	router.HandleFunc(path, apiWrap(f)).Methods(method)
 }
 
 func RegisterAdminHandler(path string, f AdminHandlerFunc, onlyPost bool) {
-	result := router.HandleFunc(path, db.WrapHandler(SessionWrap(adminWrap(f))))
+	result := router.HandleFunc(path, SessionWrap(adminWrap(f)))
 	if onlyPost {
 		result.Methods("POST")
 	}
@@ -163,18 +165,18 @@ func Setup(cfgPath string) {
 
 	// splash/static routes
 	router.HandleFunc("/message", getSplashHandler("splash_message"))
-	router.HandleFunc("/login", db.WrapHandler(SessionWrap(getSplashFormHandler("login"))))
-	router.HandleFunc("/create", db.WrapHandler(SessionWrap(getSplashFormHandler("create"))))
-	router.HandleFunc("/pwreset", db.WrapHandler(SessionWrap(authPwresetHandler)))
+	router.HandleFunc("/login", SessionWrap(getSplashFormHandler("login")))
+	router.HandleFunc("/create", SessionWrap(getSplashFormHandler("create")))
+	router.HandleFunc("/pwreset", SessionWrap(authPwresetHandler))
 	router.Handle("/assets/{path:.*}", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	router.NotFoundHandler = http.HandlerFunc(splashNotFoundHandler)
 
 	// auth routes
-	router.HandleFunc("/auth/login", db.WrapHandler(SessionWrap(authLoginHandler))).Methods("POST")
-	router.HandleFunc("/auth/create", db.WrapHandler(SessionWrap(authCreateHandler))).Methods("POST")
-	router.HandleFunc("/auth/logout", db.WrapHandler(SessionWrap(authLogoutHandler)))
-	router.HandleFunc("/auth/pwreset_request", db.WrapHandler(SessionWrap(authPwresetRequestHandler))).Methods("POST")
-	router.HandleFunc("/auth/pwreset_submit", db.WrapHandler(SessionWrap(authPwresetSubmitHandler))).Methods("POST")
+	router.HandleFunc("/auth/login", SessionWrap(authLoginHandler)).Methods("POST")
+	router.HandleFunc("/auth/create", SessionWrap(authCreateHandler)).Methods("POST")
+	router.HandleFunc("/auth/logout", SessionWrap(authLogoutHandler))
+	router.HandleFunc("/auth/pwreset_request", SessionWrap(authPwresetRequestHandler)).Methods("POST")
+	router.HandleFunc("/auth/pwreset_submit", SessionWrap(authPwresetSubmitHandler)).Methods("POST")
 
 	// panel routes
 	router.HandleFunc("/panel{slash:/*}", RedirectHandler("/panel/dashboard"))
@@ -287,7 +289,7 @@ func cron() {
 	for vmRows.Next() {
 		var vmId int
 		vmRows.Scan(&vmId)
-		vmBilling(db, vmId, false)
+		vmBilling(vmId, false)
 	}
 
 	userRows := db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
@@ -295,10 +297,10 @@ func cron() {
 	for userRows.Next() {
 		var userId int
 		userRows.Scan(&userId)
-		userBilling(db, userId)
+		userBilling(userId)
 	}
 
-	serviceBilling(db)
+	serviceBilling()
 
 	// cleanup
 	db.Exec("DELETE FROM form_tokens WHERE time < DATE_SUB(NOW(), INTERVAL 1 HOUR)")
@@ -314,7 +316,7 @@ func cached() {
 	for rows.Next() {
 		var imageId, userId int
 		rows.Scan(&imageId, &userId)
-		imageInfo := imageInfo(db, userId, imageId)
+		imageInfo := imageInfo(userId, imageId)
 
 		if imageInfo != nil {
 			if imageInfo.Info.Status == ImageError {

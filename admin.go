@@ -11,10 +11,10 @@ type AdminFormParams struct {
 	Token string
 }
 
-type AdminHandlerFunc func(http.ResponseWriter, *http.Request, *Database, *Session, FrameParams)
+type AdminHandlerFunc func(http.ResponseWriter, *http.Request, *Session, FrameParams)
 
-func adminWrap(h AdminHandlerFunc) func(http.ResponseWriter, *http.Request, *Database, *Session) {
-	return func(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
+func adminWrap(h AdminHandlerFunc) func(http.ResponseWriter, *http.Request, *Session) {
+	return func(w http.ResponseWriter, r *http.Request, session *Session) {
 		if !session.IsLoggedIn() {
 			http.Redirect(w, r, "/login", 303)
 			return
@@ -27,7 +27,7 @@ func adminWrap(h AdminHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 		}
 
 		// confirm session admin and also user still admin
-		user := UserDetails(db, session.UserId)
+		user := UserDetails(session.UserId)
 		if !user.Admin || !session.Admin {
 			http.Redirect(w, r, "/panel/dashboard", 303)
 			return
@@ -42,11 +42,11 @@ func adminWrap(h AdminHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 				frameParams.Message.Type = "info"
 			}
 		}
-		h(w, r, db, session, frameParams)
+		h(w, r, session, frameParams)
 	}
 }
 
-func adminDashboard(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminDashboard(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	RenderTemplate(w, "admin", "dashboard", frameParams)
 }
 
@@ -55,10 +55,10 @@ type AdminUsersParams struct {
 	Users []*User
 }
 
-func adminUsers(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminUsers(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := AdminUsersParams{}
 	params.Frame = frameParams
-	params.Users = UserList(db)
+	params.Users = UserList()
 	RenderTemplate(w, "admin", "users", params)
 }
 
@@ -69,13 +69,13 @@ type AdminUserParams struct {
 	Token           string
 }
 
-func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminUser(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
 		return
 	}
-	user := UserDetails(db, userId)
+	user := UserDetails(userId)
 	if user == nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("user_not_found"))
 		return
@@ -83,12 +83,12 @@ func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Se
 	params := AdminUserParams{}
 	params.Frame = frameParams
 	params.User = user
-	params.VirtualMachines = vmList(db, userId)
-	params.Token = CSRFGenerate(db, session)
+	params.VirtualMachines = vmList(userId)
+	params.Token = CSRFGenerate(session)
 	RenderTemplate(w, "admin", "user", params)
 }
 
-func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminUserLogin(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
@@ -104,7 +104,7 @@ type AdminUserCreditForm struct {
 	Description string  `schema:"description"`
 }
 
-func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminUserCredit(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
@@ -118,11 +118,11 @@ func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, sessi
 	}
 
 	creditInt := int64(form.Credit * BILLING_PRECISION)
-	UserApplyCredit(db, userId, creditInt, form.Description)
+	UserApplyCredit(userId, creditInt, form.Description)
 	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("credit_applied"))
 }
 
-func adminUserPassword(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminUserPassword(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
@@ -135,11 +135,11 @@ func adminUserPassword(w http.ResponseWriter, r *http.Request, db *Database, ses
 		return
 	}
 
-	authForceChangePassword(db, userId, r.PostFormValue("password"))
+	authForceChangePassword(userId, r.PostFormValue("password"))
 	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("password_reset"))
 }
 
-func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminUserDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
@@ -156,12 +156,12 @@ type AdminPlansParams struct {
 	Token   string
 }
 
-func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminPlans(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := AdminPlansParams{}
 	params.Frame = frameParams
-	params.Plans = planList(db)
+	params.Plans = planList()
 	params.Regions = regionList()
-	params.Token = CSRFGenerate(db, session)
+	params.Token = CSRFGenerate(session)
 	RenderTemplate(w, "admin", "plans", params)
 }
 
@@ -175,7 +175,7 @@ type AdminPlansAddForm struct {
 	Global    string  `schema:"global"`
 }
 
-func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminPlansAdd(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	form := new(AdminPlansAddForm)
 	err := decoder.Decode(form, r.PostForm)
 	if err != nil {
@@ -183,12 +183,12 @@ func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 		return
 	}
 
-	planCreate(db, form.Name, int64(form.Price*BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth, form.Global != "")
+	planCreate(form.Name, int64(form.Price*BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth, form.Global != "")
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_created"))
 }
 
-func adminPlansAutopopulate(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	err := planAutopopulate(db, r.PostFormValue("region"))
+func adminPlansAutopopulate(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	err := planAutopopulate(r.PostFormValue("region"))
 	if err != nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormatError(err))
 		return
@@ -204,13 +204,13 @@ type AdminPlanParams struct {
 	Token   string
 }
 
-func adminPlan(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminPlan(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
 		return
 	}
-	plan := planGet(db, planId)
+	plan := planGet(planId)
 	if plan == nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormattedError("plan_not_found"))
 		return
@@ -220,27 +220,27 @@ func adminPlan(w http.ResponseWriter, r *http.Request, db *Database, session *Se
 	params.Frame = frameParams
 	params.Plan = plan
 	params.Regions = regionList()
-	params.Token = CSRFGenerate(db, session)
+	params.Token = CSRFGenerate(session)
 	RenderTemplate(w, "admin", "plan", params)
 }
 
-func adminPlanDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminPlanDelete(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
 		return
 	}
-	planDelete(db, planId)
+	planDelete(planId)
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_deleted"))
 }
 
-func adminPlanAssociateRegion(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminPlanAssociateRegion(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
 		return
 	}
-	err = planAssociateRegion(db, planId, r.PostFormValue("region"), r.PostFormValue("identification"))
+	err = planAssociateRegion(planId, r.PostFormValue("region"), r.PostFormValue("identification"))
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.FormatError(err))
 	} else {
@@ -248,13 +248,13 @@ func adminPlanAssociateRegion(w http.ResponseWriter, r *http.Request, db *Databa
 	}
 }
 
-func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
 		return
 	}
-	planDeassociateRegion(db, planId, mux.Vars(r)["region"])
+	planDeassociateRegion(planId, mux.Vars(r)["region"])
 	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_region_deassociated"))
 }
 
@@ -265,12 +265,12 @@ type AdminImagesParams struct {
 	Token   string
 }
 
-func adminImages(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminImages(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	params := AdminImagesParams{}
 	params.Frame = frameParams
-	params.Images = imageListAll(db)
+	params.Images = imageListAll()
 	params.Regions = regionList()
-	params.Token = CSRFGenerate(db, session)
+	params.Token = CSRFGenerate(session)
 	RenderTemplate(w, "admin", "images", params)
 }
 
@@ -280,7 +280,7 @@ type AdminImagesAddForm struct {
 	Identification string `schema:"identification"`
 }
 
-func adminImagesAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminImagesAdd(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	form := new(AdminImagesAddForm)
 	err := decoder.Decode(form, r.PostForm)
 	if err != nil {
@@ -288,18 +288,18 @@ func adminImagesAdd(w http.ResponseWriter, r *http.Request, db *Database, sessio
 		return
 	}
 
-	imageAdd(db, form.Name, form.Region, form.Identification)
+	imageAdd(form.Name, form.Region, form.Identification)
 	RedirectMessage(w, r, "/admin/images", L.Success("image_added"))
 }
 
-func adminImageDelete(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
+func adminImageDelete(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/images", L.FormattedError("invalid_plan"))
 		return
 	}
 
-	err = imageDeleteForce(db, imageId)
+	err = imageDeleteForce(imageId)
 	if err != nil {
 		RedirectMessage(w, r, "/admin/images", L.FormatError(err))
 	} else {
@@ -307,8 +307,8 @@ func adminImageDelete(w http.ResponseWriter, r *http.Request, db *Database, sess
 	}
 }
 
-func adminImagesAutopopulate(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
-	err := imageAutopopulate(db, r.PostFormValue("region"))
+func adminImagesAutopopulate(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	err := imageAutopopulate(r.PostFormValue("region"))
 	if err != nil {
 		RedirectMessage(w, r, "/admin/images", L.FormatError(err))
 		return
