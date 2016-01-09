@@ -2,16 +2,21 @@ package main
 
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/core/support"
+import "github.com/LunaNode/lobster/module/whmcs"
+
 import "github.com/LunaNode/lobster/vmi/lunanode"
 import "github.com/LunaNode/lobster/vmi/openstack"
 import "github.com/LunaNode/lobster/vmi/solusvm"
 import "github.com/LunaNode/lobster/vmi/cloudstack"
 import "github.com/LunaNode/lobster/vmi/digitalocean"
-import "github.com/LunaNode/lobster/vmi/fake"
+import vmfake "github.com/LunaNode/lobster/vmi/fake"
 import "github.com/LunaNode/lobster/vmi/linode"
 import vmlobster "github.com/LunaNode/lobster/vmi/lobster"
 import "github.com/LunaNode/lobster/vmi/vultr"
-import "github.com/LunaNode/lobster/module/whmcs"
+
+import "github.com/LunaNode/lobster/payment/coinbase"
+import payfake "github.com/LunaNode/lobster/payment/fake"
+import "github.com/LunaNode/lobster/payment/paypal"
 
 import "encoding/json"
 import "io/ioutil"
@@ -123,7 +128,7 @@ func main() {
 		} else if vm.Type == "lndynamic" {
 			vmi = lunanode.MakeLunaNode(vm.Region, vm.ApiId, vm.ApiKey)
 		} else if vm.Type == "fake" {
-			vmi = new(fake.Fake)
+			vmi = new(vmfake.Fake)
 		} else if vm.Type == "digitalocean" {
 			vmi = digitalocean.MakeDigitalOcean(vm.Region, vm.ApiId)
 		} else if vm.Type == "vultr" {
@@ -148,11 +153,11 @@ func main() {
 	for _, payment := range jsonConfig.Payment {
 		var pi lobster.PaymentInterface
 		if payment.Type == "paypal" {
-			pi = lobster.MakePaypalPayment(payment.Business, payment.ReturnUrl)
+			pi = paypal.MakePaypalPayment(payment.Business, payment.ReturnUrl)
 		} else if payment.Type == "coinbase" {
-			pi = lobster.MakeCoinbasePayment(payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
+			pi = coinbase.MakeCoinbasePayment(payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
 		} else if payment.Type == "fake" {
-			pi = new(lobster.FakePayment)
+			pi = new(payfake.FakePayment)
 		} else {
 			log.Fatalf("Encountered unrecognized payment interface type %s", payment.Type)
 		}

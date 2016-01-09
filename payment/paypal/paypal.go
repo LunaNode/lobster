@@ -1,4 +1,6 @@
-package lobster
+package paypal
+
+import "github.com/LunaNode/lobster"
 
 import "bytes"
 import "errors"
@@ -13,7 +15,7 @@ const PAYPAL_URL = "https://www.paypal.com/cgi-bin/webscr"
 const PAYPAL_CALLBACK = "/paypal_notify"
 
 type PaypalTemplateParams struct {
-	Frame     FrameParams
+	Frame     lobster.FrameParams
 	Business  string
 	Amount    float64
 	UserId    int
@@ -31,11 +33,12 @@ func MakePaypalPayment(business string, returnUrl string) *PaypalPayment {
 	this := new(PaypalPayment)
 	this.business = business
 	this.returnUrl = returnUrl
-	RegisterHttpHandler(PAYPAL_CALLBACK, GetDatabase().WrapHandler(this.Callback), true)
+	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, lobster.GetDatabase().WrapHandler(this.Callback), true)
 	return this
 }
 
-func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *Database, frameParams FrameParams, userId int, username string, amount float64) {
+func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *lobster.Database, frameParams lobster.FrameParams, userId int, username string, amount float64) {
+	cfg := lobster.GetConfig()
 	frameParams.Scripts = append(frameParams.Scripts, "paypal")
 	params := &PaypalTemplateParams{
 		Frame:     frameParams,
@@ -46,14 +49,15 @@ func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *D
 		ReturnUrl: this.returnUrl,
 		Currency:  cfg.Billing.Currency,
 	}
-	RenderTemplate(w, "panel", "paypal", params)
+	lobster.RenderTemplate(w, "panel", "paypal", params)
 }
 
-func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *Database) {
+func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *lobster.Database) {
+	cfg := lobster.GetConfig()
 	requestBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		ReportError(err, "paypal callback read error", fmt.Sprintf("ip: %s", r.RemoteAddr))
-		splashNotFoundHandler(w, r)
+		lobster.ReportError(err, "paypal callback read error", fmt.Sprintf("ip: %s", r.RemoteAddr))
+		w.WriteHeader(403)
 		return
 	}
 
@@ -75,20 +79,20 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 
 	resp, err := http.Post(PAYPAL_URL, "application/x-www-form-urlencoded", bytes.NewBufferString(validateReq))
 	if err != nil {
-		ReportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
-		splashNotFoundHandler(w, r)
+		lobster.ReportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		w.WriteHeader(403)
 		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		ReportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
-		splashNotFoundHandler(w, r)
+		lobster.ReportError(err, "paypal callback validation error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		w.WriteHeader(403)
 		return
 	}
 
 	if string(body) != "VERIFIED" || myPost["payment_status"] == "" || myPost["mc_gross"] == "" || myPost["mc_currency"] == "" || myPost["txn_id"] == "" || myPost["receiver_email"] == "" || myPost["payment_status"] == "" || myPost["payer_email"] == "" || myPost["custom"] == "" {
-		ReportError(errors.New("missing field or not verified"), "paypal callback bad input or validation", fmt.Sprintf("ip: %s; verify body: %s; requestmap: %v", r.RemoteAddr, body, myPost))
-		splashNotFoundHandler(w, r)
+		lobster.ReportError(errors.New("missing field or not verified"), "paypal callback bad input or validation", fmt.Sprintf("ip: %s; verify body: %s; requestmap: %v", r.RemoteAddr, body, myPost))
+		w.WriteHeader(403)
 		return
 	}
 
@@ -97,13 +101,13 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	if myPost["payment_status"] != "Completed" {
 		return
 	} else if !strings.HasPrefix(myPost["custom"], "lobster") {
-		ReportError(fmt.Errorf("invalid payment with custom=%s", myPost["custom"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		lobster.ReportError(fmt.Errorf("invalid payment with custom=%s", myPost["custom"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	} else if strings.TrimSpace(strings.ToLower(myPost["receiver_email"])) != strings.TrimSpace(strings.ToLower(this.business)) {
-		ReportError(fmt.Errorf("invalid payment with receiver_email=%s", myPost["receiver_email"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		lobster.ReportError(fmt.Errorf("invalid payment with receiver_email=%s", myPost["receiver_email"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	} else if myPost["mc_currency"] != cfg.Billing.Currency {
-		ReportError(fmt.Errorf("invalid payment with currency=%s", myPost["mc_currency"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		lobster.ReportError(fmt.Errorf("invalid payment with currency=%s", myPost["mc_currency"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 
@@ -112,9 +116,9 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 	userIdStr := strings.Split(myPost["custom"], "lobster")[1]
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		ReportError(fmt.Errorf("invalid payment with custom=%s", myPost["custom"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
+		lobster.ReportError(fmt.Errorf("invalid payment with custom=%s", myPost["custom"]), "paypal callback error", fmt.Sprintf("ip: %s; requestmap: %v", r.RemoteAddr, myPost))
 		return
 	}
 
-	TransactionAdd(db, userId, "paypal", transactionId, "Transaction "+transactionId, int64(paymentAmount*BILLING_PRECISION), 0)
+	lobster.TransactionAdd(db, userId, "paypal", transactionId, "Transaction "+transactionId, int64(paymentAmount*lobster.BILLING_PRECISION), 0)
 }

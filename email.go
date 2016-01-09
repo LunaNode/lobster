@@ -50,10 +50,6 @@ type VmCreateErrorEmail struct {
 	Name string
 }
 
-type CoinbaseMispaidEmail struct {
-	OrderId string
-}
-
 type PaymentProcessedEmail *Transaction
 
 type AccountCreatedEmail struct {

@@ -1,4 +1,6 @@
-package lobster
+package coinbase
+
+import "github.com/LunaNode/lobster"
 
 import "github.com/fabioberger/coinbase-go"
 
@@ -21,11 +23,12 @@ func MakeCoinbasePayment(callbackSecret string, apiKey string, apiSecret string)
 	this.callbackSecret = callbackSecret
 	this.apiKey = apiKey
 	this.apiSecret = apiSecret
-	RegisterHttpHandler("/coinbase_callback_"+this.callbackSecret, GetDatabase().WrapHandler(this.callback), true)
+	lobster.RegisterHttpHandler("/coinbase_callback_"+this.callbackSecret, lobster.GetDatabase().WrapHandler(this.callback), true)
 	return this
 }
 
-func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db *Database, frameParams FrameParams, userId int, username string, amount float64) {
+func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db *lobster.Database, frameParams lobster.FrameParams, userId int, username string, amount float64) {
+	cfg := lobster.GetConfig()
 	if cfg.Default.Debug {
 		log.Printf("Creating Coinbase button for %s (id=%d) with amount $%.2f", username, userId, amount)
 	}
@@ -42,8 +45,8 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db 
 	cli := coinbase.ApiKeyClient(this.apiKey, this.apiSecret)
 	button, err := cli.CreateButton(params)
 	if err != nil {
-		ReportError(err, "failed to create Coinbase button", fmt.Sprintf("username=%s, amount=%.2f", username, amount))
-		RedirectMessage(w, r, "/panel/billing", L.FormattedError("try_again_later"))
+		lobster.ReportError(err, "failed to create Coinbase button", fmt.Sprintf("username=%s, amount=%.2f", username, amount))
+		lobster.RedirectMessage(w, r, "/panel/billing", lobster.L.FormattedError("try_again_later"))
 		return
 	}
 	http.Redirect(w, r, "https://coinbase.com/checkouts/"+button.Code, 303)
@@ -70,28 +73,34 @@ type CoinbaseData struct {
 	Order *CoinbaseDataOrder `json:"order"`
 }
 
-func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db *Database) {
+type CoinbaseMispaidEmail struct {
+	OrderId string
+}
+
+func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db *lobster.Database) {
+	cfg := lobster.GetConfig()
+
 	requestBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		ReportError(err, "coinbase callback read error", fmt.Sprintf("ip: %s", r.RemoteAddr))
-		splashNotFoundHandler(w, r)
+		lobster.ReportError(err, "coinbase callback read error", fmt.Sprintf("ip: %s", r.RemoteAddr))
+		w.WriteHeader(500)
 		return
 	}
 
 	var data CoinbaseData
 	err = json.Unmarshal(requestBytes, &data)
 	if err != nil {
-		ReportError(err, "coinbase callback decoding error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
-		splashNotFoundHandler(w, r)
+		lobster.ReportError(err, "coinbase callback decoding error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		w.WriteHeader(400)
 		return
 	}
 
 	if data.Order.TotalNative.CurrencyIso != cfg.Billing.Currency {
-		ReportError(fmt.Errorf("invalid currency %s", data.Order.TotalNative.CurrencyIso), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		lobster.ReportError(fmt.Errorf("invalid currency %s", data.Order.TotalNative.CurrencyIso), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return
 	} else if !strings.HasPrefix(data.Order.Custom, "lobster") {
-		ReportError(fmt.Errorf("invalid payment with custom=%s", data.Order.Custom), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		lobster.ReportError(fmt.Errorf("invalid payment with custom=%s", data.Order.Custom), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return
 	}
@@ -99,15 +108,15 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	userIdStr := strings.Split(data.Order.Custom, "lobster")[1]
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		ReportError(fmt.Errorf("invalid payment with custom=%s", data.Order.Custom), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
+		lobster.ReportError(fmt.Errorf("invalid payment with custom=%s", data.Order.Custom), "coinbase callback error", fmt.Sprintf("ip: %s; raw request: %s", r.RemoteAddr, requestBytes))
 		w.WriteHeader(200)
 		return
 	}
 
 	if data.Order.Status == "completed" {
-		TransactionAdd(db, userId, "coinbase", data.Order.Id, "Bitcoin transaction: "+data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents)*BILLING_PRECISION/100, 0)
+		lobster.TransactionAdd(db, userId, "coinbase", data.Order.Id, "Bitcoin transaction: "+data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents)*lobster.BILLING_PRECISION/100, 0)
 	} else if data.Order.Status == "mispaid" {
-		MailWrap(db, -1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
+		lobster.MailWrap(db, -1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
 	}
 
 	w.WriteHeader(200)
