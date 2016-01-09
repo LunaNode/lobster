@@ -100,13 +100,37 @@ type VmActionDescriptor struct {
 
 var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
 
-const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, vms.status, vms.task_pending, vms.external_ip, vms.private_ip, vms.time_created, vms.suspended, vms.plan_id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage, plans.bandwidth FROM vms, plans WHERE vms.plan_id = plans.id"
+const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, " +
+	"vms.status, vms.task_pending, vms.external_ip, vms.private_ip, " +
+	"vms.time_created, vms.suspended, vms.plan_id, plans.name, plans.price, " +
+	"plans.ram, plans.cpu, plans.storage, plans.bandwidth " +
+	"FROM vms, plans " +
+	"WHERE vms.plan_id = plans.id"
 
 func vmListHelper(db *Database, rows Rows) []*VirtualMachine {
 	vms := make([]*VirtualMachine, 0)
 	for rows.Next() {
 		vm := VirtualMachine{db: db}
-		rows.Scan(&vm.Id, &vm.UserId, &vm.Region, &vm.Name, &vm.Identification, &vm.Status, &vm.TaskPending, &vm.ExternalIP, &vm.PrivateIP, &vm.CreatedTime, &vm.Suspended, &vm.Plan.Id, &vm.Plan.Name, &vm.Plan.Price, &vm.Plan.Ram, &vm.Plan.Cpu, &vm.Plan.Storage, &vm.Plan.Bandwidth)
+		rows.Scan(
+			&vm.Id,
+			&vm.UserId,
+			&vm.Region,
+			&vm.Name,
+			&vm.Identification,
+			&vm.Status,
+			&vm.TaskPending,
+			&vm.ExternalIP,
+			&vm.PrivateIP,
+			&vm.CreatedTime,
+			&vm.Suspended,
+			&vm.Plan.Id,
+			&vm.Plan.Name,
+			&vm.Plan.Price,
+			&vm.Plan.Ram,
+			&vm.Plan.Cpu,
+			&vm.Plan.Storage,
+			&vm.Plan.Bandwidth,
+		)
 		vms = append(vms, &vm)
 	}
 	return vms
@@ -214,7 +238,11 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 		vm.Plan = *plan // use plan from planGetRegion so that we have the region-specific identification
 		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vm, image.Identification)
 		if err != nil {
-			ReportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
+			ReportError(
+				err,
+				"vm creation failed",
+				fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification),
+			)
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
 			MailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: vmId, Name: name}, true)
 			return
@@ -370,7 +398,11 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 			if err != nil {
 				return err
 			}
-			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status, source_vm) VALUES (?, ?, ?, ?, 'pending', ?)", vm.UserId, vm.Region, name, imageIdentification, vm.Id)
+			result := vm.db.Exec(
+				"INSERT INTO images (user_id, region, name, identification, status, source_vm) "+
+					"VALUES (?, ?, ?, ?, 'pending', ?)",
+				vm.UserId, vm.Region, name, imageIdentification, vm.Id,
+			)
 			imageId = result.LastInsertId()
 			return nil
 		} else {
@@ -423,7 +455,11 @@ func (vm *VirtualMachine) Rename(name string) error {
 		// don't worry about back-end errors, but try to rename anyway
 		vmi, ok := vmGetInterface(vm.Region).(VMIRename)
 		if ok {
-			ReportError(vmi.VmRename(vm, name), "VM rename failed", fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name))
+			ReportError(
+				vmi.VmRename(vm, name),
+				"VM rename failed",
+				fmt.Sprintf("id: %d, identification: %d, name: %s", vm.Id, vm.Identification, name),
+			)
 		}
 		return nil
 	})
@@ -495,7 +531,11 @@ func (vm *VirtualMachine) Delete(userId int) error {
 
 	if vm.Identification != "" {
 		go func() {
-			ReportError(vmGetInterface(vm.Region).VmDelete(vm), "failed to delete VM", fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification))
+			ReportError(
+				vmGetInterface(vm.Region).VmDelete(vm),
+				"failed to delete VM",
+				fmt.Sprintf("vm_id=%d, vm_identification=%s", vm.Id, vm.Identification),
+			)
 		}()
 	}
 
@@ -703,7 +743,10 @@ func imageAutopopulate(db *Database, region string) error {
 	// add images that aren't already having matching identification in database
 	for _, image := range images {
 		var count int
-		db.QueryRow("SELECT COUNT(*) FROM images WHERE region = ? AND identification = ?", region, image.Identification).Scan(&count)
+		db.QueryRow(
+			"SELECT COUNT(*) FROM images WHERE region = ? AND identification = ?",
+			region, image.Identification,
+		).Scan(&count)
 		if count == 0 {
 			imageAdd(db, image.Name, region, image.Identification)
 		}
@@ -737,9 +780,18 @@ func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 		var rowId int
 		rows.Scan(&rowId)
 		rows.Close()
-		db.Exec("UPDATE region_bandwidth SET bandwidth_additional = bandwidth_additional + ? WHERE id = ?", additionalBandwidth, rowId)
+		db.Exec(
+			"UPDATE region_bandwidth "+
+				"SET bandwidth_additional = bandwidth_additional + ? "+
+				"WHERE id = ?",
+			additionalBandwidth, rowId,
+		)
 	} else {
-		db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_additional) VALUES (?, ?, ?)", vm.UserId, vm.Region, additionalBandwidth)
+		db.Exec(
+			"INSERT INTO region_bandwidth (user_id, region, bandwidth_additional) "+
+				"VALUES (?, ?, ?)",
+			vm.UserId, vm.Region, additionalBandwidth,
+		)
 	}
 }
 
@@ -804,7 +856,11 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 			rows.Close()
 			db.Exec("UPDATE region_bandwidth SET bandwidth_used = bandwidth_used + ? WHERE id = ?", newBytesUsed, rowId)
 		} else {
-			db.Exec("INSERT INTO region_bandwidth (user_id, region, bandwidth_used) VALUES (?, ?, ?)", vm.UserId, vm.Region, newBytesUsed)
+			db.Exec(
+				"INSERT INTO region_bandwidth (user_id, region, bandwidth_used) "+
+					"VALUES (?, ?, ?)",
+				vm.UserId, vm.Region, newBytesUsed,
+			)
 		}
 	}
 }
@@ -812,7 +868,11 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 // Bills for used storage space and other resources hourly.
 func serviceBilling(db *Database) {
 	db.Exec("UPDATE users SET time_billed = NOW() WHERE time_billed = 0")
-	rows := db.Query("SELECT id, TIMESTAMPDIFF(HOUR, time_billed, NOW()) FROM users WHERE status = 'active' AND TIMESTAMPDIFF(HOUR, time_billed, NOW()) > 0")
+	rows := db.Query(
+		"SELECT id, TIMESTAMPDIFF(HOUR, time_billed, NOW()) " +
+			"FROM users " +
+			"WHERE status = 'active' AND TIMESTAMPDIFF(HOUR, time_billed, NOW()) > 0",
+	)
 	defer rows.Close()
 
 	for rows.Next() {

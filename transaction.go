@@ -26,10 +26,21 @@ func transactionListHelper(rows Rows) []*Transaction {
 	return transactions
 }
 func TransactionList(db *Database) []*Transaction {
-	return transactionListHelper(db.Query("SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time FROM transactions ORDER BY id"))
+	return transactionListHelper(
+		db.Query(
+			"SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time " +
+				"FROM transactions ORDER BY id",
+		),
+	)
 }
 func TransactionGet(db *Database, transactionId int) *Transaction {
-	transactions := transactionListHelper(db.Query("SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time FROM transactions WHERE id = ?", transactionId))
+	transactions := transactionListHelper(
+		db.Query(
+			"SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time "+
+				"FROM transactions WHERE id = ?",
+			transactionId,
+		),
+	)
 	if len(transactions) == 1 {
 		return transactions[0]
 	} else {
@@ -37,7 +48,14 @@ func TransactionGet(db *Database, transactionId int) *Transaction {
 	}
 }
 func TransactionGetByGateway(db *Database, gateway string, gatewayIdentifier string) *Transaction {
-	transactions := transactionListHelper(db.Query("SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time FROM transactions WHERE gateway = ? AND gateway_identifier = ?", gateway, gatewayIdentifier))
+	transactions := transactionListHelper(
+		db.Query(
+			"SELECT id, user_id, gateway, gateway_identifier, notes, amount, fee, time "+
+				"FROM transactions "+
+				"WHERE gateway = ? AND gateway_identifier = ?",
+			gateway, gatewayIdentifier,
+		),
+	)
 	if len(transactions) >= 1 {
 		return transactions[0]
 	} else {
@@ -56,14 +74,22 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	depositMinimum := int64(cfg.Billing.DepositMinimum * BILLING_PRECISION)
 	depositMaximum := int64(cfg.Billing.DepositMaximum * BILLING_PRECISION)
 	if amount < depositMinimum || amount > depositMaximum {
-		ReportError(fmt.Errorf("invalid payment of %d cents", amount*100/BILLING_PRECISION), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(
+			fmt.Errorf("invalid payment of %d cents", amount*100/BILLING_PRECISION),
+			"transaction add error",
+			fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier),
+		)
 		return
 	}
 
 	// verify user
 	user := UserDetails(db, userId)
 	if user == nil {
-		ReportError(fmt.Errorf("invalid user %d", userId), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(
+			fmt.Errorf("invalid user %d", userId),
+			"transaction add error",
+			fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier),
+		)
 		return
 	}
 
@@ -76,7 +102,12 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 		Fee:               fee,
 		Time:              time.Now(),
 	}
-	db.Exec("INSERT INTO transactions (user_id, gateway, gateway_identifier, notes, amount, fee) VALUES (?, ?, ?, ?, ?, ?)", transaction.UserId, transaction.Gateway, transaction.GatewayIdentifier, transaction.Notes, transaction.Amount, transaction.Fee)
+	db.Exec(
+		"INSERT INTO transactions (user_id, gateway, gateway_identifier, notes, amount, fee) "+
+			"VALUES (?, ?, ?, ?, ?, ?)",
+		transaction.UserId, transaction.Gateway, transaction.GatewayIdentifier,
+		transaction.Notes, transaction.Amount, transaction.Fee,
+	)
 	UserApplyCredit(db, userId, amount, fmt.Sprintf("Transaction %s/%s", gateway, gatewayIdentifier))
 	MailWrap(db, userId, "paymentProcessed", PaymentProcessedEmail(&transaction), true)
 	log.Printf("Processed payment of %d for user %d (%s/%s)", amount, userId, gateway, gatewayIdentifier)

@@ -15,6 +15,10 @@ func AntifloodAction(db *Database, ip string, action string) {
 
 func AntifloodCheck(db *Database, ip string, action string, maxCount int) bool {
 	var countBad int
-	db.QueryRow("SELECT COUNT(*) FROM antiflood WHERE ip = ? AND action = ? AND count >= ? AND time > DATE_SUB(NOW(), INTERVAL 1 HOUR)", ip, action, maxCount).Scan(&countBad)
+	db.QueryRow(
+		"SELECT COUNT(*) FROM antiflood "+
+			"WHERE ip = ? AND action = ? AND count >= ? AND time > DATE_SUB(NOW(), INTERVAL 1 HOUR)",
+		ip, action, maxCount,
+	).Scan(&countBad)
 	return countBad == 0
 }
