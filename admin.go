@@ -54,6 +54,7 @@ type AdminUsersParams struct {
 	Frame FrameParams
 	Users []*User
 }
+
 func adminUsers(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := AdminUsersParams{}
 	params.Frame = frameParams
@@ -62,11 +63,12 @@ func adminUsers(w http.ResponseWriter, r *http.Request, db *Database, session *S
 }
 
 type AdminUserParams struct {
-	Frame FrameParams
-	User *User
+	Frame           FrameParams
+	User            *User
 	VirtualMachines []*VirtualMachine
-	Token string
+	Token           string
 }
+
 func adminUser(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -98,9 +100,10 @@ func adminUserLogin(w http.ResponseWriter, r *http.Request, db *Database, sessio
 }
 
 type AdminUserCreditForm struct {
-	Credit float64 `schema:"credit"`
-	Description string `schema:"description"`
+	Credit      float64 `schema:"credit"`
+	Description string  `schema:"description"`
 }
+
 func adminUserCredit(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -147,11 +150,12 @@ func adminUserDisable(w http.ResponseWriter, r *http.Request, db *Database, sess
 }
 
 type AdminPlansParams struct {
-	Frame FrameParams
-	Plans []*Plan
+	Frame   FrameParams
+	Plans   []*Plan
 	Regions []string
-	Token string
+	Token   string
 }
+
 func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := AdminPlansParams{}
 	params.Frame = frameParams
@@ -162,14 +166,15 @@ func adminPlans(w http.ResponseWriter, r *http.Request, db *Database, session *S
 }
 
 type AdminPlansAddForm struct {
-	Name string `schema:"name"`
-	Price float64 `schema:"price"`
-	Ram int `schema:"ram"`
-	Cpu int `schema:"cpu"`
-	Storage int `schema:"storage"`
-	Bandwidth int `schema:"bandwidth"`
-	Global string `schema:"global"`
+	Name      string  `schema:"name"`
+	Price     float64 `schema:"price"`
+	Ram       int     `schema:"ram"`
+	Cpu       int     `schema:"cpu"`
+	Storage   int     `schema:"storage"`
+	Bandwidth int     `schema:"bandwidth"`
+	Global    string  `schema:"global"`
 }
+
 func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(AdminPlansAddForm)
 	err := decoder.Decode(form, r.PostForm)
@@ -178,7 +183,7 @@ func adminPlansAdd(w http.ResponseWriter, r *http.Request, db *Database, session
 		return
 	}
 
-	planCreate(db, form.Name, int64(form.Price * BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth, form.Global != "")
+	planCreate(db, form.Name, int64(form.Price*BILLING_PRECISION), form.Ram, form.Cpu, form.Storage, form.Bandwidth, form.Global != "")
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_created"))
 }
 
@@ -193,11 +198,12 @@ func adminPlansAutopopulate(w http.ResponseWriter, r *http.Request, db *Database
 }
 
 type AdminPlanParams struct {
-	Frame FrameParams
-	Plan *Plan
+	Frame   FrameParams
+	Plan    *Plan
 	Regions []string
-	Token string
+	Token   string
 }
+
 func adminPlan(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -253,11 +259,12 @@ func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, db *Data
 }
 
 type AdminImagesParams struct {
-	Frame FrameParams
-	Images []*Image
+	Frame   FrameParams
+	Images  []*Image
 	Regions []string
-	Token string
+	Token   string
 }
+
 func adminImages(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := AdminImagesParams{}
 	params.Frame = frameParams
@@ -268,10 +275,11 @@ func adminImages(w http.ResponseWriter, r *http.Request, db *Database, session *
 }
 
 type AdminImagesAddForm struct {
-	Name string `schema:"name"`
-	Region string `schema:"region"`
+	Name           string `schema:"name"`
+	Region         string `schema:"region"`
 	Identification string `schema:"identification"`
 }
+
 func adminImagesAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(AdminImagesAddForm)
 	err := decoder.Decode(form, r.PostForm)

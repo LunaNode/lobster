@@ -4,7 +4,7 @@ const LNDYNAMIC_API_URL = "https://dynamic.lunanode.com/api/{CATEGORY}/{ACTION}/
 
 type APIGenericResponse struct {
 	Success string `json:"success"`
-	Error string `json:"error"`
+	Error   string `json:"error"`
 }
 
 // virtual machines
@@ -18,14 +18,14 @@ type APIVmVncResponse struct {
 }
 
 type APIVmInfoStruct struct {
-	Ip string `json:"ip"`
-	PrivateIp string `json:"privateip"`
-	Status string `json:"status"`
-	StatusColor string `json:"-"`
-	Hostname string `json:"hostname"`
+	Ip            string `json:"ip"`
+	PrivateIp     string `json:"privateip"`
+	Status        string `json:"status"`
+	StatusColor   string `json:"-"`
+	Hostname      string `json:"hostname"`
 	BandwidthUsed string `json:"bandwidthUsedGB"`
-	LoginDetails string `json:"login_details"`
-	DiskSwap string `json:"diskswap"`
+	LoginDetails  string `json:"login_details"`
+	DiskSwap      string `json:"diskswap"`
 }
 
 type APIVmInfoResponse struct {
@@ -35,10 +35,10 @@ type APIVmInfoResponse struct {
 // image
 
 type APIImage struct {
-	Id string `json:"image_id"`
-	Name string `json:"name"`
+	Id     string `json:"image_id"`
+	Name   string `json:"name"`
 	Status string `json:"status"`
-	Size string `json:"size"`
+	Size   string `json:"size"`
 }
 
 type APIImageListResponse struct {
@@ -56,9 +56,9 @@ type APIImageCreateResponse struct {
 // volumes
 
 type APIVolume struct {
-	Id string `json:"id"`
-	Name string `json:"name"`
-	Size string `json:"size"`
+	Id     string `json:"id"`
+	Name   string `json:"name"`
+	Size   string `json:"size"`
 	Region string `json:"region"`
 	Status string `json:"status"`
 }
@@ -74,12 +74,12 @@ type APIVolumeInfoResponse struct {
 // plans
 
 type APIPlan struct {
-	Id string `json:"plan_id"`
-	Name string `json:"name"`
-	Vcpu string `json:"vcpu"`
-	Price string `json:"price"`
-	Ram string `json:"ram"`
-	Storage string `json:"storage"`
+	Id        string `json:"plan_id"`
+	Name      string `json:"name"`
+	Vcpu      string `json:"vcpu"`
+	Price     string `json:"price"`
+	Ram       string `json:"ram"`
+	Storage   string `json:"storage"`
 	Bandwidth string `json:"bandwidth"`
 }
 

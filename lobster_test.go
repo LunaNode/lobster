@@ -52,7 +52,7 @@ func TestWebsockify(t *testing.T) {
 
 	defer func() {
 		ln.Close()
-		lnOk := <- okChannel
+		lnOk := <-okChannel
 		if !lnOk {
 			t.Errorf("Listener not OK")
 		}

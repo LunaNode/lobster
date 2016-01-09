@@ -13,8 +13,8 @@ import "net/http"
 import "time"
 
 type Client struct {
-	Url string
-	ApiId string
+	Url    string
+	ApiId  string
 	ApiKey string
 }
 
@@ -37,7 +37,7 @@ func (this *Client) request(method string, path string, requestObj interface{}, 
 	mac.Write([]byte(toSign))
 	signature := hex.EncodeToString(mac.Sum(nil))
 
-	request, err := http.NewRequest(method, this.Url + path, body)
+	request, err := http.NewRequest(method, this.Url+path, body)
 	if err != nil {
 		return err
 	}
@@ -77,8 +77,8 @@ func (this *Client) VmList() ([]*VirtualMachine, error) {
 
 func (this *Client) VmCreate(name string, planId int, imageId int) (int, error) {
 	request := VMCreateRequest{
-		Name: name,
-		PlanId: planId,
+		Name:    name,
+		PlanId:  planId,
 		ImageId: imageId,
 	}
 	var response VMCreateResponse
@@ -103,7 +103,7 @@ func (this *Client) VmInfo(vmId int) (*VMInfoResponse, error) {
 func (this *Client) VmAction(vmId int, action string, value string) error {
 	request := VMActionRequest{
 		Action: action,
-		Value : value,
+		Value:  value,
 	}
 	return this.request("POST", fmt.Sprintf("vms/%d/action", vmId), request, nil)
 }
@@ -124,7 +124,7 @@ func (this *Client) VmVnc(vmId int) (string, error) {
 func (this *Client) VmSnapshot(vmId int, name string) (int, error) {
 	request := VMActionRequest{
 		Action: "snapshot",
-		Value: name,
+		Value:  name,
 	}
 	var response VMSnapshotResponse
 	err := this.request("POST", fmt.Sprintf("vms/%d/action", vmId), request, &response)
@@ -169,7 +169,7 @@ func (this *Client) VmAddressAdd(vmId int) error {
 
 func (this *Client) VmAddressRemove(vmId int, ip string, privateip string) error {
 	request := VMAddressRemoveRequest{
-		Ip: ip,
+		Ip:        ip,
 		PrivateIp: privateip,
 	}
 	return this.request("POST", fmt.Sprintf("vms/%d/ips/remove", vmId), request, nil)
@@ -195,8 +195,8 @@ func (this *Client) ImageList() ([]*Image, error) {
 func (this *Client) ImageFetch(region string, name string, url string, format string) (int, error) {
 	request := ImageFetchRequest{
 		Region: region,
-		Name: name,
-		Url: url,
+		Name:   name,
+		Url:    url,
 		Format: format,
 	}
 	var response ImageFetchResponse

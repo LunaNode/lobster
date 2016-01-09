@@ -26,7 +26,7 @@ type VmConfig struct {
 	Type string `json:"type"`
 
 	// API options (used by solusvm, cloudstack, lobster, lndynamic, digitalocean, vultr, linode)
-	ApiId string `json:"api_id"`
+	ApiId  string `json:"api_id"`
 	ApiKey string `json:"api_key"`
 
 	// URL (used by solusvm, lobster, openstack, cloudstack)
@@ -36,18 +36,18 @@ type VmConfig struct {
 	NetworkId string `json:"network_id"`
 
 	// solusvm options
-	VirtType string `json:"virt_type"`
+	VirtType  string `json:"virt_type"`
 	NodeGroup string `json:"node_group"`
-	Insecure bool `json:"insecure"`
+	Insecure  bool   `json:"insecure"`
 
 	// openstack options
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Tenant string `json:"tenant"`
+	Tenant   string `json:"tenant"`
 
 	// cloudstack options
 	SecretKey string `json:"secret_key"`
-	ZoneID string `json:"zone_id"`
+	ZoneID    string `json:"zone_id"`
 
 	// region option (used by lobster, lndynamic, digitalocean, vultr, linode)
 	Region string `json:"region"`
@@ -60,22 +60,22 @@ type PaymentConfig struct {
 	Type string `json:"type"`
 
 	// paypal options
-	Business string `json:"business"`
+	Business  string `json:"business"`
 	ReturnUrl string `json:"return_url"`
 
 	// coinbase options
 	CallbackSecret string `json:"callback_secret"`
 
 	// API options (used by coinbase)
-	ApiKey string `json:"api_key"`
+	ApiKey    string `json:"api_key"`
 	ApiSecret string `json:"api_secret"`
 }
 
 type JSONConfig struct {
-	Vm []*VmConfig `json:"vm"`
-	Payment []*PaymentConfig `json:"payment"`
-	Module []map[string]string `json:"module"`
-	SplashRoutes map[string]string `json:"splash_routes"`
+	Vm           []*VmConfig         `json:"vm"`
+	Payment      []*PaymentConfig    `json:"payment"`
+	Module       []map[string]string `json:"module"`
+	SplashRoutes map[string]string   `json:"splash_routes"`
 }
 
 func main() {
@@ -107,12 +107,12 @@ func main() {
 			vmi = openstack.MakeOpenStack(vm.Url, vm.Username, vm.Password, vm.Tenant, vm.NetworkId)
 		} else if vm.Type == "solusvm" {
 			vmi = &solusvm.SolusVM{
-				VirtType: vm.VirtType,
+				VirtType:  vm.VirtType,
 				NodeGroup: vm.NodeGroup,
 				Api: &solusvm.API{
-					Url: vm.Url,
-					ApiId: vm.ApiId,
-					ApiKey: vm.ApiKey,
+					Url:      vm.Url,
+					ApiId:    vm.ApiId,
+					ApiKey:   vm.ApiKey,
 					Insecure: vm.Insecure,
 				},
 			}

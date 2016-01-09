@@ -9,11 +9,11 @@ import "fmt"
 import "strconv"
 
 type Lobster struct {
-	region string
-	client *api.Client
-	canVnc bool
-	canReimage bool
-	canSnapshot bool
+	region       string
+	client       *api.Client
+	canVnc       bool
+	canReimage   bool
+	canSnapshot  bool
 	canAddresses bool
 }
 
@@ -21,8 +21,8 @@ func MakeLobster(region string, url string, apiId string, apiKey string) *Lobste
 	this := new(Lobster)
 	this.region = region
 	this.client = &api.Client{
-		Url: url,
-		ApiId: apiId,
+		Url:    url,
+		ApiId:  apiId,
 		ApiKey: apiKey,
 	}
 
@@ -75,19 +75,19 @@ func (this *Lobster) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 
 	apiInfo := apiInfoResponse.Details
 	info := lobster.VmInfo{
-		Ip: apiInfo.Ip,
-		PrivateIp: apiInfo.PrivateIp,
-		Status: apiInfo.Status,
-		Hostname: apiInfo.Hostname,
-		BandwidthUsed: apiInfo.BandwidthUsed,
-		LoginDetails: apiInfo.LoginDetails,
-		Details: apiInfo.Details,
+		Ip:                   apiInfo.Ip,
+		PrivateIp:            apiInfo.PrivateIp,
+		Status:               apiInfo.Status,
+		Hostname:             apiInfo.Hostname,
+		BandwidthUsed:        apiInfo.BandwidthUsed,
+		LoginDetails:         apiInfo.LoginDetails,
+		Details:              apiInfo.Details,
 		OverrideCapabilities: true,
-		CanVnc: apiInfo.CanVnc,
-		CanReimage: apiInfo.CanReimage,
-		CanResize: apiInfo.CanResize,
-		CanSnapshot: apiInfo.CanSnapshot,
-		CanAddresses: apiInfo.CanAddresses,
+		CanVnc:               apiInfo.CanVnc,
+		CanReimage:           apiInfo.CanReimage,
+		CanResize:            apiInfo.CanResize,
+		CanSnapshot:          apiInfo.CanSnapshot,
+		CanAddresses:         apiInfo.CanAddresses,
 	}
 	for _, srcAction := range apiInfo.Actions {
 		dstAction := new(lobster.VmActionDescriptor)
@@ -221,7 +221,7 @@ func (this *Lobster) ImageInfo(imageIdentification string) (*lobster.ImageInfo, 
 
 	apiInfo := apiInfoResponse.Details
 	info := lobster.ImageInfo{
-		Size: apiInfo.Size,
+		Size:    apiInfo.Size,
 		Details: apiInfo.Details,
 	}
 
@@ -250,7 +250,7 @@ func (this *Lobster) ImageList() ([]*lobster.Image, error) {
 	for _, apiImage := range apiImages {
 		if apiImage.Region == this.region {
 			images = append(images, &lobster.Image{
-				Name: apiImage.Name,
+				Name:           apiImage.Name,
 				Identification: fmt.Sprintf("%d", apiImage.Id),
 			})
 		}
@@ -266,11 +266,11 @@ func (this *Lobster) PlanList() ([]*lobster.Plan, error) {
 	plans := make([]*lobster.Plan, len(apiPlans))
 	for i, apiPlan := range apiPlans {
 		plans[i] = &lobster.Plan{
-			Name: apiPlan.Name,
-			Ram: apiPlan.Ram,
-			Cpu: apiPlan.Cpu,
-			Storage: apiPlan.Storage,
-			Bandwidth: apiPlan.Bandwidth,
+			Name:           apiPlan.Name,
+			Ram:            apiPlan.Ram,
+			Cpu:            apiPlan.Cpu,
+			Storage:        apiPlan.Storage,
+			Bandwidth:      apiPlan.Bandwidth,
 			Identification: fmt.Sprintf("%d", apiPlan.Id),
 		}
 	}

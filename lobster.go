@@ -134,7 +134,7 @@ func HandleWssh(ipport string, username string, password string) string {
 
 	if ssh == nil {
 		ssh = &wssh.Wssh{
-			Debug: cfg.Default.Debug,
+			Debug:  cfg.Default.Debug,
 			Listen: cfg.Wssh.Listen,
 		}
 		ssh.Run()
@@ -274,7 +274,7 @@ func Run() {
 	}()
 
 	httpServer := &http.Server{
-		Addr: cfg.Http.Addr,
+		Addr:    cfg.Http.Addr,
 		Handler: LobsterHandler(context.ClearHandler(router)),
 	}
 	log.Fatal(httpServer.ListenAndServe())

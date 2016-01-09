@@ -6,18 +6,18 @@ import "log"
 import "net/http"
 
 type Session struct {
-	Id string
-	UserId int
-	Admin bool
+	Id         string
+	UserId     int
+	Admin      bool
 	OriginalId int // user id prior to logging in as another user
 	Regenerate bool
 }
 
 func (this *Session) clone() *Session {
 	return &Session{
-		Id: this.Id,
-		UserId: this.UserId,
-		Admin: this.Admin,
+		Id:         this.Id,
+		UserId:     this.UserId,
+		Admin:      this.Admin,
 		OriginalId: this.OriginalId,
 		Regenerate: this.Regenerate,
 	}
@@ -93,14 +93,14 @@ func makeSession(w http.ResponseWriter, db *Database) *Session {
 }
 
 func generateSessionIdentifier(w http.ResponseWriter) string {
-	r := make([]byte, SESSION_UID_LENGTH / 2)
+	r := make([]byte, SESSION_UID_LENGTH/2)
 	_, err := rand.Read(r)
 	checkErr(err)
 	sessionIdentifier := hex.EncodeToString(r)
 	http.SetCookie(w, &http.Cookie{
-		Name: SESSION_COOKIE_NAME,
-		Value: sessionIdentifier,
-		Path: "/",
+		Name:   SESSION_COOKIE_NAME,
+		Value:  sessionIdentifier,
+		Path:   "/",
 		Domain: cfg.Session.Domain,
 		Secure: cfg.Session.Secure,
 	})

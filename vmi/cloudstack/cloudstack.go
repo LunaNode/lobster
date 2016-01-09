@@ -16,9 +16,9 @@ func MakeCloudStack(targetURL string, zoneID string, networkID string, apiKey st
 	cs := new(CloudStack)
 	cs.client = &API{
 		TargetURL: targetURL,
-		ZoneID: zoneID,
+		ZoneID:    zoneID,
 		NetworkID: networkID,
-		APIKey: apiKey,
+		APIKey:    apiKey,
 		SecretKey: secretKey,
 	}
 	return cs
@@ -114,7 +114,7 @@ func (cs *CloudStack) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error
 	}
 
 	info := lobster.VmInfo{
-		Status: status,
+		Status:       status,
 		LoginDetails: "password: " + vm.Metadata("password", "unknown"),
 	}
 

@@ -8,7 +8,7 @@ import "strconv"
 
 type LunaNode struct {
 	region string
-	api *API
+	api    *API
 
 	vmBandwidth map[string]int64 // for bandwidth accounting
 }
@@ -72,12 +72,12 @@ func (this *LunaNode) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error
 
 	bwUsed, _ := strconv.ParseFloat(apiInfo.BandwidthUsed, 64)
 	info := lobster.VmInfo{
-		Ip: apiInfo.Ip,
-		PrivateIp: apiInfo.PrivateIp,
-		Status: apiInfo.Status,
-		Hostname: apiInfo.Hostname,
+		Ip:            apiInfo.Ip,
+		PrivateIp:     apiInfo.PrivateIp,
+		Status:        apiInfo.Status,
+		Hostname:      apiInfo.Hostname,
 		BandwidthUsed: int64(bwUsed * 1024 * 1024 * 1024),
-		LoginDetails: apiInfo.LoginDetails,
+		LoginDetails:  apiInfo.LoginDetails,
 	}
 	return &info, nil
 }
@@ -162,7 +162,7 @@ func (this *LunaNode) ImageInfo(imageIdentification string) (*lobster.ImageInfo,
 		}
 
 		return &lobster.ImageInfo{
-			Size: size,
+			Size:   size,
 			Status: status,
 		}, nil
 	}
@@ -181,7 +181,7 @@ func (this *LunaNode) ImageList() ([]*lobster.Image, error) {
 	images := make([]*lobster.Image, len(apiImages))
 	for i, apiImage := range apiImages {
 		images[i] = &lobster.Image{
-			Name: apiImage.Name,
+			Name:           apiImage.Name,
 			Identification: apiImage.Id,
 		}
 	}
@@ -196,7 +196,7 @@ func (this *LunaNode) PlanList() ([]*lobster.Plan, error) {
 	plans := make([]*lobster.Plan, len(apiPlans))
 	for i, apiPlan := range apiPlans {
 		plans[i] = &lobster.Plan{
-			Name: apiPlan.Name,
+			Name:           apiPlan.Name,
 			Identification: apiPlan.Id,
 		}
 		plans[i].Ram, _ = strconv.Atoi(apiPlan.Ram)

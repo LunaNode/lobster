@@ -19,25 +19,25 @@ func main() {
 	app.RegisterVmInterface("Toronto", lndToronto)
 
 	solusKVM := &solusvm.SolusVM{
-		VirtType: "kvm",
+		VirtType:  "kvm",
 		NodeGroup: "1",
 		Api: &solusvm.API{
-			Url: "https://167.114.196.224:5656/api/admin/command.php",
-			ApiId: "RZGxoFGpgpGiudvIatxsg0a4tEaH1mnQTM5nhjux",
-			ApiKey: "PCSTZqTiObpOci9GN9cCkqi43chamBx36gLUwu3b",
+			Url:      "https://167.114.196.224:5656/api/admin/command.php",
+			ApiId:    "RZGxoFGpgpGiudvIatxsg0a4tEaH1mnQTM5nhjux",
+			ApiKey:   "PCSTZqTiObpOci9GN9cCkqi43chamBx36gLUwu3b",
 			Insecure: true,
 		},
 	}
 	app.RegisterVmInterface("KVM", soluskvm)
 
 	solusVZ := &solusvm.SolusVM{
-		VirtType: "openvz",
+		VirtType:  "openvz",
 		NodeGroup: "1",
-		Lobster: app,
+		Lobster:   app,
 		Api: &solusvm.API{
-			Url: "https://167.114.196.224:5656/api/admin/command.php",
-			ApiId: "RZGxoFGpgpGiudvIatxsg0a4tEaH1mnQTM5nhjux",
-			ApiKey: "PCSTZqTiObpOci9GN9cCkqi43chamBx36gLUwu3b",
+			Url:      "https://167.114.196.224:5656/api/admin/command.php",
+			ApiId:    "RZGxoFGpgpGiudvIatxsg0a4tEaH1mnQTM5nhjux",
+			ApiKey:   "PCSTZqTiObpOci9GN9cCkqi43chamBx36gLUwu3b",
 			Insecure: true,
 		},
 	}

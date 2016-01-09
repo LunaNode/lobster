@@ -5,14 +5,14 @@ import "log"
 import "time"
 
 type Transaction struct {
-	Id int
-	UserId int
-	Gateway string
+	Id                int
+	UserId            int
+	Gateway           string
 	GatewayIdentifier string
-	Notes string
-	Amount int64
-	Fee int64
-	Time time.Time
+	Notes             string
+	Amount            int64
+	Fee               int64
+	Time              time.Time
 }
 
 func transactionListHelper(rows Rows) []*Transaction {
@@ -56,7 +56,7 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	depositMinimum := int64(cfg.Billing.DepositMinimum * BILLING_PRECISION)
 	depositMaximum := int64(cfg.Billing.DepositMaximum * BILLING_PRECISION)
 	if amount < depositMinimum || amount > depositMaximum {
-		ReportError(fmt.Errorf("invalid payment of %d cents", amount * 100 / BILLING_PRECISION), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
+		ReportError(fmt.Errorf("invalid payment of %d cents", amount*100/BILLING_PRECISION), "transaction add error", fmt.Sprintf("user: %d, gw: %s; gwid: %s", userId, gateway, gatewayIdentifier))
 		return
 	}
 
@@ -68,13 +68,13 @@ func TransactionAdd(db *Database, userId int, gateway string, gatewayIdentifier 
 	}
 
 	transaction := Transaction{
-		UserId: userId,
-		Gateway: gateway,
+		UserId:            userId,
+		Gateway:           gateway,
 		GatewayIdentifier: gatewayIdentifier,
-		Notes: notes,
-		Amount: amount,
-		Fee: fee,
-		Time: time.Now(),
+		Notes:             notes,
+		Amount:            amount,
+		Fee:               fee,
+		Time:              time.Now(),
 	}
 	db.Exec("INSERT INTO transactions (user_id, gateway, gateway_identifier, notes, amount, fee) VALUES (?, ?, ?, ?, ?, ?)", transaction.UserId, transaction.Gateway, transaction.GatewayIdentifier, transaction.Notes, transaction.Amount, transaction.Fee)
 	UserApplyCredit(db, userId, amount, fmt.Sprintf("Transaction %s/%s", gateway, gatewayIdentifier))

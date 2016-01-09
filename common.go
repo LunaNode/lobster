@@ -47,7 +47,7 @@ func checkErr(err error) {
 }
 
 func RedirectMessage(w http.ResponseWriter, r *http.Request, target string, msg utils.Message) {
-	http.Redirect(w, r, target + "?message=" + url.QueryEscape(msg.Text) + "&type=" + url.QueryEscape(msg.Type), 303)
+	http.Redirect(w, r, target+"?message="+url.QueryEscape(msg.Text)+"&type="+url.QueryEscape(msg.Type), 303)
 }
 
 func RedirectMessageExtra(w http.ResponseWriter, r *http.Request, target string, msg utils.Message, extra map[string]string) {
@@ -57,7 +57,7 @@ func RedirectMessageExtra(w http.ResponseWriter, r *http.Request, target string,
 	}
 	values.Set("message", msg.Text)
 	values.Set("type", msg.Type)
-	http.Redirect(w, r, target + "?" + values.Encode(), 303)
+	http.Redirect(w, r, target+"?"+values.Encode(), 303)
 }
 
 func isPrintable(s string) bool {
@@ -115,8 +115,8 @@ func wildcardMatcher(regex string, s string) bool {
 		return false
 	}
 
-	if regex[len(regex) - 1] == '*' {
-		return strings.HasPrefix(s, regex[:len(regex) - 1])
+	if regex[len(regex)-1] == '*' {
+		return strings.HasPrefix(s, regex[:len(regex)-1])
 	} else {
 		return regex == s
 	}

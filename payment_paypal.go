@@ -13,17 +13,17 @@ const PAYPAL_URL = "https://www.paypal.com/cgi-bin/webscr"
 const PAYPAL_CALLBACK = "/paypal_notify"
 
 type PaypalTemplateParams struct {
-	Frame FrameParams
-	Business string
-	Amount float64
-	UserId int
+	Frame     FrameParams
+	Business  string
+	Amount    float64
+	UserId    int
 	NotifyUrl string
 	ReturnUrl string
-	Currency string
+	Currency  string
 }
 
 type PaypalPayment struct {
-	business string
+	business  string
 	returnUrl string
 }
 
@@ -38,13 +38,13 @@ func MakePaypalPayment(business string, returnUrl string) *PaypalPayment {
 func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, db *Database, frameParams FrameParams, userId int, username string, amount float64) {
 	frameParams.Scripts = append(frameParams.Scripts, "paypal")
 	params := &PaypalTemplateParams{
-		Frame: frameParams,
-		Business: this.business,
-		Amount: amount,
-		UserId: userId,
+		Frame:     frameParams,
+		Business:  this.business,
+		Amount:    amount,
+		UserId:    userId,
 		NotifyUrl: cfg.Default.UrlBase + PAYPAL_CALLBACK,
 		ReturnUrl: this.returnUrl,
-		Currency: cfg.Billing.Currency,
+		Currency:  cfg.Billing.Currency,
 	}
 	RenderTemplate(w, "panel", "paypal", params)
 }
@@ -116,5 +116,5 @@ func (this *PaypalPayment) Callback(w http.ResponseWriter, r *http.Request, db *
 		return
 	}
 
-	TransactionAdd(db, userId, "paypal", transactionId, "Transaction " + transactionId, int64(paymentAmount * BILLING_PRECISION), 0)
+	TransactionAdd(db, userId, "paypal", transactionId, "Transaction "+transactionId, int64(paymentAmount*BILLING_PRECISION), 0)
 }

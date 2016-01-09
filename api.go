@@ -21,12 +21,12 @@ import "strings"
 import "time"
 
 type ApiKey struct {
-	Id int
-	Label string
-	UserId int
-	ApiId string
+	Id          int
+	Label       string
+	UserId      int
+	ApiId       string
 	CreatedTime time.Time
-	Nonce int64
+	Nonce       int64
 
 	// only set on apiCreate
 	ApiKey string
@@ -57,7 +57,7 @@ func apiGet(db *Database, userId int, id int) *ApiKey {
 }
 
 type ApiActionRestriction struct {
-	Path string `json:"path"`
+	Path   string `json:"path"`
 	Method string `json:"method"`
 }
 
@@ -180,7 +180,7 @@ func apiWrap(h APIHandlerFunc) func(http.ResponseWriter, *http.Request, *Databas
 		}
 
 		apiPath := strings.Split(r.URL.Path, "/api/")[1]
-		buf := make([]byte, API_MAX_REQUEST_LENGTH + 1)
+		buf := make([]byte, API_MAX_REQUEST_LENGTH+1)
 		n, err := r.Body.Read(buf)
 		if err != nil && err != io.EOF {
 			http.Error(w, "Failed to read request body", 400)
@@ -310,13 +310,13 @@ func apiVMCreate(w http.ResponseWriter, r *http.Request, db *Database, userId in
 
 	err := json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
 	vmId, err := vmCreate(db, userId, request.Name, request.PlanId, request.ImageId)
 	if err != nil {
-		http.Error(w, "Create failed: " + err.Error(), 400)
+		http.Error(w, "Create failed: "+err.Error(), 400)
 		return
 	} else {
 		apiResponse(w, 201, api.VMCreateResponse{Id: vmId})
@@ -359,7 +359,7 @@ func apiVMAction(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	var request api.VMActionRequest
 	err = json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
@@ -411,7 +411,7 @@ func apiVMReimage(w http.ResponseWriter, r *http.Request, db *Database, userId i
 	var request api.VMReimageRequest
 	err = json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
@@ -438,7 +438,7 @@ func apiVMResize(w http.ResponseWriter, r *http.Request, db *Database, userId in
 	var request api.VMResizeRequest
 	err = json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
@@ -530,7 +530,7 @@ func apiVMAddressRemove(w http.ResponseWriter, r *http.Request, db *Database, us
 	var request api.VMAddressRemoveRequest
 	err = json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
@@ -557,7 +557,7 @@ func apiVMAddressRdns(w http.ResponseWriter, r *http.Request, db *Database, user
 	var request api.VMAddressRdnsRequest
 	err = json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
@@ -584,13 +584,13 @@ func apiImageFetch(w http.ResponseWriter, r *http.Request, db *Database, userId 
 
 	err := json.Unmarshal(requestBytes, &request)
 	if err != nil {
-		http.Error(w, "Invalid json: " + err.Error(), 400)
+		http.Error(w, "Invalid json: "+err.Error(), 400)
 		return
 	}
 
 	imageId, err := imageFetch(db, userId, request.Region, request.Name, request.Url, request.Format)
 	if err != nil {
-		http.Error(w, "Fetch failed: " + err.Error(), 400)
+		http.Error(w, "Fetch failed: "+err.Error(), 400)
 		return
 	} else {
 		apiResponse(w, 201, api.ImageFetchResponse{Id: imageId})

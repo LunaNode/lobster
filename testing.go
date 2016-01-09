@@ -17,14 +17,14 @@ func TestReset() *Database {
 			BandwidthOverageFee: 0.003,
 		},
 		Database: ConfigDatabase{
-			Host: "localhost",
+			Host:     "localhost",
 			Username: "lobstertest",
 			Password: "",
-			Name: "lobstertest",
+			Name:     "lobstertest",
 		},
 		Novnc: ConfigNovnc{
 			Listen: "127.0.0.1:6080",
-			Url: "TOKEN",
+			Url:    "TOKEN",
 		},
 	}
 	db := MakeDatabase()

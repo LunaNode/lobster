@@ -14,9 +14,9 @@ import "strconv"
 import "time"
 
 type API struct {
-	Url string
-	ApiId string
-	ApiKey string
+	Url      string
+	ApiId    string
+	ApiKey   string
 	Insecure bool // InsecureSkipVerify true in tls.Config
 }
 
@@ -29,7 +29,7 @@ func (this *API) uid() string {
 	}
 	str := make([]rune, len(bytes))
 	for i := range bytes {
-		str[i] = alphabet[int(bytes[i]) % len(alphabet)]
+		str[i] = alphabet[int(bytes[i])%len(alphabet)]
 	}
 	return string(str)
 }

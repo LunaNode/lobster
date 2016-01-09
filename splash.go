@@ -3,9 +3,9 @@ package lobster
 import "net/http"
 
 type SplashTemplateParams struct {
-	Title string
+	Title   string
 	Message string
-	Token string
+	Token   string
 }
 
 func getSplashHandler(template string) func(w http.ResponseWriter, r *http.Request) {
@@ -16,7 +16,7 @@ func getSplashHandler(template string) func(w http.ResponseWriter, r *http.Reque
 		}
 
 		params := SplashTemplateParams{
-			Title: template,
+			Title:   template,
 			Message: message,
 		}
 
@@ -32,9 +32,9 @@ func getSplashFormHandler(template string) func(w http.ResponseWriter, r *http.R
 		}
 
 		params := SplashTemplateParams{
-			Title: template,
+			Title:   template,
 			Message: message,
-			Token: CSRFGenerate(db, session),
+			Token:   CSRFGenerate(db, session),
 		}
 
 		RenderTemplate(w, "splash", template, params)

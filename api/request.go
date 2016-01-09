@@ -1,14 +1,14 @@
 package api
 
 type VMCreateRequest struct {
-	Name string `json:"name"`
-	PlanId int `json:"plan_id"`
-	ImageId int `json:"image_id"`
+	Name    string `json:"name"`
+	PlanId  int    `json:"plan_id"`
+	ImageId int    `json:"image_id"`
 }
 
 type VMActionRequest struct {
 	Action string `json:"action"`
-	Value string `json:"value"`
+	Value  string `json:"value"`
 }
 
 type VMReimageRequest struct {
@@ -20,7 +20,7 @@ type VMResizeRequest struct {
 }
 
 type VMAddressRemoveRequest struct {
-	Ip string `json:"ip"`
+	Ip        string `json:"ip"`
 	PrivateIp string `json:"private_ip"`
 }
 
@@ -30,7 +30,7 @@ type VMAddressRdnsRequest struct {
 
 type ImageFetchRequest struct {
 	Region string `json:"region"`
-	Name string `json:"name"`
-	Url string `json:"url"`
+	Name   string `json:"name"`
+	Url    string `json:"url"`
 	Format string `json:"format"`
 }

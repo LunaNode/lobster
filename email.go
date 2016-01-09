@@ -12,22 +12,22 @@ import "strings"
 import "text/template"
 
 type EmailParams struct {
-	UserId int
+	UserId   int
 	Username string
-	Email string
-	UrlBase string
-	Params interface{}
+	Email    string
+	UrlBase  string
+	Params   interface{}
 }
 
 type ErrorEmail struct {
-	Error string
+	Error       string
 	Description string
-	Detail string
+	Detail      string
 }
 
 type LowCreditEmail struct {
-	Credit int64
-	Hourly int64
+	Credit         int64
+	Hourly         int64
 	RemainingHours int
 }
 
@@ -36,17 +36,17 @@ type VmUnsuspendEmail struct {
 }
 
 type VmDeletedEmail struct {
-	Id int
+	Id   int
 	Name string
 }
 
 type VmCreateEmail struct {
-	Id int
+	Id   int
 	Name string
 }
 
 type VmCreateErrorEmail struct {
-	Id int
+	Id   int
 	Name string
 }
 
@@ -57,15 +57,15 @@ type CoinbaseMispaidEmail struct {
 type PaymentProcessedEmail *Transaction
 
 type AccountCreatedEmail struct {
-	UserId int
+	UserId   int
 	Username string
-	Email string
+	Email    string
 }
 
 type BandwidthUsageEmail struct {
 	UtilPercent int
-	Region string
-	Fee int64
+	Region      string
+	Fee         int64
 }
 
 type PwresetRequestEmail string
@@ -77,7 +77,7 @@ func loadEmail() {
 	templatePaths := make([]string, 0)
 	for _, fileInfo := range contents {
 		if fileInfo.Mode().IsRegular() && strings.HasSuffix(fileInfo.Name(), ".txt") {
-			templatePaths = append(templatePaths, "tmpl/email/" + fileInfo.Name())
+			templatePaths = append(templatePaths, "tmpl/email/"+fileInfo.Name())
 		}
 	}
 	emailTemplate = template.Must(template.New("").Funcs(template.FuncMap(templateFuncMap())).ParseFiles(templatePaths...))
@@ -121,15 +121,15 @@ func mail(db *Database, userId int, tmpl string, subparams interface{}, ccAdmin 
 	}
 
 	params := EmailParams{
-		UserId: userId,
+		UserId:   userId,
 		Username: username,
-		Email: toAddress,
-		UrlBase: cfg.Default.UrlBase,
-		Params: subparams,
+		Email:    toAddress,
+		UrlBase:  cfg.Default.UrlBase,
+		Params:   subparams,
 	}
 
 	var buffer bytes.Buffer
-	err := emailTemplate.ExecuteTemplate(&buffer, tmpl + ".txt", params)
+	err := emailTemplate.ExecuteTemplate(&buffer, tmpl+".txt", params)
 	if err != nil {
 		return err
 	}

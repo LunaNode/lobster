@@ -8,8 +8,8 @@ import "fmt"
 import "io/ioutil"
 
 type Section struct {
-	Text map[string]string `json:"T"`
-	Errors map[string]string `json:"error"`
+	Text     map[string]string `json:"T"`
+	Errors   map[string]string `json:"error"`
 	Messages map[string]string `json:"message"`
 }
 

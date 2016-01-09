@@ -87,7 +87,7 @@ func authChangePassword(db *Database, ip string, userId int, oldPassword string,
 	rows := db.Query("SELECT password FROM users WHERE id = ?", userId)
 	if !rows.Next() {
 		AntifloodAction(db, ip, "authCheck")
-		log.Printf("Error changing password: bad user ID?! (%d/%s)", userId ,ip)
+		log.Printf("Error changing password: bad user ID?! (%d/%s)", userId, ip)
 		return L.Error("invalid_account")
 	}
 	var actualPasswordCombined string
@@ -198,9 +198,9 @@ func authLoginHandler(w http.ResponseWriter, r *http.Request, db *Database, sess
 }
 
 type AuthCreateForm struct {
-	Username string `schema:"username"`
-	Password string `schema:"password"`
-	Email string `schema:"email"`
+	Username    string `schema:"username"`
+	Password    string `schema:"password"`
+	Email       string `schema:"email"`
 	AcceptTerms string `schema:"acceptTermsOfService"`
 }
 
@@ -238,11 +238,11 @@ func authLogoutHandler(w http.ResponseWriter, r *http.Request, db *Database, ses
 }
 
 type AuthPwresetParams struct {
-	Title string
-	Message string
-	Token string
+	Title         string
+	Message       string
+	Token         string
 	PwresetUserId string
-	PwresetToken string
+	PwresetToken  string
 }
 
 func authPwresetHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
@@ -252,7 +252,7 @@ func authPwresetHandler(w http.ResponseWriter, r *http.Request, db *Database, se
 	}
 	params := AuthPwresetParams{
 		Message: message,
-		Token: CSRFGenerate(db, session),
+		Token:   CSRFGenerate(db, session),
 	}
 
 	if r.URL.Query().Get("user_id") != "" && r.URL.Query().Get("token") != "" {
@@ -266,7 +266,7 @@ func authPwresetHandler(w http.ResponseWriter, r *http.Request, db *Database, se
 
 type AuthPwresetRequestForm struct {
 	Username string `schema:"username"`
-	Email string `schema:"email"`
+	Email    string `schema:"email"`
 }
 
 func authPwresetRequestHandler(w http.ResponseWriter, r *http.Request, db *Database, session *Session) {
@@ -292,9 +292,9 @@ func authPwresetRequestHandler(w http.ResponseWriter, r *http.Request, db *Datab
 }
 
 type AuthPwresetSubmitForm struct {
-	UserId int `schema:"pwreset_user_id"`
-	Token string `schema:"pwreset_token"`
-	Password string `schema:"password"`
+	UserId          int    `schema:"pwreset_user_id"`
+	Token           string `schema:"pwreset_token"`
+	Password        string `schema:"password"`
 	PasswordConfirm string `schema:"password_confirm"`
 }
 

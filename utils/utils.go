@@ -16,7 +16,7 @@ func Uid(l int) string {
 	}
 	str := make([]rune, len(bytes))
 	for i := range bytes {
-		str[i] = alphabet[int(bytes[i]) % len(alphabet)]
+		str[i] = alphabet[int(bytes[i])%len(alphabet)]
 	}
 	return string(str)
 }

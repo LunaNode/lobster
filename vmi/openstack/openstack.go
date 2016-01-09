@@ -21,8 +21,8 @@ import "time"
 
 type OpenStack struct {
 	ComputeClient *gophercloud.ServiceClient
-	ImageClient *gophercloud.ServiceClient
-	networkId string
+	ImageClient   *gophercloud.ServiceClient
+	networkId     string
 }
 
 func MakeOpenStack(identityEndpoint string, username string, password string, tenantName string, networkId string) *OpenStack {
@@ -30,9 +30,9 @@ func MakeOpenStack(identityEndpoint string, username string, password string, te
 	this.networkId = networkId
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: identityEndpoint,
-		Username: username,
-		Password: password,
-		TenantName: tenantName,
+		Username:         username,
+		Password:         password,
+		TenantName:       tenantName,
 	}
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
@@ -54,7 +54,7 @@ func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 	if flavorID == "" {
 		flavorOpts := flavors.ListOpts{
 			MinDisk: vm.Plan.Storage,
-			MinRAM: vm.Plan.Ram,
+			MinRAM:  vm.Plan.Ram,
 		}
 		flavorPager := flavors.ListDetail(this.ComputeClient, flavorOpts)
 		var matchFlavor *flavors.Flavor
@@ -82,12 +82,12 @@ func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 
 	password := utils.Uid(16)
 	opts := servers.CreateOpts{
-		Name: vm.Name,
-		ImageRef: imageIdentification,
+		Name:      vm.Name,
+		ImageRef:  imageIdentification,
 		FlavorRef: flavorID,
-		Networks: []servers.Network{servers.Network{UUID: this.networkId}},
+		Networks:  []servers.Network{servers.Network{UUID: this.networkId}},
 		AdminPass: password,
-		UserData: []byte("#cloud-config\npassword: " + password + "\nchpasswd: { expire: False }\nssh_pwauth: True\n"),
+		UserData:  []byte("#cloud-config\npassword: " + password + "\nchpasswd: { expire: False }\nssh_pwauth: True\n"),
 	}
 	createResult := servers.Create(this.ComputeClient, opts)
 	server, err := createResult.Extract()
@@ -157,8 +157,8 @@ func (this *OpenStack) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, erro
 	}
 
 	info := lobster.VmInfo{
-		Status: status,
-		Hostname: server.Name,
+		Status:       status,
+		Hostname:     server.Name,
 		LoginDetails: "password: " + vm.Metadata("password", "unknown"),
 	}
 
@@ -232,10 +232,10 @@ func (this *OpenStack) BandwidthAccounting(vm *lobster.VirtualMachine) int64 {
 
 func (this *OpenStack) ImageFetch(url string, format string) (string, error) {
 	opts := image.CreateOpts{
-		Name: "lobster",
+		Name:            "lobster",
 		ContainerFormat: "bare",
-		DiskFormat: format,
-		CopyFrom: url,
+		DiskFormat:      format,
+		CopyFrom:        url,
 	}
 	createResult := image.Create(this.ImageClient, opts)
 	image, err := createResult.Extract()
@@ -266,7 +266,7 @@ func (this *OpenStack) ImageInfo(imageIdentification string) (*lobster.ImageInfo
 
 func (this *OpenStack) ImageDelete(imageIdentification string) error {
 	err := image.Delete(this.ImageClient, imageIdentification).ExtractErr()
-	if err != nil && !strings.Contains(err.Error(), "Image with identifier " + imageIdentification + " not found") {
+	if err != nil && !strings.Contains(err.Error(), "Image with identifier "+imageIdentification+" not found") {
 		return err
 	} else {
 		return nil
@@ -288,10 +288,10 @@ func (this *OpenStack) PlanList() ([]*lobster.Plan, error) {
 
 		for _, flavor := range flavorList {
 			plans = append(plans, &lobster.Plan{
-				Name: flavor.Name,
-				Ram: flavor.RAM,
-				Cpu: flavor.VCPUs,
-				Storage: flavor.Disk,
+				Name:           flavor.Name,
+				Ram:            flavor.RAM,
+				Cpu:            flavor.VCPUs,
+				Storage:        flavor.Disk,
 				Identification: flavor.ID,
 			})
 		}

@@ -6,7 +6,7 @@ import "github.com/LunaNode/lobster/i18n"
 import "github.com/gorilla/schema"
 
 type TicketUpdateEmail struct {
-	Id int
+	Id      int
 	Subject string
 	Message string
 }

@@ -12,11 +12,11 @@ type Fake struct {
 
 	CountCreate int
 	CountDelete int
-	CountInfo int
-	CountStart int
-	CountStop int
+	CountInfo   int
+	CountStart  int
+	CountStop   int
 	CountReboot int
-	CountVnc int
+	CountVnc    int
 }
 
 func (this *Fake) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
@@ -33,7 +33,7 @@ func (this *Fake) VmDelete(vm *lobster.VirtualMachine) error {
 func (this *Fake) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
 	this.CountInfo++
 	info := &lobster.VmInfo{
-		Status: "Online",
+		Status:       "Online",
 		LoginDetails: "fingerprint login supported",
 	}
 
@@ -96,9 +96,9 @@ func (this *Fake) VmAddresses(vm *lobster.VirtualMachine) ([]*lobster.IpAddress,
 		if addrString != "" {
 			parts := strings.Split(addrString, ":")
 			ipAddr := &lobster.IpAddress{
-				Ip: parts[0],
+				Ip:        parts[0],
 				PrivateIp: "255.255.255.255",
-				CanRdns: true,
+				CanRdns:   true,
 			}
 			if len(parts) > 1 {
 				ipAddr.Hostname = parts[1]
@@ -122,7 +122,7 @@ func (this *Fake) saveAddresses(vm *lobster.VirtualMachine, addresses []*lobster
 
 func (this *Fake) VmAddAddress(vm *lobster.VirtualMachine) error {
 	addresses, _ := this.VmAddresses(vm)
-	addresses = append(addresses, &lobster.IpAddress{Ip: "127.0.0." + fmt.Sprintf("%d", rand.Int31n(255) + 1)})
+	addresses = append(addresses, &lobster.IpAddress{Ip: "127.0.0." + fmt.Sprintf("%d", rand.Int31n(255)+1)})
 	this.saveAddresses(vm, addresses)
 	return nil
 }
@@ -160,7 +160,7 @@ func (this *Fake) ImageFetch(url string, format string) (string, error) {
 
 func (this *Fake) ImageInfo(imageIdentification string) (*lobster.ImageInfo, error) {
 	return &lobster.ImageInfo{
-		Size: int64(1024 * 1024 * 1024),
+		Size:   int64(1024 * 1024 * 1024),
 		Status: lobster.ImageActive,
 	}, nil
 }

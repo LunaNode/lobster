@@ -7,20 +7,20 @@ import "log"
 import "time"
 
 type TicketMessage struct {
-	Id int
-	Staff bool
+	Id      int
+	Staff   bool
 	Message string
-	Time time.Time
+	Time    time.Time
 }
 
 type Ticket struct {
-	Id int
-	UserId int
-	Name string
-	Status string
-	Time time.Time
+	Id         int
+	UserId     int
+	Name       string
+	Status     string
+	Time       time.Time
 	ModifyTime time.Time
-	Messages []*TicketMessage
+	Messages   []*TicketMessage
 }
 
 func TicketList(db *lobster.Database, userId int) []*Ticket {

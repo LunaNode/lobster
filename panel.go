@@ -11,13 +11,13 @@ import "strconv"
 import "time"
 
 type FrameParams struct {
-	Message utils.Message
-	Error bool
-	UserId int
-	Admin bool
-	OriginalId int // non-zero only if admin is logged in as another user
-	Styles []string // additional CSS
-	Scripts []string // additional JS
+	Message    utils.Message
+	Error      bool
+	UserId     int
+	Admin      bool
+	OriginalId int      // non-zero only if admin is logged in as another user
+	Styles     []string // additional CSS
+	Scripts    []string // additional JS
 }
 type PanelFormParams struct {
 	Frame FrameParams
@@ -32,8 +32,8 @@ func panelWrap(h PanelHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 			http.Redirect(w, r, "/login", 303)
 		} else {
 			var frameParams = FrameParams{
-				UserId: session.UserId,
-				Admin: session.Admin,
+				UserId:     session.UserId,
+				Admin:      session.Admin,
 				OriginalId: session.OriginalId,
 			}
 			if r.URL.Query()["message"] != nil {
@@ -50,12 +50,13 @@ func panelWrap(h PanelHandlerFunc) func(http.ResponseWriter, *http.Request, *Dat
 }
 
 type PanelDashboardParams struct {
-	Frame FrameParams
-	VirtualMachines []*VirtualMachine
-	CreditSummary *CreditSummary
+	Frame            FrameParams
+	VirtualMachines  []*VirtualMachine
+	CreditSummary    *CreditSummary
 	BandwidthSummary map[string]*BandwidthSummary
-	WidgetData map[string]interface{}
+	WidgetData       map[string]interface{}
 }
+
 func panelDashboard(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelDashboardParams{}
 	params.Frame = frameParams
@@ -70,9 +71,10 @@ func panelDashboard(w http.ResponseWriter, r *http.Request, db *Database, sessio
 }
 
 type PanelVirtualMachinesParams struct {
-	Frame FrameParams
+	Frame           FrameParams
 	VirtualMachines []*VirtualMachine
 }
+
 func panelVirtualMachines(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelVirtualMachinesParams{}
 	params.Frame = frameParams
@@ -81,9 +83,10 @@ func panelVirtualMachines(w http.ResponseWriter, r *http.Request, db *Database, 
 }
 
 type PanelNewVMParams struct {
-	Frame FrameParams
+	Frame   FrameParams
 	Regions []string
 }
+
 func panelNewVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelNewVMParams{}
 	params.Frame = frameParams
@@ -92,18 +95,19 @@ func panelNewVM(w http.ResponseWriter, r *http.Request, db *Database, session *S
 }
 
 type PanelNewVMRegionParams struct {
-	Frame FrameParams
-	Region string
+	Frame        FrameParams
+	Region       string
 	PublicImages []*Image
-	UserImages []*Image
-	Plans []*Plan
-	Token string
+	UserImages   []*Image
+	Plans        []*Plan
+	Token        string
 }
 type NewVMRegionForm struct {
-	Name string `schema:"name"`
-	PlanId int `schema:"plan_id"`
-	ImageId int `schema:"image_id"`
+	Name    string `schema:"name"`
+	PlanId  int    `schema:"plan_id"`
+	ImageId int    `schema:"image_id"`
 }
+
 func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	region := mux.Vars(r)["region"]
 
@@ -111,13 +115,13 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 		form := new(NewVMRegionForm)
 		err := decoder.Decode(form, r.PostForm)
 		if err != nil {
-			http.Redirect(w, r, "/panel/newvm/" + region, 303)
+			http.Redirect(w, r, "/panel/newvm/"+region, 303)
 			return
 		}
 
 		vmId, err := vmCreate(db, session.UserId, form.Name, form.PlanId, form.ImageId)
 		if err != nil {
-			RedirectMessage(w, r, "/panel/newvm/" + region, L.FormatError(err))
+			RedirectMessage(w, r, "/panel/newvm/"+region, L.FormatError(err))
 		} else {
 			LogAction(db, session.UserId, ExtractIP(r.RemoteAddr), "Create VM", fmt.Sprintf("Name: %s, Plan: %d, Image: %d", form.Name, form.PlanId, form.ImageId))
 			http.Redirect(w, r, fmt.Sprintf("/panel/vm/%d", vmId), 303)
@@ -143,12 +147,13 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, db *Database, sess
 }
 
 type PanelVMParams struct {
-	Frame FrameParams
-	Vm *VirtualMachine
+	Frame  FrameParams
+	Vm     *VirtualMachine
 	Images []*Image
-	Plans []*Plan
-	Token string
+	Plans  []*Plan
+	Token  string
 }
+
 func panelVM(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -270,6 +275,7 @@ func panelVMVnc(w http.ResponseWriter, r *http.Request, db *Database, session *S
 type VMReimageForm struct {
 	Image int `schema:"image"`
 }
+
 func panelVMReimage(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -311,6 +317,7 @@ func panelVMSnapshot(w http.ResponseWriter, r *http.Request, db *Database, sessi
 type VMResizeForm struct {
 	PlanId int `schema:"plan_id"`
 }
+
 func panelVMResize(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	vm, err := panelVMProcess(w, r, db, session, frameParams)
 	if err != nil {
@@ -348,10 +355,11 @@ func panelVMRename(w http.ResponseWriter, r *http.Request, db *Database, session
 }
 
 type PanelBillingParams struct {
-	Frame FrameParams
-	CreditSummary *CreditSummary
+	Frame          FrameParams
+	CreditSummary  *CreditSummary
 	PaymentMethods []string
 }
+
 func panelBilling(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelBillingParams{}
 	params.Frame = frameParams
@@ -361,9 +369,10 @@ func panelBilling(w http.ResponseWriter, r *http.Request, db *Database, session 
 }
 
 type PayForm struct {
-	Gateway string `schema:"gateway"`
-	Amount float64 `schema:"amount"`
+	Gateway string  `schema:"gateway"`
+	Amount  float64 `schema:"amount"`
 }
+
 func panelPay(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(PayForm)
 	err := decoder.Decode(form, r.Form)
@@ -377,14 +386,15 @@ func panelPay(w http.ResponseWriter, r *http.Request, db *Database, session *Ses
 }
 
 type PanelChargesParams struct {
-	Frame FrameParams
-	Year int
-	Month time.Month
+	Frame   FrameParams
+	Year    int
+	Month   time.Month
 	Charges []*Charge
 
 	Previous time.Time
-	Next time.Time
+	Next     time.Time
 }
+
 func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	year, err := strconv.Atoi(mux.Vars(r)["year"])
 	if err != nil {
@@ -409,10 +419,11 @@ func panelCharges(w http.ResponseWriter, r *http.Request, db *Database, session 
 
 type PanelAccountParams struct {
 	Frame FrameParams
-	User *User
-	Keys []*ApiKey
+	User  *User
+	Keys  []*ApiKey
 	Token string
 }
+
 func panelAccount(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelAccountParams{}
 	params.Frame = frameParams
@@ -423,10 +434,11 @@ func panelAccount(w http.ResponseWriter, r *http.Request, db *Database, session 
 }
 
 type AccountPasswordForm struct {
-	OldPassword string `schema:"old_password"`
-	NewPassword string `schema:"new_password"`
+	OldPassword        string `schema:"old_password"`
+	NewPassword        string `schema:"new_password"`
 	NewPasswordConfirm string `schema:"new_password_confirm"`
 }
+
 func panelAccountPassword(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(AccountPasswordForm)
 	err := decoder.Decode(form, r.PostForm)
@@ -446,10 +458,11 @@ func panelAccountPassword(w http.ResponseWriter, r *http.Request, db *Database, 
 }
 
 type ApiAddForm struct {
-	Label string `schema:"label"`
+	Label          string `schema:"label"`
 	RestrictAction string `schema:"restrict_action"`
-	RestrictIp string `schema:"restrict_ip"`
+	RestrictIp     string `schema:"restrict_ip"`
 }
+
 func panelApiAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(ApiAddForm)
 	err := decoder.Decode(form, r.PostForm)
@@ -477,11 +490,12 @@ func panelApiRemove(w http.ResponseWriter, r *http.Request, db *Database, sessio
 }
 
 type PanelImagesParams struct {
-	Frame FrameParams
-	Images []*Image
+	Frame   FrameParams
+	Images  []*Image
 	Regions []string
-	Token string
+	Token   string
 }
+
 func panelImages(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	params := PanelImagesParams{}
 	params.Frame = frameParams
@@ -498,11 +512,12 @@ func panelImages(w http.ResponseWriter, r *http.Request, db *Database, session *
 }
 
 type ImageAddForm struct {
-	Region string `schema:"region"`
-	Name string `schema:"name"`
+	Region   string `schema:"region"`
+	Name     string `schema:"name"`
 	Location string `schema:"location"`
-	Format string `schema:"format"`
+	Format   string `schema:"format"`
 }
+
 func panelImageAdd(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	form := new(ImageAddForm)
 	err := decoder.Decode(form, r.PostForm)
@@ -540,6 +555,7 @@ type PanelImageDetailsParams struct {
 	Frame FrameParams
 	Image *Image
 }
+
 func panelImageDetails(w http.ResponseWriter, r *http.Request, db *Database, session *Session, frameParams FrameParams) {
 	imageId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {

@@ -22,7 +22,7 @@ func MakeWHMCS(ip string, secret string) *WHMCS {
 }
 
 type WHMCS struct {
-	ip string
+	ip     string
 	secret string
 }
 
@@ -60,7 +60,7 @@ func (this *WHMCS) handleConnector(w http.ResponseWriter, r *http.Request, db *l
 			http.Error(w, "no such user", 400)
 			return
 		}
-		lobster.UserApplyCredit(db, userId, int64(amount * lobster.BILLING_PRECISION), "Credit via WHMCS")
+		lobster.UserApplyCredit(db, userId, int64(amount*lobster.BILLING_PRECISION), "Credit via WHMCS")
 		w.Write([]byte("ok"))
 	case "token":
 		userId, err := strconv.Atoi(r.PostForm.Get("user_id"))

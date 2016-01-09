@@ -3,14 +3,14 @@ package lobster
 import "fmt"
 
 type Plan struct {
-	Id int
-	Name string
-	Price int64
-	Ram int
-	Cpu int
-	Storage int
+	Id        int
+	Name      string
+	Price     int64
+	Ram       int
+	Cpu       int
+	Storage   int
 	Bandwidth int
-	Global bool
+	Global    bool
 
 	// region-specific identification from planGet
 	Identification string

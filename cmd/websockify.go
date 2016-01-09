@@ -10,5 +10,5 @@ func main() {
 	}
 	ws.Run()
 	fmt.Println(ws.Register("127.0.0.1:5900"))
-	select{}
+	select {}
 }

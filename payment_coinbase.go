@@ -12,8 +12,8 @@ import "strings"
 
 type CoinbasePayment struct {
 	callbackSecret string
-	apiKey string
-	apiSecret string
+	apiKey         string
+	apiSecret      string
 }
 
 func MakeCoinbasePayment(callbackSecret string, apiKey string, apiSecret string) *CoinbasePayment {
@@ -21,7 +21,7 @@ func MakeCoinbasePayment(callbackSecret string, apiKey string, apiSecret string)
 	this.callbackSecret = callbackSecret
 	this.apiKey = apiKey
 	this.apiSecret = apiSecret
-	RegisterHttpHandler("/coinbase_callback_" + this.callbackSecret, GetDatabase().WrapHandler(this.callback), true)
+	RegisterHttpHandler("/coinbase_callback_"+this.callbackSecret, GetDatabase().WrapHandler(this.callback), true)
 	return this
 }
 
@@ -30,14 +30,14 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db 
 		log.Printf("Creating Coinbase button for %s (id=%d) with amount $%.2f", username, userId, amount)
 	}
 	params := &coinbase.Button{
-		Name: "Credit for " + username,
-		PriceString: fmt.Sprintf("%.2f", amount),
+		Name:             "Credit for " + username,
+		PriceString:      fmt.Sprintf("%.2f", amount),
 		PriceCurrencyIso: cfg.Billing.Currency,
-		Custom: fmt.Sprintf("lobster%d", userId),
-		Description: fmt.Sprintf("Credit $%.2f", amount),
-		Type: "buy_now",
-		Style: "buy_now_large",
-		CallbackUrl: cfg.Default.UrlBase + "/coinbase_callback_" + this.callbackSecret,
+		Custom:           fmt.Sprintf("lobster%d", userId),
+		Description:      fmt.Sprintf("Credit $%.2f", amount),
+		Type:             "buy_now",
+		Style:            "buy_now_large",
+		CallbackUrl:      cfg.Default.UrlBase + "/coinbase_callback_" + this.callbackSecret,
 	}
 	cli := coinbase.ApiKeyClient(this.apiKey, this.apiSecret)
 	button, err := cli.CreateButton(params)
@@ -46,12 +46,12 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, db 
 		RedirectMessage(w, r, "/panel/billing", L.FormattedError("try_again_later"))
 		return
 	}
-	http.Redirect(w, r, "https://coinbase.com/checkouts/" + button.Code, 303)
+	http.Redirect(w, r, "https://coinbase.com/checkouts/"+button.Code, 303)
 }
 
 type CoinbaseDataNative struct {
-	Cents float64 `json:"cents"`
-	CurrencyIso string `json:"currency_iso"`
+	Cents       float64 `json:"cents"`
+	CurrencyIso string  `json:"currency_iso"`
 }
 
 type CoinbaseTransaction struct {
@@ -59,10 +59,10 @@ type CoinbaseTransaction struct {
 }
 
 type CoinbaseDataOrder struct {
-	Id string `json:"id"`
-	Status string `json:"status"`
-	TotalNative *CoinbaseDataNative `json:"total_native"`
-	Custom string `json:"custom"`
+	Id          string               `json:"id"`
+	Status      string               `json:"status"`
+	TotalNative *CoinbaseDataNative  `json:"total_native"`
+	Custom      string               `json:"custom"`
 	Transaction *CoinbaseTransaction `json:"transaction"`
 }
 
@@ -105,7 +105,7 @@ func (this *CoinbasePayment) callback(w http.ResponseWriter, r *http.Request, db
 	}
 
 	if data.Order.Status == "completed" {
-		TransactionAdd(db, userId, "coinbase", data.Order.Id, "Bitcoin transaction: " + data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents) * BILLING_PRECISION / 100, 0)
+		TransactionAdd(db, userId, "coinbase", data.Order.Id, "Bitcoin transaction: "+data.Order.Transaction.Id, int64(data.Order.TotalNative.Cents)*BILLING_PRECISION/100, 0)
 	} else if data.Order.Status == "mispaid" {
 		MailWrap(db, -1, "coinbaseMispaid", CoinbaseMispaidEmail{OrderId: data.Order.Id}, false)
 	}

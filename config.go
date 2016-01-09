@@ -5,12 +5,12 @@ import "code.google.com/p/gcfg"
 import "log"
 
 type ConfigDefault struct {
-	UrlBase string
-	AdminEmail string
-	FromEmail string
+	UrlBase     string
+	AdminEmail  string
+	FromEmail   string
 	ProxyHeader string
-	Debug bool
-	Language string
+	Debug       bool
+	Language    string
 }
 
 type ConfigVm struct {
@@ -19,12 +19,12 @@ type ConfigVm struct {
 
 type ConfigBilling struct {
 	BandwidthOverageFee float64
-	StorageFee float64
-	Currency string
-	BillingInterval int
-	BillingVmMinimum int
-	DepositMinimum float64
-	DepositMaximum float64
+	StorageFee          float64
+	Currency            string
+	BillingInterval     int
+	BillingVmMinimum    int
+	DepositMinimum      float64
+	DepositMaximum      float64
 }
 
 type ConfigSession struct {
@@ -33,10 +33,10 @@ type ConfigSession struct {
 }
 
 type ConfigDatabase struct {
-	Host string
+	Host     string
 	Username string
 	Password string
-	Name string
+	Name     string
 }
 
 type ConfigHttp struct {
@@ -44,33 +44,33 @@ type ConfigHttp struct {
 }
 
 type ConfigEmail struct {
-	Host string
-	Port int
-	NoTLS bool
+	Host     string
+	Port     int
+	NoTLS    bool
 	Username string
 	Password string
 }
 
 type ConfigNovnc struct {
-	Url string
+	Url    string
 	Listen string
 }
 
 type ConfigWssh struct {
-	Url string
+	Url    string
 	Listen string
 }
 
 type Config struct {
-	Default ConfigDefault
-	Vm ConfigVm
-	Billing ConfigBilling
-	Session ConfigSession
+	Default  ConfigDefault
+	Vm       ConfigVm
+	Billing  ConfigBilling
+	Session  ConfigSession
 	Database ConfigDatabase
-	Http ConfigHttp
-	Email ConfigEmail
-	Novnc ConfigNovnc
-	Wssh ConfigWssh
+	Http     ConfigHttp
+	Email    ConfigEmail
+	Novnc    ConfigNovnc
+	Wssh     ConfigWssh
 }
 
 func LoadConfig(cfgPath string) *Config {

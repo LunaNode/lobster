@@ -18,14 +18,14 @@ func newToken(l int) string {
 	}
 	str := make([]rune, len(bytes))
 	for i := range bytes {
-		str[i] = alphabet[int(bytes[i]) % len(alphabet)]
+		str[i] = alphabet[int(bytes[i])%len(alphabet)]
 	}
 	return string(str)
 }
 
 type tokenTarget struct {
 	ipport string // e.g. 127.0.0.1:5900
-	time time.Time
+	time   time.Time
 }
 
 type Websockify struct {
@@ -35,8 +35,8 @@ type Websockify struct {
 	// Whether to print debug output
 	Debug bool
 
-	tokens map[string]*tokenTarget
-	upgrader websocket.Upgrader
+	tokens     map[string]*tokenTarget
+	upgrader   websocket.Upgrader
 	fileserver http.Handler
 }
 
@@ -47,13 +47,13 @@ func (this *Websockify) Run() {
 
 	this.tokens = make(map[string]*tokenTarget)
 	this.upgrader = websocket.Upgrader{
-		ReadBufferSize: 2048,
+		ReadBufferSize:  2048,
 		WriteBufferSize: 2048,
 	}
 	this.fileserver = http.FileServer(http.Dir("./novnc/"))
 
 	httpServer := &http.Server{
-		Addr: this.Listen,
+		Addr:    this.Listen,
 		Handler: this,
 	}
 
@@ -74,7 +74,7 @@ func (this *Websockify) Register(ipport string) string {
 	token := newToken(32)
 	this.tokens[token] = &tokenTarget{
 		ipport: ipport,
-		time: time.Now(),
+		time:   time.Now(),
 	}
 
 	return token
@@ -128,7 +128,7 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			done <- true
 		}()
-		wbuf := make([]byte, 32 * 1024)
+		wbuf := make([]byte, 32*1024)
 		for {
 			messageType, p, err := conn.ReadMessage()
 			if err != nil {
@@ -149,7 +149,7 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			done <- true
 		}()
 		rbuf := make([]byte, 8192)
-		wbuf := make([]byte, len(rbuf) * 2)
+		wbuf := make([]byte, len(rbuf)*2)
 		for {
 			n, err := sock.Read(rbuf)
 			if err != nil {
@@ -165,5 +165,5 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
-	<- done
+	<-done
 }

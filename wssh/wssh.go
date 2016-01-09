@@ -18,16 +18,16 @@ func newToken(l int) string {
 	}
 	str := make([]rune, len(bytes))
 	for i := range bytes {
-		str[i] = alphabet[int(bytes[i]) % len(alphabet)]
+		str[i] = alphabet[int(bytes[i])%len(alphabet)]
 	}
 	return string(str)
 }
 
 type tokenTarget struct {
-	ipport string
+	ipport   string
 	username string
 	password string
-	time time.Time
+	time     time.Time
 }
 
 type Wssh struct {
@@ -37,8 +37,8 @@ type Wssh struct {
 	// Whether to print debug output
 	Debug bool
 
-	tokens map[string]*tokenTarget
-	upgrader websocket.Upgrader
+	tokens     map[string]*tokenTarget
+	upgrader   websocket.Upgrader
 	fileserver http.Handler
 }
 
@@ -49,13 +49,13 @@ func (this *Wssh) Run() {
 
 	this.tokens = make(map[string]*tokenTarget)
 	this.upgrader = websocket.Upgrader{
-		ReadBufferSize: 2048,
+		ReadBufferSize:  2048,
 		WriteBufferSize: 2048,
 	}
 	this.fileserver = http.FileServer(http.Dir("./wssh/assets/"))
 
 	httpServer := &http.Server{
-		Addr: this.Listen,
+		Addr:    this.Listen,
 		Handler: this,
 	}
 
@@ -75,10 +75,10 @@ func (this *Wssh) Register(ipport string, username string, password string) stri
 	// insert
 	token := newToken(32)
 	this.tokens[token] = &tokenTarget{
-		ipport: ipport,
+		ipport:   ipport,
 		username: username,
 		password: password,
-		time: time.Now(),
+		time:     time.Now(),
 	}
 
 	return token
@@ -94,11 +94,11 @@ type ptyRequestMsg struct {
 }
 
 type clientResize struct {
-	Width int `json:"width"`
+	Width  int `json:"width"`
 	Height int `json:"height"`
 }
 type clientMessage struct {
-	Data string `json:"data"`
+	Data   string        `json:"data"`
 	Resize *clientResize `json:"resize"`
 }
 
@@ -233,7 +233,7 @@ func (this *Wssh) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if n > 0 {
-				msg := &clientMessage {
+				msg := &clientMessage{
 					Data: string(rbuf[:n]),
 				}
 				msgBytes, err := json.Marshal(msg)
@@ -244,5 +244,5 @@ func (this *Wssh) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
-	<- done
+	<-done
 }

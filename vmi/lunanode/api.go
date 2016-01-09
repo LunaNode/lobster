@@ -16,8 +16,8 @@ import "strings"
 import "time"
 
 type API struct {
-	ApiId string
-	ApiKey string
+	ApiId         string
+	ApiKey        string
 	ApiPartialKey string
 }
 

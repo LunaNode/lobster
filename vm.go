@@ -10,32 +10,32 @@ import "time"
 // database objects
 
 type VirtualMachine struct {
-	Id int
-	UserId int
-	Region string
-	Name string
+	Id             int
+	UserId         int
+	Region         string
+	Name           string
 	Identification string
-	Status string
-	TaskPending bool
-	ExternalIP string
-	PrivateIP string
-	CreatedTime time.Time
-	Suspended string
-	Plan Plan
+	Status         string
+	TaskPending    bool
+	ExternalIP     string
+	PrivateIP      string
+	CreatedTime    time.Time
+	Suspended      string
+	Plan           Plan
 
-	Info *VmInfo
+	Info      *VmInfo
 	Addresses []*IpAddress
-	db *Database
+	db        *Database
 }
 
 type Image struct {
-	Id int
-	UserId int
-	Region string
-	Name string
+	Id             int
+	UserId         int
+	Region         string
+	Name           string
 	Identification string
-	Status string
-	SourceVm int
+	Status         string
+	SourceVm       int
 
 	Info *ImageInfo
 }
@@ -43,14 +43,14 @@ type Image struct {
 // interface objects
 
 type VmInfo struct {
-	Ip string
-	PrivateIp string
-	Status string
-	Hostname string
+	Ip            string
+	PrivateIp     string
+	Status        string
+	Hostname      string
 	BandwidthUsed int64 // in bytes
-	LoginDetails string
-	Details map[string]string
-	Actions []*VmActionDescriptor
+	LoginDetails  string
+	Details       map[string]string
+	Actions       []*VmActionDescriptor
 
 	// these fields are filled in by lobster, so VM interface should generally not set
 	// occassionally it may be useful for interface to override though
@@ -58,24 +58,25 @@ type VmInfo struct {
 	//    interface discovers that some capabilities aren't supported on some
 	//    virtual machines, it may want to override that
 	//   in that event it should set OverrideCapabilities
-	CanVnc bool
-	CanReimage bool
-	CanSnapshot bool
-	CanResize bool
-	CanAddresses bool
+	CanVnc               bool
+	CanReimage           bool
+	CanSnapshot          bool
+	CanResize            bool
+	CanAddresses         bool
 	OverrideCapabilities bool
-	PendingSnapshots []*Image
+	PendingSnapshots     []*Image
 }
 
 type IpAddress struct {
-	Ip string
+	Ip        string
 	PrivateIp string // blank means N/A
 
-	CanRdns bool
+	CanRdns  bool
 	Hostname string // current rDNS setting, always blank if CanRdns is false
 }
 
 type ImageStatus int
+
 const (
 	ImagePending ImageStatus = iota
 	ImageActive
@@ -83,18 +84,18 @@ const (
 )
 
 type ImageInfo struct {
-	Size int64
-	Status ImageStatus
+	Size    int64
+	Status  ImageStatus
 	Details map[string]string
 }
 
 // describes an action that we can perform on a virtual machine
 type VmActionDescriptor struct {
-	Action string
-	Name string // used for button text
-	Options map[string]string // if non-nil, set of options to offer in modal / dropdown menu; not used for sanitization!
-	Description string // if non-empty, will be displayed in a modal
-	Dangerous bool // if true, we will have confirmation window
+	Action      string
+	Name        string            // used for button text
+	Options     map[string]string // if non-nil, set of options to offer in modal / dropdown menu; not used for sanitization!
+	Description string            // if non-empty, will be displayed in a modal
+	Dangerous   bool              // if true, we will have confirmation window
 }
 
 var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
@@ -112,15 +113,15 @@ func vmListHelper(db *Database, rows Rows) []*VirtualMachine {
 }
 
 func vmList(db *Database, userId int) []*VirtualMachine {
-	return vmListHelper(db, db.Query(VM_QUERY + " AND vms.user_id = ? ORDER BY id DESC", userId))
+	return vmListHelper(db, db.Query(VM_QUERY+" AND vms.user_id = ? ORDER BY id DESC", userId))
 }
 
 func vmListRegion(db *Database, userId int, region string) []*VirtualMachine {
-	return vmListHelper(db, db.Query(VM_QUERY + " AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
+	return vmListHelper(db, db.Query(VM_QUERY+" AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
 }
 
 func vmGet(db *Database, vmId int) *VirtualMachine {
-	vms := vmListHelper(db, db.Query(VM_QUERY + " AND vms.id = ? ORDER BY id DESC", vmId))
+	vms := vmListHelper(db, db.Query(VM_QUERY+" AND vms.id = ? ORDER BY id DESC", vmId))
 	if len(vms) == 1 {
 		return vms[0]
 	} else {
@@ -129,7 +130,7 @@ func vmGet(db *Database, vmId int) *VirtualMachine {
 }
 
 func vmGetUser(db *Database, userId int, vmId int) *VirtualMachine {
-	vms := vmListHelper(db, db.Query(VM_QUERY + " AND vms.id = ? AND vms.user_id = ? ORDER BY id DESC", vmId, userId))
+	vms := vmListHelper(db, db.Query(VM_QUERY+" AND vms.id = ? AND vms.user_id = ? ORDER BY id DESC", vmId, userId))
 	if len(vms) == 1 {
 		return vms[0]
 	} else {
@@ -566,19 +567,19 @@ func imageListAll(db *Database) []*Image {
 }
 
 func imageList(db *Database, userId int) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
+	return imageListHelper(db.Query(IMAGE_QUERY+" WHERE user_id = -1 OR user_id = ? ORDER BY name", userId))
 }
 
 func imageListRegion(db *Database, userId int, region string) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
+	return imageListHelper(db.Query(IMAGE_QUERY+" WHERE (user_id = -1 OR user_id = ?) AND region = ? ORDER BY name", userId, region))
 }
 
 func imageListVmPending(db *Database, vmId int) []*Image {
-	return imageListHelper(db.Query(IMAGE_QUERY + " WHERE source_vm = ? AND status = 'pending'", vmId))
+	return imageListHelper(db.Query(IMAGE_QUERY+" WHERE source_vm = ? AND status = 'pending'", vmId))
 }
 
 func imageGet(db *Database, userId int, imageId int) *Image {
-	images := imageListHelper(db.Query(IMAGE_QUERY + " WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
+	images := imageListHelper(db.Query(IMAGE_QUERY+" WHERE id = ? AND (user_id = -1 OR user_id = ?)", imageId, userId))
 	if len(images) == 1 {
 		return images[0]
 	} else {
@@ -730,7 +731,7 @@ func vmUpdateAdditionalBandwidth(db *Database, vm *VirtualMachine) {
 		factor = 1
 	}
 
-	additionalBandwidth := int64((factor * float64(vm.Plan.Bandwidth) + 15) * 1024 * 1024 * 1024)
+	additionalBandwidth := int64((factor*float64(vm.Plan.Bandwidth) + 15) * 1024 * 1024 * 1024)
 	rows := db.Query("SELECT id FROM region_bandwidth WHERE region = ? AND user_id = ?", vm.Region, vm.UserId)
 	if rows.Next() {
 		var rowId int
@@ -770,7 +771,7 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 				rows.Scan(&alreadyBilledMinutes)
 				rows.Close()
 				alreadyBilledIntervals := alreadyBilledMinutes / cfg.Billing.BillingInterval
-				if alreadyBilledIntervals + intervals < cfg.Billing.BillingVmMinimum {
+				if alreadyBilledIntervals+intervals < cfg.Billing.BillingVmMinimum {
 					intervals = cfg.Billing.BillingVmMinimum - alreadyBilledIntervals
 				}
 			}
@@ -789,8 +790,8 @@ func vmBilling(db *Database, vmId int, terminating bool) {
 	}
 
 	amount := int64(intervals) * int64(vm.Plan.Price)
-	UserApplyCharge(db, vm.UserId, vm.Name, "Plan: " + vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
-	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? MINUTE) WHERE id = ?", intervals * cfg.Billing.BillingInterval, vmId)
+	UserApplyCharge(db, vm.UserId, vm.Name, "Plan: "+vm.Plan.Name, fmt.Sprintf("vm-%d", vmId), amount)
+	db.Exec("UPDATE vms SET time_billed = DATE_ADD(time_billed, INTERVAL ? MINUTE) WHERE id = ?", intervals*cfg.Billing.BillingInterval, vmId)
 
 	// also bill for bandwidth usage
 	newBytesUsed := vmGetInterface(vm.Region).BandwidthAccounting(vm)
@@ -834,8 +835,8 @@ func serviceBilling(db *Database) {
 
 		if hourlyCharge > 0 {
 			totalCharge := hourlyCharge * int64(hours)
-			log.Printf("Charging user %d for %d bytes (amount=%.5f)", userId, storageBytes, float64(totalCharge) / BILLING_PRECISION)
-			UserApplyCharge(db, userId, "Image storage space", fmt.Sprintf("%d MB", storageBytes / 1000 / 1000), "storage", totalCharge)
+			log.Printf("Charging user %d for %d bytes (amount=%.5f)", userId, storageBytes, float64(totalCharge)/BILLING_PRECISION)
+			UserApplyCharge(db, userId, "Image storage space", fmt.Sprintf("%d MB", storageBytes/1000/1000), "storage", totalCharge)
 		}
 
 		db.Exec("UPDATE users SET time_billed = DATE_ADD(time_billed, INTERVAL ? HOUR) WHERE id = ?", hours, userId)

@@ -9,9 +9,10 @@ import "net/http"
 import "strconv"
 
 type SupportParams struct {
-	Frame lobster.FrameParams
+	Frame   lobster.FrameParams
 	Tickets []*Ticket
 }
+
 func panelSupport(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	params := SupportParams{}
 	params.Frame = frameParams
@@ -20,9 +21,10 @@ func panelSupport(w http.ResponseWriter, r *http.Request, db *lobster.Database, 
 }
 
 type SupportOpenForm struct {
-	Name string `schema:"name"`
+	Name    string `schema:"name"`
 	Message string `schema:"message"`
 }
+
 func panelSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	if r.Method == "POST" {
 		form := new(SupportOpenForm)
@@ -46,10 +48,11 @@ func panelSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Databa
 }
 
 type PanelSupportTicketParams struct {
-	Frame lobster.FrameParams
+	Frame  lobster.FrameParams
 	Ticket *Ticket
-	Token string
+	Token  string
 }
+
 func panelSupportTicket(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -72,6 +75,7 @@ func panelSupportTicket(w http.ResponseWriter, r *http.Request, db *lobster.Data
 type SupportTicketReplyForm struct {
 	Message string `schema:"message"`
 }
+
 func panelSupportTicketReply(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {

@@ -6,24 +6,24 @@ import "fmt"
 import "time"
 
 type User struct {
-	Id int
-	Username string
-	Email string
-	CreateTime time.Time
-	Credit int64
-	VmLimit int
+	Id                int
+	Username          string
+	Email             string
+	CreateTime        time.Time
+	Credit            int64
+	VmLimit           int
 	LastBillingNotify time.Time
-	Status string
-	Admin bool
+	Status            string
+	Admin             bool
 }
 
 type Charge struct {
-	Id int
+	Id     int
 	UserId int
-	Name string
+	Name   string
 	Detail string
-	Key string
-	Time time.Time
+	Key    string
+	Time   time.Time
 	Amount int64
 }
 
@@ -102,8 +102,8 @@ func ChargeList(db *Database, userId int, year int, month time.Month) []*Charge 
 }
 
 func UserApplyCredit(db *Database, userId int, amount int64, detail string) {
-	db.Exec("INSERT INTO charges (user_id, name, time, amount, detail) VALUES (?, ?, CURDATE(), ?, ?)", userId, "Credit updated", -amount, detail);
-	db.Exec("UPDATE users SET status = 'active' WHERE id = ? AND status = 'new'", userId);
+	db.Exec("INSERT INTO charges (user_id, name, time, amount, detail) VALUES (?, ?, CURDATE(), ?, ?)", userId, "Credit updated", -amount, detail)
+	db.Exec("UPDATE users SET status = 'active' WHERE id = ? AND status = 'new'", userId)
 	userAdjustCredit(db, userId, amount)
 
 	user := UserDetails(db, userId)
@@ -138,12 +138,12 @@ func userAdjustCredit(db *Database, userId int, amount int64) {
 }
 
 type CreditSummary struct {
-	Credit int64
-	Hourly int64
-	Daily int64
-	Monthly int64
+	Credit        int64
+	Hourly        int64
+	Daily         int64
+	Monthly       int64
 	DaysRemaining string
-	Status string
+	Status        string
 }
 
 func UserCreditSummary(db *Database, userId int) *CreditSummary {
@@ -181,11 +181,11 @@ func UserCreditSummary(db *Database, userId int) *CreditSummary {
 }
 
 type BandwidthSummary struct {
-	Used int64
-	Allocated int64
-	Billed int64
+	Used            int64
+	Allocated       int64
+	Billed          int64
 	NotifiedPercent int
-	ActualPercent float64
+	ActualPercent   float64
 }
 
 func UserBandwidthSummary(db *Database, userId int) map[string]*BandwidthSummary {
@@ -234,10 +234,10 @@ func userBilling(db *Database, userId int) {
 			//  then they might go over their bandwidth limit (since it's proportional)
 			// it is correct to charge them in this case, but if it's a small amount of bandwidth then the possible confusion isn't worth it
 			// also we only bill in multiples of 1 GB (TODO: maybe store it as GB instead of bytes?)
-			if summary.Used > summary.Allocated + gigaToBytes(50) {
+			if summary.Used > summary.Allocated+gigaToBytes(50) {
 				gbOver := int((summary.Used - summary.Allocated - summary.Billed) / 1024 / 1024 / 1024)
 				if gbOver > 0 {
-					UserApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-" + region, creditPerGB * int64(gbOver))
+					UserApplyCharge(db, userId, "Bandwidth", fmt.Sprintf("Bandwidth usage overage charge %s ($%.4f/GB)", region, cfg.Billing.BandwidthOverageFee), "bw-"+region, creditPerGB*int64(gbOver))
 					db.Exec("UPDATE region_bandwidth SET bandwidth_billed = bandwidth_billed + ? WHERE user_id = ? AND region = ?", gigaToBytes(gbOver), userId, region)
 				}
 			}
@@ -249,7 +249,7 @@ func userBilling(db *Database, userId int) {
 			//  also if user provisioned more VM, was no longer over bandwidth, but now is going over again
 			if summary.Allocated != 0 {
 				utilPercent := int((100 * summary.Used) / summary.Allocated)
-				if summary.NotifiedPercent < 100 && utilPercent > 85 && (utilPercent - summary.NotifiedPercent >= 5 || (summary.NotifiedPercent < 100 && utilPercent >= 100) || utilPercent < summary.NotifiedPercent) {
+				if summary.NotifiedPercent < 100 && utilPercent > 85 && (utilPercent-summary.NotifiedPercent >= 5 || (summary.NotifiedPercent < 100 && utilPercent >= 100) || utilPercent < summary.NotifiedPercent) {
 					db.Exec("UPDATE region_bandwidth SET bandwidth_notified_percent = ? WHERE user_id = ? AND region = ?", utilPercent, userId, region)
 					tmpl := "bandwidthNotify"
 					if utilPercent >= 100 {
@@ -257,8 +257,8 @@ func userBilling(db *Database, userId int) {
 					}
 					emailParams := BandwidthUsageEmail{
 						UtilPercent: utilPercent,
-						Region: region,
-						Fee: creditPerGB,
+						Region:      region,
+						Fee:         creditPerGB,
 					}
 					MailWrap(db, userId, tmpl, emailParams, false)
 				}
@@ -275,14 +275,14 @@ func userBilling(db *Database, userId int) {
 	var credit int64
 	var email string
 	var lastBilledHoursAgo int // how many hours ago this user was last billed
-	var billingLowCount int // how many reminders regarding low account balance have been sent
+	var billingLowCount int    // how many reminders regarding low account balance have been sent
 	rows.Scan(&credit, &email, &lastBilledHoursAgo, &billingLowCount)
 	rows.Close()
 	hourly := UserCreditSummary(db, userId).Hourly
 
-	if credit <= hourly * 168 {
+	if credit <= hourly*168 {
 		if credit < 0 && billingLowCount >= 5 {
-			if credit < -168 * hourly && lastBilledHoursAgo > 0 && lastBilledHoursAgo <= 48 {
+			if credit < -168*hourly && lastBilledHoursAgo > 0 && lastBilledHoursAgo <= 48 {
 				// terminte the account
 				vms := vmList(db, userId)
 				for _, vm := range vms {
@@ -301,8 +301,8 @@ func userBilling(db *Database, userId int) {
 			// send low credit warning
 			remainingHours := int(credit / hourly)
 			params := LowCreditEmail{
-				Credit: credit,
-				Hourly: hourly,
+				Credit:         credit,
+				Hourly:         hourly,
 				RemainingHours: remainingHours,
 			}
 			tmpl := "userLowCredit"

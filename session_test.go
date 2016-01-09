@@ -77,7 +77,7 @@ func TestSessionLogin(t *testing.T) {
 	}
 
 	// login
-	request, _ := http.NewRequest("GET", server.URL + "/login", nil)
+	request, _ := http.NewRequest("GET", server.URL+"/login", nil)
 	request.AddCookie(&http.Cookie{Name: SESSION_COOKIE_NAME, Value: initialSessionId})
 	response, err = new(http.Client).Do(request)
 	if err != nil {

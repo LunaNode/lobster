@@ -14,8 +14,8 @@ import "strings"
 
 type API struct {
 	TargetURL string
-	ZoneID string
-	APIKey string
+	ZoneID    string
+	APIKey    string
 	SecretKey string
 
 	NetworkID string
@@ -130,9 +130,9 @@ func (api *API) ListDiskOfferings() ([]APIDiskOffering, error) {
 func (api *API) DeployVirtualMachine(serviceOfferingID string, diskOfferingID string, templateID string) (string, string, error) {
 	params := map[string]string{
 		"serviceofferingid": serviceOfferingID,
-		"diskofferingid": diskOfferingID,
-		"templateid": templateID,
-		"networkids": api.NetworkID,
+		"diskofferingid":    diskOfferingID,
+		"templateid":        templateID,
+		"networkids":        api.NetworkID,
 	}
 	var response APIDeployVirtualMachineResponse
 	err := api.request("deployVirtualMachine", params, &response)
@@ -148,7 +148,7 @@ func (api *API) QueryDeployJob(jobid string) (*APIDeployVirtualMachineResult, er
 		VirtualMachine *APIDeployVirtualMachineResult `json:"virtualmachine"`
 	}
 	type Response struct {
-		Status int `json:"jobstatus"`
+		Status int       `json:"jobstatus"`
 		Result JobResult `json:"jobresult"`
 	}
 	var response Response

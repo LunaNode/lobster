@@ -11,7 +11,7 @@ import "strings"
 
 type Vultr struct {
 	regionId int
-	client *vultr.Client
+	client   *vultr.Client
 
 	vmBandwidth map[string]int64 // for bandwidth accounting
 }
@@ -60,7 +60,7 @@ func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, imageIdentification stri
 
 	serverOptions := &vultr.ServerOptions{
 		PrivateNetworking: true,
-		IPV6: true,
+		IPV6:              true,
 	}
 
 	imageParts := strings.SplitN(imageIdentification, ":", 2)
@@ -96,11 +96,11 @@ func (this *Vultr) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) {
 	}
 
 	info := lobster.VmInfo{
-		Ip: server.MainIP,
-		PrivateIp: server.InternalIP,
-		Hostname: server.Name,
+		Ip:            server.MainIP,
+		PrivateIp:     server.InternalIP,
+		Hostname:      server.Name,
 		BandwidthUsed: int64(server.CurrentBandwidth * 1024 * 1024 * 1024),
-		LoginDetails: "password: " + server.DefaultPassword,
+		LoginDetails:  "password: " + server.DefaultPassword,
 	}
 
 	if server.Status == "pending" {
@@ -182,12 +182,12 @@ func (this *Vultr) ImageInfo(imageIdentification string) (*lobster.ImageInfo, er
 	for _, snapshot := range snapshots {
 		if snapshot.ID == imageParts[1] {
 			if snapshot.Status == "complete" {
-				return &lobster.ImageInfo {
+				return &lobster.ImageInfo{
 					Status: lobster.ImageActive,
-					Size: snapshot.Size,
+					Size:   snapshot.Size,
 				}, nil
 			} else {
-				return &lobster.ImageInfo {
+				return &lobster.ImageInfo{
 					Status: lobster.ImagePending,
 				}, nil
 			}
@@ -214,7 +214,7 @@ func (this *Vultr) ImageList() ([]*lobster.Image, error) {
 	images := make([]*lobster.Image, len(osList))
 	for i, os := range osList {
 		images[i] = &lobster.Image{
-			Name: os.Name,
+			Name:           os.Name,
 			Identification: fmt.Sprintf("os:%d", os.ID),
 		}
 	}
@@ -239,10 +239,10 @@ func (this *Vultr) PlanList() ([]*lobster.Plan, error) {
 	for _, apiPlan := range apiPlans {
 		if regionPlans[apiPlan.ID] {
 			plan := &lobster.Plan{
-				Name: apiPlan.Name,
-				Ram: apiPlan.RAM,
-				Cpu: apiPlan.VCpus,
-				Storage: apiPlan.Disk,
+				Name:           apiPlan.Name,
+				Ram:            apiPlan.RAM,
+				Cpu:            apiPlan.VCpus,
+				Storage:        apiPlan.Disk,
 				Identification: fmt.Sprintf("%d", apiPlan.ID),
 			}
 			plan.Bandwidth, _ = strconv.Atoi(apiPlan.Bandwidth)

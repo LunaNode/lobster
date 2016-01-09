@@ -9,11 +9,11 @@ import "strconv"
 import "strings"
 
 type SolusVM struct {
-	VirtType string
+	VirtType  string
 	NodeGroup string
-	Api *API
+	Api       *API
 
-	vmBandwidth map[string]int64 // for bandwidth accounting
+	vmBandwidth      map[string]int64 // for bandwidth accounting
 	setupConsolePage bool
 }
 
@@ -42,20 +42,20 @@ func (this *SolusVM) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 
 	bwUsed, _ := strconv.ParseInt(strings.Split(apiInfo.Bandwidth, ",")[1], 10, 64)
 	info := lobster.VmInfo{
-		Ip: apiInfo.Ip,
-		PrivateIp: apiInfo.InternalIps,
-		Status: strings.Title(apiInfo.State),
+		Ip:            apiInfo.Ip,
+		PrivateIp:     apiInfo.InternalIps,
+		Status:        strings.Title(apiInfo.State),
 		BandwidthUsed: bwUsed,
-		LoginDetails: "username: root; password: " + vm.Metadata("password", "unknown"),
+		LoginDetails:  "username: root; password: " + vm.Metadata("password", "unknown"),
 	}
 
 	if this.VirtType == "openvz" {
 		info.Actions = append(info.Actions, &lobster.VmActionDescriptor{
-			Action: "tuntap",
-			Name: "TUN/TAP",
+			Action:      "tuntap",
+			Name:        "TUN/TAP",
 			Description: "Enable or disable TUN/TAP.",
 			Options: map[string]string{
-				"enable": "On",
+				"enable":  "On",
 				"disable": "Off",
 			},
 		})
@@ -87,22 +87,22 @@ func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 		if err != nil {
 			return "", err
 		} else {
-			return lobster.HandleWebsockify(vncInfo.Ip + vncInfo.Port, vncInfo.Password), nil
+			return lobster.HandleWebsockify(vncInfo.Ip+vncInfo.Port, vncInfo.Password), nil
 		}
 	} else {
 		consoleInfo, err := this.Api.VmConsole(vmIdentificationInt)
 		if err != nil {
 			return "", err
 		} else {
-			return lobster.HandleWssh(consoleInfo.Ip + ":" + consoleInfo.Port, consoleInfo.Username, consoleInfo.Password), nil
+			return lobster.HandleWssh(consoleInfo.Ip+":"+consoleInfo.Port, consoleInfo.Username, consoleInfo.Password), nil
 		}
 	}
 }
 
 type ConsoleParams struct {
-	Frame lobster.FrameParams
-	Host string
-	Port string
+	Frame    lobster.FrameParams
+	Host     string
+	Port     string
 	Username string
 	Password string
 }

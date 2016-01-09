@@ -20,9 +20,10 @@ func adminSupportTicketClose(w http.ResponseWriter, r *http.Request, db *lobster
 }
 
 type AdminSupportParams struct {
-	Frame lobster.FrameParams
+	Frame   lobster.FrameParams
 	Tickets []*Ticket
 }
+
 func adminSupport(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	params := AdminSupportParams{}
 	params.Frame = frameParams
@@ -32,14 +33,15 @@ func adminSupport(w http.ResponseWriter, r *http.Request, db *lobster.Database, 
 
 type AdminSupportOpenParams struct {
 	Frame lobster.FrameParams
-	User *lobster.User
+	User  *lobster.User
 	Token string
 }
 type AdminSupportOpenForm struct {
-	UserId int `schema:"user_id"`
-	Name string `schema:"name"`
+	UserId  int    `schema:"user_id"`
+	Name    string `schema:"name"`
 	Message string `schema:"message"`
 }
+
 func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -77,10 +79,11 @@ func adminSupportOpen(w http.ResponseWriter, r *http.Request, db *lobster.Databa
 }
 
 type AdminSupportTicketParams struct {
-	Frame lobster.FrameParams
+	Frame  lobster.FrameParams
 	Ticket *Ticket
-	Token string
+	Token  string
 }
+
 func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -103,6 +106,7 @@ func adminSupportTicket(w http.ResponseWriter, r *http.Request, db *lobster.Data
 type AdminSupportTicketReplyForm struct {
 	Message string `schema:"message"`
 }
+
 func adminSupportTicketReply(w http.ResponseWriter, r *http.Request, db *lobster.Database, session *lobster.Session, frameParams lobster.FrameParams) {
 	ticketId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {

@@ -14,6 +14,7 @@ import "time"
 type TokenSource struct {
 	AccessToken string
 }
+
 func (t *TokenSource) Token() (*oauth2.Token, error) {
 	token := &oauth2.Token{
 		AccessToken: t.AccessToken,
@@ -41,7 +42,7 @@ func (this *DigitalOcean) getPlanName(ram int) string {
 	if ram < 1024 {
 		return fmt.Sprintf("%dmb", ram)
 	} else {
-		return fmt.Sprintf("%dgb", ram / 1024)
+		return fmt.Sprintf("%dgb", ram/1024)
 	}
 }
 
@@ -76,15 +77,15 @@ func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, imageIdentificati
 	}
 
 	createRequest := &godo.DropletCreateRequest{
-		Name: vm.Name,
+		Name:   vm.Name,
 		Region: this.region,
-		Size: plan,
+		Size:   plan,
 		Image: godo.DropletCreateImage{
 			ID: image.ID,
 		},
-		IPv6: true,
+		IPv6:              true,
 		PrivateNetworking: true,
-		UserData: fmt.Sprintf("#cloud-config\nchpasswd:\n list: |\n  root:%s\n expire: False\n", password),
+		UserData:          fmt.Sprintf("#cloud-config\nchpasswd:\n list: |\n  root:%s\n expire: False\n", password),
 	}
 	droplet, _, err := this.client.Droplets.Create(createRequest)
 	if err != nil {
@@ -109,7 +110,7 @@ func (this *DigitalOcean) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, e
 	}
 
 	info := lobster.VmInfo{
-		Hostname: droplet.Name,
+		Hostname:     droplet.Name,
 		LoginDetails: "username: root; password: " + vm.Metadata("password", "unknown"),
 	}
 	for _, addr4 := range droplet.Networks.V4 {
@@ -263,16 +264,16 @@ func (this *DigitalOcean) ImageInfo(imageIdentification string) (*lobster.ImageI
 	image, err := this.findImage(imageIdentification)
 	if err != nil {
 		if strings.Contains(err.Error(), "could not find image") {
-			return &lobster.ImageInfo {
+			return &lobster.ImageInfo{
 				Status: lobster.ImagePending,
 			}, nil
 		} else {
 			return nil, err
 		}
 	}
-	return &lobster.ImageInfo {
+	return &lobster.ImageInfo{
 		Status: lobster.ImageActive,
-		Size: int64(image.MinDiskSize) * 1024 * 1024 * 1024,
+		Size:   int64(image.MinDiskSize) * 1024 * 1024 * 1024,
 	}, nil
 }
 
@@ -293,7 +294,7 @@ func (this *DigitalOcean) ImageList() ([]*lobster.Image, error) {
 	images := make([]*lobster.Image, len(apiImages))
 	for i, apiImage := range apiImages {
 		images[i] = &lobster.Image{
-			Name: fmt.Sprintf("%s %s", apiImage.Distribution, apiImage.Name),
+			Name:           fmt.Sprintf("%s %s", apiImage.Distribution, apiImage.Name),
 			Identification: apiImage.Slug,
 		}
 	}
@@ -308,11 +309,11 @@ func (this *DigitalOcean) PlanList() ([]*lobster.Plan, error) {
 	plans := make([]*lobster.Plan, len(sizes))
 	for i, size := range sizes {
 		plans[i] = &lobster.Plan{
-			Name: size.Slug,
-			Ram: size.Memory,
-			Cpu: size.Vcpus,
-			Storage: size.Disk,
-			Bandwidth: int(size.Transfer * 1024),
+			Name:           size.Slug,
+			Ram:            size.Memory,
+			Cpu:            size.Vcpus,
+			Storage:        size.Disk,
+			Bandwidth:      int(size.Transfer * 1024),
 			Identification: size.Slug,
 		}
 	}

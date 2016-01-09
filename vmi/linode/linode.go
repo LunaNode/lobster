@@ -11,7 +11,7 @@ import "strings"
 
 type Linode struct {
 	datacenterID int
-	client *linode.Client
+	client       *linode.Client
 }
 
 func MakeLinode(apiKey string, datacenterID int) *Linode {
@@ -133,7 +133,7 @@ func (this *Linode) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) 
 	}
 
 	info := lobster.VmInfo{
-		Hostname: vm.Name,
+		Hostname:     vm.Name,
 		LoginDetails: "password: " + vm.Metadata("password", "unknown"),
 	}
 
@@ -217,7 +217,7 @@ func (this *Linode) ImageInfo(imageIdentification string) (*lobster.ImageInfo, e
 	}
 	imageInfo := &lobster.ImageInfo{
 		Status: lobster.ImagePending,
-		Size: image.MinSize * 1024 * 1024,
+		Size:   image.MinSize * 1024 * 1024,
 	}
 	if image.Status == "available" {
 		imageInfo.Status = lobster.ImageActive
@@ -244,7 +244,7 @@ func (this *Linode) ImageList() ([]*lobster.Image, error) {
 	images := make([]*lobster.Image, len(distributions))
 	for i, distribution := range distributions {
 		images[i] = &lobster.Image{
-			Name: distribution.Label,
+			Name:           distribution.Label,
 			Identification: fmt.Sprintf("distribution:%d", distribution.ID),
 		}
 	}
@@ -259,11 +259,11 @@ func (this *Linode) PlanList() ([]*lobster.Plan, error) {
 	plans := make([]*lobster.Plan, len(apiPlans))
 	for i, apiPlan := range apiPlans {
 		plans[i] = &lobster.Plan{
-			Name: apiPlan.Label,
-			Ram: apiPlan.RAM,
-			Cpu: apiPlan.Cores,
-			Storage: apiPlan.Disk,
-			Bandwidth: apiPlan.Bandwidth,
+			Name:           apiPlan.Label,
+			Ram:            apiPlan.RAM,
+			Cpu:            apiPlan.Cores,
+			Storage:        apiPlan.Disk,
+			Bandwidth:      apiPlan.Bandwidth,
 			Identification: fmt.Sprintf("%d", apiPlan.ID),
 		}
 	}
