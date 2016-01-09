@@ -9,7 +9,6 @@ import "github.com/gorilla/mux"
 import "crypto/hmac"
 import "crypto/sha512"
 import "crypto/subtle"
-import "database/sql"
 import "encoding/hex"
 import "encoding/json"
 import "errors"
@@ -33,7 +32,7 @@ type ApiKey struct {
 	ApiKey string
 }
 
-func apiListHelper(rows *sql.Rows) []*ApiKey {
+func apiListHelper(rows Rows) []*ApiKey {
 	var keys []*ApiKey
 	defer rows.Close()
 	for rows.Next() {
@@ -87,8 +86,7 @@ func apiCreate(db *Database, userId int, label string, restrictAction string, re
 	apiId := utils.Uid(16)
 	apiKey := utils.Uid(128)
 	result := db.Exec("INSERT INTO api_keys (label, user_id, api_id, api_key, restrict_action, restrict_ip) VALUES (?, ?, ?, ?, ?, ?)", label, userId, apiId, apiKey, restrictAction, restrictIp)
-	id, _ := result.LastInsertId()
-	key := apiGet(db, userId, int(id))
+	key := apiGet(db, userId, result.LastInsertId())
 	key.ApiKey = apiKey
 	return key, nil
 }

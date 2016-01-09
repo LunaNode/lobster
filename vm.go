@@ -1,6 +1,5 @@
 package lobster
 
-import "database/sql"
 import "errors"
 import "fmt"
 import "log"
@@ -102,7 +101,7 @@ var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
 
 const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, vms.status, vms.task_pending, vms.external_ip, vms.private_ip, vms.time_created, vms.suspended, vms.plan_id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage, plans.bandwidth FROM vms, plans WHERE vms.plan_id = plans.id"
 
-func vmListHelper(db *Database, rows *sql.Rows) []*VirtualMachine {
+func vmListHelper(db *Database, rows Rows) []*VirtualMachine {
 	vms := make([]*VirtualMachine, 0)
 	for rows.Next() {
 		vm := VirtualMachine{db: db}
@@ -206,26 +205,25 @@ func vmCreate(db *Database, userId int, name string, planId int, imageId int) (i
 
 	// create the virtual machine asynchronously
 	result := db.Exec("INSERT INTO vms (user_id, region, plan_id, name, status) VALUES (?, ?, ?, ?, ?)", userId, image.Region, planId, name, "provisioning")
-	vmId, err := result.LastInsertId()
-	checkErr(err)
+	vmId := result.LastInsertId()
 
 	go func() {
 		defer errorHandler(nil, nil, true)
-		vm := vmGet(db, int(vmId))
+		vm := vmGet(db, vmId)
 		vm.Plan = *plan // use plan from planGetRegion so that we have the region-specific identification
 		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vm, image.Identification)
 		if err != nil {
 			ReportError(err, "vm creation failed", fmt.Sprintf("hostname=%s, plan_id=%d, image_identification=%s", name, plan.Id, image.Identification))
 			db.Query("UPDATE vms SET status = 'error' WHERE id = ?", vmId)
-			MailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: int(vmId), Name: name}, true)
+			MailWrap(db, userId, "vmCreateError", VmCreateErrorEmail{Id: vmId, Name: name}, true)
 			return
 		}
 
 		db.Exec("UPDATE vms SET status = 'active', identification = ? WHERE id = ?", vmIdentification, vmId)
-		MailWrap(db, userId, "vmCreate", VmCreateEmail{Id: int(vmId), Name: name}, true)
+		MailWrap(db, userId, "vmCreate", VmCreateEmail{Id: vmId, Name: name}, true)
 	}()
 
-	return int(vmId), nil
+	return vmId, nil
 }
 
 func (vm *VirtualMachine) LoadInfo() {
@@ -363,7 +361,7 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 	}
 
 	log.Printf("vmSnapshot(%d, %s)", vm.Id, name)
-	var imageId int64
+	var imageId int
 	err := vm.do(func(vm *VirtualMachine) error {
 		vmi, ok := vmGetInterface(vm.Region).(VMISnapshot)
 		if ok {
@@ -372,13 +370,13 @@ func (vm *VirtualMachine) Snapshot(name string) (int, error) {
 				return err
 			}
 			result := vm.db.Exec("INSERT INTO images (user_id, region, name, identification, status, source_vm) VALUES (?, ?, ?, ?, 'pending', ?)", vm.UserId, vm.Region, name, imageIdentification, vm.Id)
-			imageId, _ = result.LastInsertId()
+			imageId = result.LastInsertId()
 			return nil
 		} else {
 			return L.Error("vm_snapshot_unsupported")
 		}
 	})
-	return int(imageId), err
+	return imageId, err
 }
 
 func (vm *VirtualMachine) Resize(planId int) error {
@@ -550,7 +548,7 @@ func (vm *VirtualMachine) Metadata(k string, d string) string {
 	}
 }
 
-func imageListHelper(rows *sql.Rows) []*Image {
+func imageListHelper(rows Rows) []*Image {
 	defer rows.Close()
 	images := make([]*Image, 0)
 	for rows.Next() {
@@ -621,8 +619,7 @@ func imageFetch(db *Database, userId int, region string, name string, url string
 		return 0, err
 	} else {
 		result := db.Exec("INSERT INTO images (user_id, region, name, identification, status) VALUES (?, ?, ?, ?, 'pending')", userId, region, name, imageIdentification)
-		imageId, _ := result.LastInsertId()
-		return int(imageId), nil
+		return result.LastInsertId(), nil
 	}
 }
 

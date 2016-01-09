@@ -1,6 +1,5 @@
 package lobster
 
-import "database/sql"
 import "fmt"
 import "log"
 import "time"
@@ -16,7 +15,7 @@ type Transaction struct {
 	Time time.Time
 }
 
-func transactionListHelper(rows *sql.Rows) []*Transaction {
+func transactionListHelper(rows Rows) []*Transaction {
 	transactions := make([]*Transaction, 0)
 	defer rows.Close()
 	for rows.Next() {

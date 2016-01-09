@@ -1,6 +1,5 @@
 package lobster
 
-import "database/sql"
 import "fmt"
 
 type Plan struct {
@@ -36,7 +35,7 @@ func (plan *Plan) LoadRegionPlans() {
 	}
 }
 
-func planListHelper(db *Database, rows *sql.Rows) []*Plan {
+func planListHelper(db *Database, rows Rows) []*Plan {
 	defer rows.Close()
 	plans := make([]*Plan, 0)
 	for rows.Next() {
@@ -75,9 +74,7 @@ func planGetRegion(db *Database, region string, planId int) *Plan {
 
 func planCreate(db *Database, name string, price int64, ram int, cpu int, storage int, bandwidth int, global bool) int {
 	result := db.Exec("INSERT INTO plans (name, price, ram, cpu, storage, bandwidth, global) VALUES (?, ?, ?, ?, ?, ?, ?)", name, price, ram, cpu, storage, bandwidth, global)
-	planId, err := result.LastInsertId()
-	checkErr(err)
-	return int(planId)
+	return result.LastInsertId()
 }
 
 func planDelete(db *Database, planId int) {

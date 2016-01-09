@@ -84,8 +84,7 @@ func UserCreate(db *Database, username string, password string, email string) (i
 
 	// generate salt and hash password
 	result := db.Exec("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", username, authMakePassword(password), email)
-	userId, _ := result.LastInsertId()
-	return int(userId), nil
+	return result.LastInsertId(), nil
 }
 
 func ChargeList(db *Database, userId int, year int, month time.Month) []*Charge {
