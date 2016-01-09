@@ -10,7 +10,7 @@ var paymentInterfaces map[string]PaymentInterface = make(map[string]PaymentInter
 
 func paymentMethodList() []string {
 	var methods []string
-	for method, _ := range paymentInterfaces {
+	for method := range paymentInterfaces {
 		methods = append(methods, method)
 	}
 	return methods

@@ -148,7 +148,7 @@ func vmGetInterface(region string) VmInterface {
 
 func regionList() []string {
 	var regions []string
-	for region, _ := range regionInterfaces {
+	for region := range regionInterfaces {
 		regions = append(regions, region)
 	}
 	sort.Sort(sort.StringSlice(regions))

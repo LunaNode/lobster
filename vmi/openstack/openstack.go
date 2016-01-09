@@ -85,7 +85,7 @@ func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 		Name:      vm.Name,
 		ImageRef:  imageIdentification,
 		FlavorRef: flavorID,
-		Networks:  []servers.Network{servers.Network{UUID: this.networkId}},
+		Networks:  []servers.Network{{UUID: this.networkId}},
 		AdminPass: password,
 		UserData:  []byte("#cloud-config\npassword: " + password + "\nchpasswd: { expire: False }\nssh_pwauth: True\n"),
 	}
