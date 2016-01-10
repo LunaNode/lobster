@@ -336,7 +336,6 @@ func (cloug *Cloug) ImageList() ([]*lobster.Image, error) {
 				Name:           apiImage.Name,
 				Identification: apiImage.ID,
 			})
-			break
 		}
 	}
 	return images, nil
