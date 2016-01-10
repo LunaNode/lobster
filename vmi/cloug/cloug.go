@@ -304,16 +304,24 @@ func (cloug *Cloug) ImageList() ([]*lobster.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var images []*lobster.Image
-	for _, apiImage := range apiImages {
-		for _, region := range apiImage.Regions {
-			if region == cloug.region {
-				images = append(images, &lobster.Image{
-					Name:           apiImage.Name,
-					Identification: apiImage.ID,
-				})
-				break
+	stringSliceContains := func(slice []string, search string) bool {
+		for _, str := range slice {
+			if str == search {
+				return true
 			}
+		}
+		return false
+	}
+
+	for _, apiImage := range apiImages {
+		if len(apiImage.Regions) == 0 || stringSliceContains(apiImage.Regions, cloug.region) {
+			images = append(images, &lobster.Image{
+				Name:           apiImage.Name,
+				Identification: apiImage.ID,
+			})
+			break
 		}
 	}
 	return images, nil
