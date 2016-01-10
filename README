@@ -40,13 +40,21 @@ much as possible. Currently these backends are supported:
 
 * OpenStack
 * SolusVM
+* CloudStack (experimental)
 
 These provider-specific APIs are also supported:
 
-* Luna Node (https://lunanode.com)
+* Luna Node
 * Digital Ocean
 * Linode
 * Vultr
+
+Lobster also supports using Cloug [1] providers as VM backends. Cloug is a cloud
+API library that provides a common interface to access multiple APIs, just as
+Lobster provides a common panel. Cloug is still under development, but the aim
+is to eventually move all VM interface code on Lobster to Cloug.
+
+[1] https://github.com/LunaNode/cloug
 
 Payment gateways
 ----------------
