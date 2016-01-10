@@ -5,12 +5,13 @@ import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/cloug/provider"
 import "github.com/LunaNode/cloug/service/compute"
 
+import "encoding/json"
 import "fmt"
 import "strings"
 
 type Cloug struct {
 	service compute.Service
-	region  string
+	config  Config
 
 	vncService     compute.VNCService
 	renameService  compute.RenameService
@@ -21,11 +22,20 @@ type Cloug struct {
 	flavorService  compute.FlavorService
 }
 
-func MakeCloug(json []byte, region string) (*Cloug, error) {
-	cloug := new(Cloug)
-	cloug.region = region
+type Config struct {
+	Region    string `json:"region"`
+	NetworkID string `json:"network_id"`
+}
 
-	provider, err := provider.ComputeProviderFromJSON(json)
+func MakeCloug(jsonData []byte, region string) (*Cloug, error) {
+	cloug := new(Cloug)
+
+	err := json.Unmarshal(jsonData, &cloug.config)
+	if err != nil {
+		return nil, err
+	}
+
+	provider, err := provider.ComputeProviderFromJSON(jsonData)
 	if err != nil {
 		return nil, err
 	}
@@ -44,9 +54,10 @@ func MakeCloug(json []byte, region string) (*Cloug, error) {
 
 func (cloug *Cloug) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	instance, err := cloug.service.CreateInstance(&compute.Instance{
-		Name:   vm.Name,
-		Region: cloug.region,
-		Image:  compute.Image{ID: imageIdentification},
+		Name:      vm.Name,
+		Region:    cloug.config.Region,
+		NetworkID: cloug.config.NetworkID,
+		Image:     compute.Image{ID: imageIdentification},
 		Flavor: compute.Flavor{
 			ID:         vm.Plan.Identification,
 			NumCores:   vm.Plan.Cpu,
@@ -254,8 +265,12 @@ func (cloug *Cloug) ImageFetch(url string, format string) (string, error) {
 	if cloug.imageService == nil {
 		return "", fmt.Errorf("operation not supported")
 	}
+	var regions []string
+	if cloug.config.Region != "" {
+		regions = []string{cloug.config.Region}
+	}
 	image, err := cloug.imageService.CreateImage(&compute.Image{
-		Regions:   []string{cloug.region},
+		Regions:   regions,
 		SourceURL: url,
 		Format:    format,
 	})
@@ -316,7 +331,7 @@ func (cloug *Cloug) ImageList() ([]*lobster.Image, error) {
 	}
 
 	for _, apiImage := range apiImages {
-		if len(apiImage.Regions) == 0 || stringSliceContains(apiImage.Regions, cloug.region) {
+		if len(apiImage.Regions) == 0 || cloug.config.Region == "" || stringSliceContains(apiImage.Regions, cloug.config.Region) {
 			images = append(images, &lobster.Image{
 				Name:           apiImage.Name,
 				Identification: apiImage.ID,
