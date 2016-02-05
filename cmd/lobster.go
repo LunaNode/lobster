@@ -13,6 +13,7 @@ import vmfake "github.com/LunaNode/lobster/vmi/fake"
 import "github.com/LunaNode/lobster/vmi/linode"
 import vmlobster "github.com/LunaNode/lobster/vmi/lobster"
 import "github.com/LunaNode/lobster/vmi/vultr"
+import "github.com/LunaNode/lobster/vmi/cloug"
 
 import "github.com/LunaNode/lobster/payment/coinbase"
 import payfake "github.com/LunaNode/lobster/payment/fake"
@@ -27,7 +28,7 @@ import "strconv"
 type VmConfig struct {
 	Name string `json:"name"`
 
-	// one of solusvm, openstack, cloudstack, lobster, lndynamic, fake, digitalocean, vultr, linode
+	// one of solusvm, openstack, cloudstack, lobster, lndynamic, fake, digitalocean, vultr, linode, cloug
 	Type string `json:"type"`
 
 	// API options (used by solusvm, cloudstack, lobster, lndynamic, digitalocean, vultr, linode)
@@ -83,6 +84,10 @@ type JSONConfig struct {
 	SplashRoutes map[string]string   `json:"splash_routes"`
 }
 
+type HelperConfig struct {
+	Vm []interface{} `json:"vm"`
+}
+
 func main() {
 	cfgPath := "lobster.cfg"
 	if len(os.Args) >= 2 {
@@ -105,7 +110,7 @@ func main() {
 		log.Fatalf("Error: failed to parse json configuration: %s", err.Error())
 	}
 
-	for _, vm := range jsonConfig.Vm {
+	for i, vm := range jsonConfig.Vm {
 		log.Printf("Initializing VM interface %s (type=%s)", vm.Name, vm.Type)
 		var vmi lobster.VmInterface
 		if vm.Type == "openstack" {
@@ -143,6 +148,22 @@ func main() {
 				log.Fatalf("Error: invalid datacenter ID for linode interface: %s", vm.Region)
 			}
 			vmi = linode.MakeLinode(vm.ApiKey, datacenterId)
+		} else if vm.Type == "cloug" {
+			// need to get the JSON data for this interface
+			// to do this, we will unmarshal the configuration into HelperConfig, and then
+			//   re-marshal the corresponding index
+			var helperConfig HelperConfig
+			if err := json.Unmarshal(jsonConfigBytes, &helperConfig); err != nil {
+				log.Fatalf("Error unmarshaling into helper for cloug interface: %v", err)
+			}
+			jsonData, err := json.Marshal(helperConfig.Vm[i])
+			if err != nil {
+				log.Fatalf("Error marshaling from helper for cloug interface: %v", err)
+			}
+			vmi, err = cloug.MakeCloug(jsonData, vm.Region)
+			if err != nil {
+				log.Fatalf("Cloug error: %v", err)
+			}
 		} else {
 			log.Fatalf("Encountered unrecognized VM interface type %s", vm.Type)
 		}
