@@ -120,6 +120,7 @@ func HandleWebsockify(ipport string, password string) string {
 
 	if ws == nil {
 		ws = &websockify.Websockify{
+			Debug:  cfg.Default.Debug,
 			Listen: cfg.Novnc.Listen,
 		}
 		ws.Run()
