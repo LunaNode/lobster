@@ -1,6 +1,6 @@
 package lobster
 
-import "code.google.com/p/gcfg"
+import "github.com/scalingdata/gcfg"
 
 import "log"
 

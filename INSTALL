@@ -3,7 +3,7 @@ Dependencies
 
 Lobster depends on several Golang libraries that must be fetched:
 
-- code.google.com/p/gcfg
+- github.com/scalingdata/gcfg
 - github.com/asaskevich/govalidator
 - github.com/fabioberger/coinbase-go
 - github.com/gorilla/context
@@ -14,7 +14,7 @@ Lobster depends on several Golang libraries that must be fetched:
 - github.com/LunaNode/gophercloud
 - github.com/LunaNode/email
 
-Run `go get` for each dependency (e.g. `go get code.google.com/p/gcfg`)
+Run `go get` for each dependency (e.g. `go get github.com/scalingdata/gcfg`)
 
 Lobster also uses noVNC for some VNC interfaces (e.g. SolusVM) where the backend does not provide its own web interface.
 noVNC needs to be installed in the "novnc" subdirectory of the Lobster installation path.
