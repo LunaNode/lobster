@@ -103,19 +103,30 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// try upgrade connection
+	useBinary := false
 	responseHeader := make(http.Header)
 	requestedSubprotocols := websocket.Subprotocols(r)
+
 	if len(requestedSubprotocols) > 0 {
-		// pick base64 subprotocol if available
+		// pick base64 or binary subprotocol if available
 		// otherwise arbitrarily pick the first one and hope for the best
 		pickedSubprotocol := ""
 		for _, subprotocol := range requestedSubprotocols {
 			if subprotocol == "base64" {
 				pickedSubprotocol = "base64"
+				break
+			} else if subprotocol == "binary" {
+				pickedSubprotocol = "binary"
+				useBinary = true
+				break
 			}
 		}
 		if pickedSubprotocol == "" {
 			pickedSubprotocol = requestedSubprotocols[0]
+
+			if this.Debug {
+				log.Printf("Warning: client %s did not offer base64 or binary subprotocols, falling back to %s", r.RemoteAddr, pickedSubprotocol)
+			}
 		}
 		responseHeader.Set("Sec-Websocket-Protocol", pickedSubprotocol)
 	}
@@ -145,6 +156,7 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			done <- true
 		}()
+
 		wbuf := make([]byte, 32*1024)
 		for {
 			messageType, p, err := conn.ReadMessage()
@@ -152,9 +164,17 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			var fwdbuf []byte
+
 			if messageType == websocket.TextMessage {
 				n, _ := base64.StdEncoding.Decode(wbuf, p)
-				_, err = sock.Write(wbuf[:n])
+				fwdbuf = wbuf[:n]
+			} else if messageType == websocket.BinaryMessage {
+				fwdbuf = p
+			}
+
+			if fwdbuf != nil {
+				_, err = sock.Write(fwdbuf)
 				if err != nil {
 					return
 				}
@@ -174,8 +194,15 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if n > 0 {
-				base64.StdEncoding.Encode(wbuf, rbuf[:n])
-				err = conn.WriteMessage(websocket.TextMessage, wbuf[:base64.StdEncoding.EncodedLen(n)])
+				var err error
+
+				if useBinary {
+					err = conn.WriteMessage(websocket.BinaryMessage, rbuf[:n])
+				} else {
+					base64.StdEncoding.Encode(wbuf, rbuf[:n])
+					err = conn.WriteMessage(websocket.TextMessage, wbuf[:base64.StdEncoding.EncodedLen(n)])
+				}
+
 				if err != nil {
 					return
 				}
