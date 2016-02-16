@@ -87,7 +87,7 @@ func (this *SolusVM) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 		if err != nil {
 			return "", err
 		} else {
-			return lobster.HandleWebsockify(vncInfo.Ip+vncInfo.Port, vncInfo.Password), nil
+			return lobster.HandleWebsockify(vncInfo.Ip+":"+vncInfo.Port, vncInfo.Password), nil
 		}
 	} else {
 		consoleInfo, err := this.Api.VmConsole(vmIdentificationInt)
