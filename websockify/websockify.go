@@ -103,7 +103,24 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// try upgrade connection
-	conn, err := this.upgrader.Upgrade(w, r, nil)
+	responseHeader := make(http.Header)
+	requestedSubprotocols := websocket.Subprotocols(r)
+	if len(requestedSubprotocols) > 0 {
+		// pick base64 subprotocol if available
+		// otherwise arbitrarily pick the first one and hope for the best
+		pickedSubprotocol := ""
+		for _, subprotocol := range requestedSubprotocols {
+			if subprotocol == "base64" {
+				pickedSubprotocol = "base64"
+			}
+		}
+		if pickedSubprotocol == "" {
+			pickedSubprotocol = requestedSubprotocols[0]
+		}
+		responseHeader.Set("Sec-Websocket-Protocol", pickedSubprotocol)
+	}
+
+	conn, err := this.upgrader.Upgrade(w, r, responseHeader)
 	if err != nil {
 		log.Printf("websockify error (%s): %s", r.RemoteAddr, err.Error())
 		return
