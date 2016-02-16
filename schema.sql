@@ -7,7 +7,7 @@ CREATE TABLE users (
 	credit BIGINT NOT NULL DEFAULT 0,
 	vm_limit INT NOT NULL DEFAULT 5,
 	last_billing_notify TIMESTAMP DEFAULT 0,
-	billing_low_count NOT NULL INT DEFAULT 0,
+	billing_low_count INT NOT NULL DEFAULT 0,
 	time_billed TIMESTAMP DEFAULT 0,
 	status ENUM('new', 'active', 'disabled') NOT NULL DEFAULT 'new',
 	admin TINYINT(1) DEFAULT 0
