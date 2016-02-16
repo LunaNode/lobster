@@ -97,7 +97,7 @@ func (this *Websockify) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	target := this.tokens[tokenCookie.Value]
 	if target == nil {
 		if this.Debug {
-			log.Printf("Invaild token (%s): %s", r.RemoteAddr, tokenCookie.Value)
+			log.Printf("Invalid token (%s): %s", r.RemoteAddr, tokenCookie.Value)
 		}
 		return
 	}
