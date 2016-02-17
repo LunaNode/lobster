@@ -93,11 +93,11 @@ func imageGet(userId int, imageId int) *Image {
 		return nil
 	}
 }
+
 func imageGetForce(imageId int) *Image {
 	images := imageListHelper(
 		db.Query(
-			"SELECT id, user_id, region, name, identification, status "+
-				"FROM images WHERE id = ?",
+			IMAGE_QUERY+" WHERE id = ?",
 			imageId,
 		),
 	)
