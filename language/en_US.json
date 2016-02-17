@@ -264,7 +264,8 @@
 			"associate_region_plan_identification_help": "An optional string used by the VM interface to identify this plan; if left blank, the VM interace will attempt to find a matching plan based on the RAM, vCPU, and storage allocations.",
 			"associate_region_plan": "Associate region with plan",
 			"deassociate": "Deassociate",
-			"add_plan_help_global": "Global plans are available in all regions. Non-global plans can be associated with specific regions; additionally, for non-global plans, you can provide region-specific VM interface plan identifiers to override automatic VM interface plan detection."
+			"add_plan_help_global": "Global plans are available in all regions. Non-global plans can be associated with specific regions; additionally, for non-global plans, you can provide region-specific VM interface plan identifiers to override automatic VM interface plan detection.",
+			"currency_format": "$%s"
 		}
 	}, "payment_fake": {
 		"message": {

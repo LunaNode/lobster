@@ -19,7 +19,7 @@ func templateFuncMap() template.FuncMap {
 			return t.Format(DATE_FORMAT)
 		},
 		"FormatCredit": func(x int64) string {
-			return fmt.Sprintf("$%.3f", float64(x)/BILLING_PRECISION)
+			return L.T("currency_format", fmt.Sprintf("%.3f", float64(x)/BILLING_PRECISION))
 		},
 		"FormatGB": func(x int64) string {
 			return fmt.Sprintf("%.2f", float64(x)/1024/1024/1024)
