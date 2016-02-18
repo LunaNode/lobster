@@ -27,6 +27,18 @@ type ConfigBilling struct {
 	DepositMaximum      float64
 }
 
+type ConfigBillingNotifications struct {
+	LowBalanceIntervals int
+	Frequency           int
+}
+
+type ConfigBillingTermination struct {
+	TerminateBalanceIntervals int
+	TerminateMinNotifications int
+	SuspendBalanceIntervals   int
+	SuspendMinNotifications   int
+}
+
 type ConfigSession struct {
 	Domain string
 	Secure bool
@@ -62,15 +74,17 @@ type ConfigWssh struct {
 }
 
 type Config struct {
-	Default  ConfigDefault
-	Vm       ConfigVm
-	Billing  ConfigBilling
-	Session  ConfigSession
-	Database ConfigDatabase
-	Http     ConfigHttp
-	Email    ConfigEmail
-	Novnc    ConfigNovnc
-	Wssh     ConfigWssh
+	Default              ConfigDefault
+	Vm                   ConfigVm
+	Billing              ConfigBilling
+	BillingNotifications ConfigBillingNotifications
+	BillingTermination   ConfigBillingTermination
+	Session              ConfigSession
+	Database             ConfigDatabase
+	Http                 ConfigHttp
+	Email                ConfigEmail
+	Novnc                ConfigNovnc
+	Wssh                 ConfigWssh
 }
 
 func LoadConfig(cfgPath string) *Config {
@@ -98,6 +112,13 @@ func LoadConfig(cfgPath string) *Config {
 	if cfg.Billing.BillingVmMinimum < 1 {
 		log.Printf("Warning: minimum VM billing intervals less than 1, setting to 1")
 		cfg.Billing.BillingVmMinimum = 1
+	}
+	if cfg.BillingNotifications.LowBalanceIntervals == cfg.BillingTermination.SuspendBalanceIntervals {
+		log.Printf("Warning: low balance intervals is set the same as suspend balance intervals")
+	}
+	if cfg.BillingNotifications.Frequency == 0 {
+		log.Printf("Warning: billing notifications frequency not set, defaulting to 24 hours")
+		cfg.BillingNotifications.Frequency = 24
 	}
 
 	return &cfg

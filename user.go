@@ -267,7 +267,14 @@ func userBilling(userId int) {
 	}
 
 	// check for low account balance, possibly suspend/terminate virtual machines
-	rows := db.Query("SELECT credit, email, IFNULL(TIMESTAMPDIFF(HOUR, last_billing_notify, NOW()), 0), billing_low_count FROM users WHERE id = ? AND last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND (SELECT COUNT(*) FROM vms WHERE vms.user_id = users.id) > 0", userId)
+	rows := db.Query(
+		"SELECT credit, email, IFNULL(TIMESTAMPDIFF(HOUR, last_billing_notify, NOW()), 0), billing_low_count "+
+			"FROM users "+
+			"WHERE id = ? AND last_billing_notify < DATE_SUB(NOW(), INTERVAL ? HOUR) AND "+
+			"(SELECT COUNT(*) FROM vms WHERE vms.user_id = users.id) > 0",
+		userId,
+		cfg.BillingNotifications.Frequency,
+	)
 	if !rows.Next() {
 		return
 	}
@@ -280,9 +287,15 @@ func userBilling(userId int) {
 	rows.Close()
 	hourly := UserCreditSummary(userId).Hourly
 
-	if credit <= hourly*168 {
-		if credit < 0 && billingLowCount >= 5 {
-			if credit < -168*hourly && lastBilledHoursAgo > 0 && lastBilledHoursAgo <= 48 {
+	if credit <= hourly*int64(cfg.BillingNotifications.LowBalanceIntervals) {
+		canSuspendBalance := credit < hourly*int64(cfg.BillingTermination.SuspendBalanceIntervals)
+		canSuspendNotifications := billingLowCount >= cfg.BillingTermination.SuspendMinNotifications
+
+		if canSuspendBalance && canSuspendNotifications {
+			canTerminateBalance := credit < hourly*int64(cfg.BillingTermination.TerminateBalanceIntervals)
+			canTerminateNotifications := billingLowCount >= cfg.BillingTermination.TerminateMinNotifications
+
+			if canTerminateBalance && canTerminateNotifications && lastBilledHoursAgo > 0 && lastBilledHoursAgo <= 48 {
 				// terminte the account
 				vms := vmList(userId)
 				for _, vm := range vms {
