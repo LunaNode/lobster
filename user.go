@@ -293,7 +293,7 @@ func userBilling(userId int) {
 				// suspend
 				vms := vmList(userId)
 				for _, vm := range vms {
-					ReportError(vm.Suspend(true), "failed to suspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", userId, vm.Id))
+					vm.Suspend(true)
 				}
 				MailWrap(userId, "userSuspend", nil, false)
 			}

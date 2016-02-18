@@ -275,10 +275,10 @@ func (vm *VirtualMachine) LoadInfo() {
 }
 
 // Attempt to apply function on the provided VM.
-func (vm *VirtualMachine) do(f func(vm *VirtualMachine) error) error {
+func (vm *VirtualMachine) doForce(f func(vm *VirtualMachine) error, ignoreSuspend bool) error {
 	if vm.Identification == "" || vm.Status != "active" {
 		return L.Error("vm_not_ready")
-	} else if vm.Suspended != "no" {
+	} else if vm.Suspended != "no" && !ignoreSuspend {
 		if vm.Suspended == "auto" {
 			return L.Error("vm_suspended_auto")
 		} else if vm.Suspended == "manual" {
@@ -292,18 +292,26 @@ func (vm *VirtualMachine) do(f func(vm *VirtualMachine) error) error {
 
 	return f(vm)
 }
+
+func (vm *VirtualMachine) do(f func(vm *VirtualMachine) error) error {
+	return vm.doForce(f, false)
+}
+
 func (vm *VirtualMachine) Start() error {
 	log.Printf("vmStart(%d)", vm.Id)
 	return vm.do(vmGetInterface(vm.Region).VmStart)
 }
+
 func (vm *VirtualMachine) Stop() error {
 	log.Printf("vmStop(%d)", vm.Id)
-	return vm.do(vmGetInterface(vm.Region).VmStop)
+	return vm.doForce(vmGetInterface(vm.Region).VmStop, true)
 }
+
 func (vm *VirtualMachine) Reboot() error {
 	log.Printf("vmReboot(%d)", vm.Id)
 	return vm.do(vmGetInterface(vm.Region).VmReboot)
 }
+
 func (vm *VirtualMachine) Action(action string, value string) error {
 	log.Printf("vmAction(%d, %s, %s)", vm.Id, action, value)
 	return vm.do(func(vm *VirtualMachine) error {
@@ -519,17 +527,26 @@ func (vm *VirtualMachine) Delete(userId int) error {
 	return nil
 }
 
-func (vm *VirtualMachine) Suspend(auto bool) error {
-	err := vm.Stop()
-	if err != nil {
-		return err
-	}
+func (vm *VirtualMachine) Suspend(auto bool) {
 	if auto {
 		db.Exec("UPDATE vms SET suspended = 'auto' WHERE id = ? AND suspended = 'no'", vm.Id)
 	} else {
 		db.Exec("UPDATE vms SET suspended = 'manual' WHERE id = ?", vm.Id)
 	}
-	return nil
+
+	// Try to stop the VM, and throw an error if it's not stopped after one minute
+	// We ignonre error from Stop function since it might throw error if VM already stopped
+	go func() {
+		defer errorHandler(nil, nil, true)
+		vm.Stop()
+		time.Sleep(time.Minute)
+		info, err := vmGetInterface(vm.Region).VmInfo(vm)
+		if err != nil {
+			ReportError(err, "failed to suspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", vm.UserId, vm.Id))
+		} else if info.Status != "Offline" {
+			ReportError(errors.New("status not offline after one minute"), "failed to suspend VM", fmt.Sprintf("user_id: %d, vm_id: %d", vm.UserId, vm.Id))
+		}
+	}()
 }
 
 func (vm *VirtualMachine) Unsuspend() error {
