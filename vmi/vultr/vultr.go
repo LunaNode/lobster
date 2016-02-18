@@ -46,6 +46,21 @@ func (this *Vultr) findMatchingPlan(plan lobster.Plan) (int, error) {
 	return 0, errors.New("no matching plan found")
 }
 
+func (this *Vultr) findOSByName(name string) (int, error) {
+	osList, err := this.client.GetOS()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, os := range osList {
+		if os.Name == name {
+			return os.ID, nil
+		}
+	}
+
+	return 0, fmt.Errorf("no OS found matching %s", name)
+}
+
 func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
 	var planId int
 	if vm.Plan.Identification != "" {
@@ -68,10 +83,20 @@ func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, imageIdentification stri
 		return "", errors.New("malformed image identification: missing colon")
 	}
 	if imageParts[0] == "iso" {
+		customOSID, err := this.findOSByName("Custom")
+		if err != nil {
+			return "", fmt.Errorf("failed to get custom OS for creation from ISO: %v", err)
+		}
+		serverOptions.OS = customOSID
 		serverOptions.ISO, _ = strconv.Atoi(imageParts[1])
 	} else if imageParts[0] == "os" {
 		serverOptions.OS, _ = strconv.Atoi(imageParts[1])
 	} else if imageParts[0] == "snapshot" {
+		snapshotOSID, err := this.findOSByName("Snapshot")
+		if err != nil {
+			return "", fmt.Errorf("failed to get snapshot OS for creation from snapshot: %v", err)
+		}
+		serverOptions.OS = snapshotOSID
 		serverOptions.Snapshot = imageParts[1]
 	} else {
 		return "", errors.New("invalid image type " + imageParts[0])
