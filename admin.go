@@ -62,14 +62,9 @@ func adminUsers(w http.ResponseWriter, r *http.Request, session *Session, frameP
 	RenderTemplate(w, "admin", "users", params)
 }
 
-type AdminUserParams struct {
-	Frame           FrameParams
-	User            *User
-	VirtualMachines []*VirtualMachine
-	Token           string
-}
+type AdminUserProcessFunc func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User)
 
-func adminUser(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+func adminUserProcess(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, f AdminUserProcessFunc) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
@@ -79,24 +74,41 @@ func adminUser(w http.ResponseWriter, r *http.Request, session *Session, framePa
 	if user == nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("user_not_found"))
 		return
+	} else {
+		f(w, r, session, frameParams, user)
 	}
-	params := AdminUserParams{}
-	params.Frame = frameParams
-	params.User = user
-	params.VirtualMachines = vmList(userId)
-	params.Token = CSRFGenerate(session)
-	RenderTemplate(w, "admin", "user", params)
+}
+
+type AdminUserParams struct {
+	Frame           FrameParams
+	User            *User
+	StatusAction    string // action that admin can take on this user, either "disable" or "enable" depending on current user status
+	VirtualMachines []*VirtualMachine
+	Token           string
+}
+
+func adminUser(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		params := AdminUserParams{}
+		params.Frame = frameParams
+		params.User = user
+		if user.Status == "disabled" {
+			params.StatusAction = "enable"
+		} else {
+			params.StatusAction = "disable"
+		}
+		params.VirtualMachines = vmList(user.Id)
+		params.Token = CSRFGenerate(session)
+		RenderTemplate(w, "admin", "user", params)
+	})
 }
 
 func adminUserLogin(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-	} else {
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
 		session.OriginalId = session.UserId
-		session.UserId = userId
+		session.UserId = user.Id
 		http.Redirect(w, r, "/panel/dashboard", 303)
-	}
+	})
 }
 
 type AdminUserCreditForm struct {
@@ -105,48 +117,47 @@ type AdminUserCreditForm struct {
 }
 
 func adminUserCredit(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-		return
-	}
-	form := new(AdminUserCreditForm)
-	err = decoder.Decode(form, r.PostForm)
-	if err != nil {
-		http.Redirect(w, r, fmt.Sprintf("/admin/user/%d", userId), 303)
-		return
-	}
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		form := new(AdminUserCreditForm)
+		err := decoder.Decode(form, r.PostForm)
+		if err != nil {
+			http.Redirect(w, r, fmt.Sprintf("/admin/user/%d", user.Id), 303)
+			return
+		}
 
-	creditInt := int64(form.Credit * BILLING_PRECISION)
-	UserApplyCredit(userId, creditInt, form.Description)
-	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("credit_applied"))
+		creditInt := int64(form.Credit * BILLING_PRECISION)
+		UserApplyCredit(user.Id, creditInt, form.Description)
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("credit_applied"))
+	})
 }
 
 func adminUserPassword(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-		return
-	} else if r.PostFormValue("password") != r.PostFormValue("password_confirm") {
-		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.FormattedError("password_mismatch"))
-		return
-	} else if r.PostFormValue("password") == "" {
-		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.FormattedError("password_empty"))
-		return
-	}
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		if r.PostFormValue("password") != r.PostFormValue("password_confirm") {
+			RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.FormattedError("password_mismatch"))
+			return
+		} else if r.PostFormValue("password") == "" {
+			RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.FormattedError("password_empty"))
+			return
+		}
 
-	authForceChangePassword(userId, r.PostFormValue("password"))
-	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("password_reset"))
+		authForceChangePassword(user.Id, r.PostFormValue("password"))
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("password_reset"))
+	})
 }
 
 func adminUserDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-	} else {
-		db.Exec("UPDATE users SET status = 'disabled' WHERE id = ?", userId)
-		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("user_disabled"))
-	}
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		db.Exec("UPDATE users SET status = 'disabled' WHERE id = ?", user.Id)
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("user_disabled"))
+	})
+}
+
+func adminUserEnable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		db.Exec("UPDATE users SET status = 'active' WHERE id = ?", user.Id)
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("user_enabled"))
+	})
 }
 
 type AdminPlansParams struct {
