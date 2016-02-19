@@ -40,13 +40,16 @@ func (this *SolusVM) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error)
 		return nil, err
 	}
 
-	bwUsed, _ := strconv.ParseInt(strings.Split(apiInfo.Bandwidth, ",")[1], 10, 64)
 	info := lobster.VmInfo{
-		Ip:            apiInfo.Ip,
-		PrivateIp:     apiInfo.InternalIps,
-		Status:        strings.Title(apiInfo.State),
-		BandwidthUsed: bwUsed,
-		LoginDetails:  "username: root; password: " + vm.Metadata("password", "unknown"),
+		Ip:           apiInfo.Ip,
+		PrivateIp:    apiInfo.InternalIps,
+		Status:       strings.Title(apiInfo.State),
+		LoginDetails: "username: root; password: " + vm.Metadata("password", "unknown"),
+	}
+
+	bwParts := strings.Split(apiInfo.Bandwidth, ",")
+	if len(bwParts) >= 2 {
+		info.BandwidthUsed, _ = strconv.ParseInt(bwParts[1], 10, 64)
 	}
 
 	if this.VirtType == "openvz" {
