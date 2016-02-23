@@ -294,7 +294,7 @@ func cron() {
 		vmBilling(vmId, false)
 	}
 
-	userRows := db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+	userRows := db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL ? HOUR)", cfg.BillingNotifications.Frequency)
 	defer userRows.Close()
 	for userRows.Next() {
 		var userId int
