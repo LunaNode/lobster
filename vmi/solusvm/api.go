@@ -126,28 +126,30 @@ func (this *API) VmCreate(virtType string, nodeGroup string, hostname string, im
 	err := this.request("vserver-create", params, &response)
 	if err != nil {
 		return 0, "", err
-	} else {
-		vmId, err := strconv.Atoi(response.VmId)
-		if err != nil {
-			return 0, "", err
-		} else {
-			// apply custom memory work-around described above
-			// we sleep for a bit to give time for provisioning
-			// TODO: reportError?
-			go func() {
-				time.Sleep(15 * time.Second)
-				this.VmStop(vmId)
-				time.Sleep(time.Second)
-				params := make(map[string]string)
-				params["memory"] = fmt.Sprintf("%d|%d", memory, memory)
-				this.vmAction(vmId, "vserver-change-memory", params)
-				time.Sleep(5 * time.Second)
-				this.VmStart(vmId)
-			}()
-
-			return vmId, rootPassword, nil
-		}
 	}
+
+	vmId, err := strconv.Atoi(response.VmId)
+	if err != nil {
+		return 0, "", err
+	}
+
+	if virtType == "openvz" {
+		// apply custom memory work-around described above
+		// we sleep for a bit to give time for provisioning
+		// TODO: reportError?
+		go func() {
+			time.Sleep(15 * time.Second)
+			this.VmStop(vmId)
+			time.Sleep(time.Second)
+			params := make(map[string]string)
+			params["memory"] = fmt.Sprintf("%d|%d", memory, memory)
+			this.vmAction(vmId, "vserver-change-memory", params)
+			time.Sleep(5 * time.Second)
+			this.VmStart(vmId)
+		}()
+	}
+
+	return vmId, response.RootPassword, nil
 }
 
 func (this *API) vmAction(vmIdentification int, action string, params map[string]string) error {
