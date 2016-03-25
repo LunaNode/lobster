@@ -160,6 +160,18 @@ func adminUserEnable(w http.ResponseWriter, r *http.Request, session *Session, f
 	})
 }
 
+type AdminVirtualMachinesParams struct {
+	Frame           FrameParams
+	VirtualMachines []*VirtualMachine
+}
+
+func adminVirtualMachines(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	params := AdminVirtualMachinesParams{}
+	params.Frame = frameParams
+	params.VirtualMachines = vmListAll()
+	RenderTemplate(w, "admin", "vms", params)
+}
+
 // virtual machine actions
 func adminVMProcess(r *http.Request) (*VirtualMachine, error) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])

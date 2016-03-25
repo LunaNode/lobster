@@ -22,6 +22,7 @@ type VirtualMachine struct {
 	CreatedTime    time.Time
 	Suspended      string
 	Plan           Plan
+	User           User
 
 	Info      *VmInfo
 	Addresses []*IpAddress
@@ -75,10 +76,11 @@ var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
 
 const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, " +
 	"vms.status, vms.task_pending, vms.external_ip, vms.private_ip, " +
-	"vms.time_created, vms.suspended, vms.plan_id, plans.name, plans.price, " +
-	"plans.ram, plans.cpu, plans.storage, plans.bandwidth " +
-	"FROM vms, plans " +
-	"WHERE vms.plan_id = plans.id"
+	"vms.time_created, vms.suspended, vms.plan_id, " +
+	"plans.name, plans.price, plans.ram, plans.cpu, plans.storage, plans.bandwidth, " +
+	"users.username, users.email " +
+	"FROM vms, plans, users " +
+	"WHERE vms.plan_id = plans.id AND vms.user_id = users.id"
 
 func vmListHelper(rows Rows) []*VirtualMachine {
 	vms := make([]*VirtualMachine, 0)
@@ -103,6 +105,8 @@ func vmListHelper(rows Rows) []*VirtualMachine {
 			&vm.Plan.Cpu,
 			&vm.Plan.Storage,
 			&vm.Plan.Bandwidth,
+			&vm.User.Username,
+			&vm.User.Email,
 		)
 		vms = append(vms, &vm)
 	}
@@ -115,6 +119,10 @@ func vmList(userId int) []*VirtualMachine {
 
 func vmListRegion(userId int, region string) []*VirtualMachine {
 	return vmListHelper(db.Query(VM_QUERY+" AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
+}
+
+func vmListAll() []*VirtualMachine {
+	return vmListHelper(db.Query(VM_QUERY + " ORDER BY id DESC"))
 }
 
 func vmGet(vmId int) *VirtualMachine {
