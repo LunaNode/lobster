@@ -237,6 +237,8 @@ func Setup(cfgPath string) {
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/password", adminUserPassword, true)
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/disable", adminUserDisable, true)
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/enable", adminUserEnable, true)
+	RegisterPanelHandler("/admin/vm/{id:[0-9]+}/suspend", adminVMSuspend, true)
+	RegisterPanelHandler("/admin/vm/{id:[0-9]+}/unsuspend", adminVMUnsuspend, true)
 	RegisterAdminHandler("/admin/plans", adminPlans, false)
 	RegisterAdminHandler("/admin/plans/add", adminPlansAdd, true)
 	RegisterAdminHandler("/admin/plans/autopopulate", adminPlansAutopopulate, true)

@@ -551,6 +551,7 @@ func (vm *VirtualMachine) Suspend(auto bool) {
 
 func (vm *VirtualMachine) Unsuspend() error {
 	db.Exec("UPDATE vms SET suspended = 'no' WHERE id = ?", vm.Id)
+	vm.Suspended = "no"
 	return vm.Start()
 }
 

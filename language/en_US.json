@@ -95,6 +95,8 @@
 			"vm_stopped": "VM stopped successfully.",
 			"vm_rebooted": "VM rebooted successfully.",
 			"vm_resized": "VM resized successfully.",
+			"vm_suspended": "VM suspended successfully.",
+			"vm_unsuspended": "VM unsuspended successfully.",
 			"pwreset_requested": "Your password reset request has been processed, and an e-mail has been sent with details on how to proceed.",
 			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password."
 		}, "T": {
@@ -266,7 +268,9 @@
 			"associate_region_plan": "Associate region with plan",
 			"deassociate": "Deassociate",
 			"add_plan_help_global": "Global plans are available in all regions. Non-global plans can be associated with specific regions; additionally, for non-global plans, you can provide region-specific VM interface plan identifiers to override automatic VM interface plan detection.",
-			"currency_format": "$%s"
+			"currency_format": "$%s",
+			"suspend": "Suspend",
+			"unsuspend": "Unsuspend"
 		}
 	}, "payment_fake": {
 		"message": {

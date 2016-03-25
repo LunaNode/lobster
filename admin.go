@@ -160,6 +160,41 @@ func adminUserEnable(w http.ResponseWriter, r *http.Request, session *Session, f
 	})
 }
 
+// virtual machine actions
+func adminVMProcess(r *http.Request) (*VirtualMachine, error) {
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		return nil, fmt.Errorf("invalid VM ID")
+	}
+	vm := vmGet(vmId)
+	if vm == nil {
+		return nil, fmt.Errorf("VM does not exist")
+	}
+	return vm, nil
+}
+
+func adminVMSuspend(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := adminVMProcess(r)
+	if err != nil {
+		RedirectMessage(w, r, "/admin/users", L.FormatError(err))
+	}
+	vm.Suspend(false)
+	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", vm.UserId), L.Success("vm_suspended"))
+}
+
+func adminVMUnsuspend(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := adminVMProcess(r)
+	if err != nil {
+		RedirectMessage(w, r, "/admin/users", L.FormatError(err))
+	}
+	err = vm.Unsuspend()
+	if err != nil {
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", vm.UserId), L.FormatError(err))
+	} else {
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", vm.UserId), L.Success("vm_unsuspended"))
+	}
+}
+
 type AdminPlansParams struct {
 	Frame   FrameParams
 	Plans   []*Plan
