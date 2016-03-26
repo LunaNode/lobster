@@ -61,6 +61,7 @@
 			"vm_resize_unsupported": "resize is not supported on this VM",
 			"operation_unsupported": "operation not supported",
 			"region_plans_unsupported": "the specified region does not support plan auto-generation",
+			"region_disabled": "the specified region is disabled",
 			"vm_max_ips": "this VM already has the maximum of %d IP addresses",
 			"ip_manage_disabled": "IP address management is disabled",
 			"pwreset_email_required": "an e-mail address is required for password reset",
@@ -81,6 +82,8 @@
 			"plan_autopopulate_success": "Plan autopopulation succeeded.",
 			"image_deleted": "Image deleted.",
 			"plan_deleted": "Plan deleted successfully.",
+			"plan_enabled": "Plan enabled successfully.",
+			"plan_disabled": "Plan disabled successfully.",
 			"plan_region_associated": "The region has been associated with this plan.",
 			"plan_region_deassociated": "The region has been de-associated from this plan.",
 			"api_deleted": "API key deleted successfully.",
@@ -98,7 +101,9 @@
 			"vm_suspended": "VM suspended successfully.",
 			"vm_unsuspended": "VM unsuspended successfully.",
 			"pwreset_requested": "Your password reset request has been processed, and an e-mail has been sent with details on how to proceed.",
-			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password."
+			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password.",
+			"region_enabled": "Region enabled successfully.",
+			"region_disabled": "Region disabled successfully."
 		}, "T": {
 			"account_settings": "Account Settings",
 			"username": "Username",
@@ -270,7 +275,8 @@
 			"add_plan_help_global": "Global plans are available in all regions. Non-global plans can be associated with specific regions; additionally, for non-global plans, you can provide region-specific VM interface plan identifiers to override automatic VM interface plan detection.",
 			"currency_format": "$%s",
 			"suspend": "Suspend",
-			"unsuspend": "Unsuspend"
+			"unsuspend": "Unsuspend",
+			"regions": "Regions"
 		}
 	}, "payment_fake": {
 		"message": {

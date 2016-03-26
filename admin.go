@@ -292,6 +292,26 @@ func adminPlanDelete(w http.ResponseWriter, r *http.Request, session *Session, f
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_deleted"))
 }
 
+func adminPlanEnable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planEnable(planId)
+	RedirectMessage(w, r, "/admin/plans", L.Success("plan_enabled"))
+}
+
+func adminPlanDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planDisable(planId)
+	RedirectMessage(w, r, "/admin/plans", L.Success("plan_disabled"))
+}
+
 func adminPlanAssociateRegion(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -314,6 +334,30 @@ func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, session 
 	}
 	planDeassociateRegion(planId, mux.Vars(r)["region"])
 	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_region_deassociated"))
+}
+
+type AdminRegionsParams struct {
+	Frame   FrameParams
+	Regions []Region
+	Token   string
+}
+
+func adminRegions(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	params := AdminRegionsParams{}
+	params.Frame = frameParams
+	params.Regions = regionListAll()
+	params.Token = CSRFGenerate(session)
+	RenderTemplate(w, "admin", "regions", params)
+}
+
+func adminRegionEnable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	enableRegion(mux.Vars(r)["region"])
+	RedirectMessage(w, r, "/admin/regions", L.Success("region_enabled"))
+}
+
+func adminRegionDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	disableRegion(mux.Vars(r)["region"])
+	RedirectMessage(w, r, "/admin/regions", L.Success("region_disabled"))
 }
 
 type AdminImagesParams struct {

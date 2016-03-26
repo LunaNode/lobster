@@ -1,0 +1,38 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">{{ T "virtual_machines" }}</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+		<tr>
+			<th>{{ T "username" }}</th>
+			<th>{{ T "name" }}</th>
+			<th>{{ T "status" }}</th>
+			<th>{{ T "plan" }}</th>
+			<th>{{ T "region" }}</th>
+			<th>{{ T "external_ip" }}</th>
+			<th>{{ T "private_ip" }}</th>
+		</tr>
+		{{ range .VirtualMachines }}
+		<tr>
+			<td><a href="/admin/user/{{ .UserId }}">{{ .User.Username }}</a></td>
+			<td>{{ .Name }}</td>
+			<td>{{ .Status | Title }}</td>
+			<td><span data-toggle="tooltip" data-placement="top" title="vCPU: {{ .Plan.Cpu }}, Memory: {{ .Plan.Ram }} MB, Disk: {{ .Plan.Storage }} GB, Bandwidth: {{ .Plan.Bandwidth }} GB">{{ .Plan.Name }}</span></td>
+			<td>{{ .Region }}</td>
+			<td>{{ .ExternalIP }}</td>
+			<td>{{ .PrivateIP }}</td>
+		</tr>
+		{{ end }}
+</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

@@ -11,6 +11,7 @@ type Plan struct {
 	Storage   int
 	Bandwidth int
 	Global    bool
+	Enabled   bool
 
 	// region-specific identification from planGet
 	Identification string
@@ -47,6 +48,7 @@ func planListHelper(rows Rows) []*Plan {
 			&plan.Storage,
 			&plan.Bandwidth,
 			&plan.Global,
+			&plan.Enabled,
 			&plan.Identification,
 		)
 		plans = append(plans, &plan)
@@ -57,7 +59,7 @@ func planListHelper(rows Rows) []*Plan {
 func planList() []*Plan {
 	return planListHelper(
 		db.Query(
-			"SELECT id, name, price, ram, cpu, storage, bandwidth, global, '' " +
+			"SELECT id, name, price, ram, cpu, storage, bandwidth, global, enabled, '' " +
 				"FROM plans ORDER BY id",
 		),
 	)
@@ -67,9 +69,9 @@ func planListRegion(region string) []*Plan {
 	return planListHelper(
 		db.Query(
 			"SELECT plans.id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage,"+
-				" plans.bandwidth, plans.global, IFNULL(region_plans.identification, '') "+
+				" plans.bandwidth, plans.global, plans.enabled, IFNULL(region_plans.identification, '') "+
 				"FROM plans LEFT JOIN region_plans ON plans.id = region_plans.plan_id AND region_plans.region = ? "+
-				"WHERE plans.global = 1 OR region_plans.identification IS NOT NULL "+
+				"WHERE plans.enabled = 1 AND (plans.global = 1 OR region_plans.identification IS NOT NULL) "+
 				"ORDER BY id",
 			region,
 		),
@@ -80,7 +82,7 @@ func planGet(planId int) *Plan {
 	plans := planListHelper(
 		db.Query(
 			"SELECT plans.id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage,"+
-				" plans.bandwidth, plans.global, '' "+
+				" plans.bandwidth, plans.global, plans.enabled, '' "+
 				"FROM plans WHERE id = ?",
 			planId,
 		),
@@ -96,9 +98,9 @@ func planGetRegion(region string, planId int) *Plan {
 	plans := planListHelper(
 		db.Query(
 			"SELECT plans.id, plans.name, plans.price, plans.ram, plans.cpu, plans.storage,"+
-				" plans.bandwidth, plans.global, IFNULL(region_plans.identification, '') "+
+				" plans.bandwidth, plans.global, plans.enabled, IFNULL(region_plans.identification, '') "+
 				"FROM plans LEFT JOIN region_plans ON plans.id = region_plans.plan_id AND region_plans.region = ? "+
-				"WHERE id = ? AND (plans.global = 1 OR region_plans.identification IS NOT NULL)",
+				"WHERE plans.id = ? AND plans.enabled = 1 AND (plans.global = 1 OR region_plans.identification IS NOT NULL)",
 			region, planId,
 		),
 	)
@@ -120,6 +122,14 @@ func planCreate(name string, price int64, ram int, cpu int, storage int, bandwid
 
 func planDelete(planId int) {
 	db.Exec("DELETE FROM plans WHERE id = ?", planId)
+}
+
+func planEnable(planId int) {
+	db.Exec("UPDATE plans SET enabled = 1 WHERE id = ?", planId)
+}
+
+func planDisable(planId int) {
+	db.Exec("UPDATE plans SET enabled = 0 WHERE id = ?", planId)
 }
 
 func planAssociateRegion(planId int, region string, identification string) error {

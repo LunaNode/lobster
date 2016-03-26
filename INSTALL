@@ -24,13 +24,13 @@ Run `go get` for each dependency (e.g. `go get github.com/scalingdata/gcfg`)
 Lobster also uses noVNC for some VNC interfaces (e.g. SolusVM) where the backend does not provide its own web interface.
 noVNC needs to be installed in the "novnc" subdirectory of the Lobster installation path.
 
-Database
---------
-
-Initialize a database using schema.sql
-
 Configuration
 -------------
 
 Copy lobster.example.cfg to lobster.cfg and lobster.example.cfg.json to lobster.cfg.json
 Both of these files need to be configured.
+
+Database
+--------
+
+Once your database has been configured in lobster.cfg, you can initialize it by running `./manage`.

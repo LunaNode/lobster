@@ -3,7 +3,6 @@ package lobster
 import "errors"
 import "fmt"
 import "log"
-import "sort"
 import "strings"
 import "time"
 
@@ -71,8 +70,6 @@ type VmActionDescriptor struct {
 	Description string            // if non-empty, will be displayed in a modal
 	Dangerous   bool              // if true, we will have confirmation window
 }
-
-var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
 
 const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, " +
 	"vms.status, vms.task_pending, vms.external_ip, vms.private_ip, " +
@@ -143,23 +140,6 @@ func vmGetUser(userId int, vmId int) *VirtualMachine {
 	}
 }
 
-func vmGetInterface(region string) VmInterface {
-	vmi, ok := regionInterfaces[region]
-	if !ok {
-		panic(errors.New("no interface registered for " + region))
-	}
-	return vmi
-}
-
-func regionList() []string {
-	var regions []string
-	for region := range regionInterfaces {
-		regions = append(regions, region)
-	}
-	sort.Sort(sort.StringSlice(regions))
-	return regions
-}
-
 func vmNameOk(name string) error {
 	if len(name) == 0 {
 		return L.Error("name_empty")
@@ -201,6 +181,11 @@ func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 		return 0, L.Error("image_not_exist")
 	} else if image.Status != "active" {
 		return 0, L.Error("image_not_ready")
+	}
+
+	// verify region not disabled
+	if !regionEnabled(image.Region) {
+		return 0, L.Error("region_disabled")
 	}
 
 	// validate plan
