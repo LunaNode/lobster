@@ -33,11 +33,11 @@ func (this *CoinbasePayment) Payment(w http.ResponseWriter, r *http.Request, fra
 		log.Printf("Creating Coinbase button for %s (id=%d) with amount $%.2f", username, userId, amount)
 	}
 	params := &coinbase.Button{
-		Name:             "Credit for " + username,
+		Name:             lobster.L.T("credit_for_username", username),
 		PriceString:      fmt.Sprintf("%.2f", amount),
 		PriceCurrencyIso: cfg.Billing.Currency,
 		Custom:           fmt.Sprintf("lobster%d", userId),
-		Description:      fmt.Sprintf("Credit $%.2f", amount),
+		Description:      fmt.Sprintf("Credit %s", lobster.L.T("currency_format", fmt.Sprintf("%.2f", amount))),
 		Type:             "buy_now",
 		Style:            "buy_now_large",
 		CallbackUrl:      cfg.Default.UrlBase + "/coinbase_callback_" + this.callbackSecret,

@@ -276,7 +276,8 @@
 			"currency_format": "$%s",
 			"suspend": "Suspend",
 			"unsuspend": "Unsuspend",
-			"regions": "Regions"
+			"regions": "Regions",
+			"credit_for_username": "Credit for %s"
 		}
 	}, "payment_fake": {
 		"message": {
