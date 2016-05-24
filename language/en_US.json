@@ -61,6 +61,7 @@
 			"vm_resize_unsupported": "resize is not supported on this VM",
 			"operation_unsupported": "operation not supported",
 			"region_plans_unsupported": "the specified region does not support plan auto-generation",
+			"region_disabled": "the specified region is disabled",
 			"vm_max_ips": "this VM already has the maximum of %d IP addresses",
 			"ip_manage_disabled": "IP address management is disabled",
 			"pwreset_email_required": "an e-mail address is required for password reset",
@@ -72,6 +73,7 @@
 			"password_reset": "Password reset successfully.",
 			"password_changed": "Password changed successfully.",
 			"user_disabled": "Account disabled successfully.",
+			"user_enabled": "Account re-enabled successfully.",
 			"ticket_closed": "This ticket has been marked closed.",
 			"image_added": "Image added successfully.",
 			"image_autopopulate_success": "Image autopopulation succeeded.",
@@ -80,6 +82,8 @@
 			"plan_autopopulate_success": "Plan autopopulation succeeded.",
 			"image_deleted": "Image deleted.",
 			"plan_deleted": "Plan deleted successfully.",
+			"plan_enabled": "Plan enabled successfully.",
+			"plan_disabled": "Plan disabled successfully.",
 			"plan_region_associated": "The region has been associated with this plan.",
 			"plan_region_deassociated": "The region has been de-associated from this plan.",
 			"api_deleted": "API key deleted successfully.",
@@ -94,8 +98,12 @@
 			"vm_stopped": "VM stopped successfully.",
 			"vm_rebooted": "VM rebooted successfully.",
 			"vm_resized": "VM resized successfully.",
+			"vm_suspended": "VM suspended successfully.",
+			"vm_unsuspended": "VM unsuspended successfully.",
 			"pwreset_requested": "Your password reset request has been processed, and an e-mail has been sent with details on how to proceed.",
-			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password."
+			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password.",
+			"region_enabled": "Region enabled successfully.",
+			"region_disabled": "Region disabled successfully."
 		}, "T": {
 			"account_settings": "Account Settings",
 			"username": "Username",
@@ -241,7 +249,7 @@
 			"no": "No",
 			"adjust_credit": "Adjust credit",
 			"disable": "Disable",
-			"account_disable_confirm_text": "Are you sure you want to disable this user account?",
+			"enable": "Enable",
 			"password": "Password",
 			"optional_email": "Optional email",
 			"optional_email_help": "If an e-mail address is not provided, you will need to login to the panel to view service notifications.",
@@ -265,7 +273,11 @@
 			"associate_region_plan": "Associate region with plan",
 			"deassociate": "Deassociate",
 			"add_plan_help_global": "Global plans are available in all regions. Non-global plans can be associated with specific regions; additionally, for non-global plans, you can provide region-specific VM interface plan identifiers to override automatic VM interface plan detection.",
-			"currency_format": "$%s"
+			"currency_format": "$%s",
+			"suspend": "Suspend",
+			"unsuspend": "Unsuspend",
+			"regions": "Regions",
+			"credit_for_username": "Credit for %s"
 		}
 	}, "payment_fake": {
 		"message": {

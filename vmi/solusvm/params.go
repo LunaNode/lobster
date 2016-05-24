@@ -11,8 +11,9 @@ type APIGenericResponse struct {
 // virtual machines
 
 type APIVmCreateResponse struct {
-	XMLName xml.Name `xml:"root"`
-	VmId    string   `xml:"vserverid"`
+	XMLName      xml.Name `xml:"root"`
+	VmId         string   `xml:"vserverid"`
+	RootPassword string   `xml:"rootpassword"`
 }
 
 type APIVmVncResponse struct {

@@ -1,0 +1,17 @@
+DROP TABLE users;
+DROP TABLE api_keys;
+DROP TABLE sessions;
+DROP TABLE form_tokens;
+DROP TABLE pwreset_tokens;
+DROP TABLE tickets;
+DROP TABLE ticket_messages;
+DROP TABLE region_bandwidth;
+DROP TABLE actions;
+DROP TABLE vms;
+DROP TABLE vm_metadata;
+DROP TABLE plans;
+DROP TABLE region_plans;
+DROP TABLE images;
+DROP TABLE charges;
+DROP TABLE transactions;
+DROP TABLE antiflood;

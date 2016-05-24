@@ -1,0 +1,49 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">{{ T "regions" }}</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<table class="table table-striped">
+		<tr>
+			<th>{{ T "name" }}</th>
+			<th>{{ T "action" }}</th>
+		</tr>
+		{{ $token := .Token }}
+		{{ range .Regions }}
+		<tr>
+			<td>{{ .Region }}</td>
+			<td>
+				{{ if .Enabled }}
+					<button
+						type="button"
+						class="btn btn-danger lobster-btn"
+						data-action="/admin/region/{{ .Region }}/disable"
+						data-token="{{ $token }}"
+						>
+						{{ T "disable" }}
+					</button>
+				{{ else }}
+					<button
+						type="button"
+						class="btn btn-success lobster-btn"
+						data-action="/admin/region/{{ .Region }}/enable"
+						data-token="{{ $token }}"
+						>
+						{{ T "enable" }}
+					</button>
+				{{ end }}
+			</td>
+		</tr>
+		{{ end }}
+		</table>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

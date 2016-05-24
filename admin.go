@@ -62,14 +62,9 @@ func adminUsers(w http.ResponseWriter, r *http.Request, session *Session, frameP
 	RenderTemplate(w, "admin", "users", params)
 }
 
-type AdminUserParams struct {
-	Frame           FrameParams
-	User            *User
-	VirtualMachines []*VirtualMachine
-	Token           string
-}
+type AdminUserProcessFunc func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User)
 
-func adminUser(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+func adminUserProcess(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, f AdminUserProcessFunc) {
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
@@ -79,24 +74,41 @@ func adminUser(w http.ResponseWriter, r *http.Request, session *Session, framePa
 	if user == nil {
 		RedirectMessage(w, r, "/admin/users", L.FormattedError("user_not_found"))
 		return
+	} else {
+		f(w, r, session, frameParams, user)
 	}
-	params := AdminUserParams{}
-	params.Frame = frameParams
-	params.User = user
-	params.VirtualMachines = vmList(userId)
-	params.Token = CSRFGenerate(session)
-	RenderTemplate(w, "admin", "user", params)
+}
+
+type AdminUserParams struct {
+	Frame           FrameParams
+	User            *User
+	StatusAction    string // action that admin can take on this user, either "disable" or "enable" depending on current user status
+	VirtualMachines []*VirtualMachine
+	Token           string
+}
+
+func adminUser(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		params := AdminUserParams{}
+		params.Frame = frameParams
+		params.User = user
+		if user.Status == "disabled" {
+			params.StatusAction = "enable"
+		} else {
+			params.StatusAction = "disable"
+		}
+		params.VirtualMachines = vmList(user.Id)
+		params.Token = CSRFGenerate(session)
+		RenderTemplate(w, "admin", "user", params)
+	})
 }
 
 func adminUserLogin(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-	} else {
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
 		session.OriginalId = session.UserId
-		session.UserId = userId
+		session.UserId = user.Id
 		http.Redirect(w, r, "/panel/dashboard", 303)
-	}
+	})
 }
 
 type AdminUserCreditForm struct {
@@ -105,47 +117,93 @@ type AdminUserCreditForm struct {
 }
 
 func adminUserCredit(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-		return
-	}
-	form := new(AdminUserCreditForm)
-	err = decoder.Decode(form, r.PostForm)
-	if err != nil {
-		http.Redirect(w, r, fmt.Sprintf("/admin/user/%d", userId), 303)
-		return
-	}
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		form := new(AdminUserCreditForm)
+		err := decoder.Decode(form, r.PostForm)
+		if err != nil {
+			http.Redirect(w, r, fmt.Sprintf("/admin/user/%d", user.Id), 303)
+			return
+		}
 
-	creditInt := int64(form.Credit * BILLING_PRECISION)
-	UserApplyCredit(userId, creditInt, form.Description)
-	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("credit_applied"))
+		creditInt := int64(form.Credit * BILLING_PRECISION)
+		UserApplyCredit(user.Id, creditInt, form.Description)
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("credit_applied"))
+	})
 }
 
 func adminUserPassword(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
-		return
-	} else if r.PostFormValue("password") != r.PostFormValue("password_confirm") {
-		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.FormattedError("password_mismatch"))
-		return
-	} else if r.PostFormValue("password") == "" {
-		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.FormattedError("password_empty"))
-		return
-	}
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		if r.PostFormValue("password") != r.PostFormValue("password_confirm") {
+			RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.FormattedError("password_mismatch"))
+			return
+		} else if r.PostFormValue("password") == "" {
+			RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.FormattedError("password_empty"))
+			return
+		}
 
-	authForceChangePassword(userId, r.PostFormValue("password"))
-	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("password_reset"))
+		authForceChangePassword(user.Id, r.PostFormValue("password"))
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("password_reset"))
+	})
 }
 
 func adminUserDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	userId, err := strconv.Atoi(mux.Vars(r)["id"])
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		db.Exec("UPDATE users SET status = 'disabled' WHERE id = ?", user.Id)
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("user_disabled"))
+	})
+}
+
+func adminUserEnable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	adminUserProcess(w, r, session, frameParams, func(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams, user *User) {
+		db.Exec("UPDATE users SET status = 'active' WHERE id = ?", user.Id)
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", user.Id), L.Success("user_enabled"))
+	})
+}
+
+type AdminVirtualMachinesParams struct {
+	Frame           FrameParams
+	VirtualMachines []*VirtualMachine
+}
+
+func adminVirtualMachines(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	params := AdminVirtualMachinesParams{}
+	params.Frame = frameParams
+	params.VirtualMachines = vmListAll()
+	RenderTemplate(w, "admin", "vms", params)
+}
+
+// virtual machine actions
+func adminVMProcess(r *http.Request) (*VirtualMachine, error) {
+	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
-		RedirectMessage(w, r, "/admin/users", L.FormattedError("invalid_user"))
+		return nil, fmt.Errorf("invalid VM ID")
+	}
+	vm := vmGet(vmId)
+	if vm == nil {
+		return nil, fmt.Errorf("VM does not exist")
+	}
+	return vm, nil
+}
+
+func adminVMSuspend(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := adminVMProcess(r)
+	if err != nil {
+		RedirectMessage(w, r, "/admin/users", L.FormatError(err))
+	}
+	vm.Suspend(false)
+	RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", vm.UserId), L.Success("vm_suspended"))
+}
+
+func adminVMUnsuspend(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	vm, err := adminVMProcess(r)
+	if err != nil {
+		RedirectMessage(w, r, "/admin/users", L.FormatError(err))
+	}
+	err = vm.Unsuspend()
+	if err != nil {
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", vm.UserId), L.FormatError(err))
 	} else {
-		db.Exec("UPDATE users SET status = 'disabled' WHERE id = ?", userId)
-		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", userId), L.Success("user_disabled"))
+		RedirectMessage(w, r, fmt.Sprintf("/admin/user/%d", vm.UserId), L.Success("vm_unsuspended"))
 	}
 }
 
@@ -234,6 +292,26 @@ func adminPlanDelete(w http.ResponseWriter, r *http.Request, session *Session, f
 	RedirectMessage(w, r, "/admin/plans", L.Success("plan_deleted"))
 }
 
+func adminPlanEnable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planEnable(planId)
+	RedirectMessage(w, r, "/admin/plans", L.Success("plan_enabled"))
+}
+
+func adminPlanDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planDisable(planId)
+	RedirectMessage(w, r, "/admin/plans", L.Success("plan_disabled"))
+}
+
 func adminPlanAssociateRegion(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	planId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -256,6 +334,30 @@ func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, session 
 	}
 	planDeassociateRegion(planId, mux.Vars(r)["region"])
 	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_region_deassociated"))
+}
+
+type AdminRegionsParams struct {
+	Frame   FrameParams
+	Regions []Region
+	Token   string
+}
+
+func adminRegions(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	params := AdminRegionsParams{}
+	params.Frame = frameParams
+	params.Regions = regionListAll()
+	params.Token = CSRFGenerate(session)
+	RenderTemplate(w, "admin", "regions", params)
+}
+
+func adminRegionEnable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	enableRegion(mux.Vars(r)["region"])
+	RedirectMessage(w, r, "/admin/regions", L.Success("region_enabled"))
+}
+
+func adminRegionDisable(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	disableRegion(mux.Vars(r)["region"])
+	RedirectMessage(w, r, "/admin/regions", L.Success("region_disabled"))
 }
 
 type AdminImagesParams struct {

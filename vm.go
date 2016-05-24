@@ -3,7 +3,6 @@ package lobster
 import "errors"
 import "fmt"
 import "log"
-import "sort"
 import "strings"
 import "time"
 
@@ -22,6 +21,7 @@ type VirtualMachine struct {
 	CreatedTime    time.Time
 	Suspended      string
 	Plan           Plan
+	User           User
 
 	Info      *VmInfo
 	Addresses []*IpAddress
@@ -71,14 +71,13 @@ type VmActionDescriptor struct {
 	Dangerous   bool              // if true, we will have confirmation window
 }
 
-var regionInterfaces map[string]VmInterface = make(map[string]VmInterface)
-
 const VM_QUERY = "SELECT vms.id, vms.user_id, vms.region, vms.name, vms.identification, " +
 	"vms.status, vms.task_pending, vms.external_ip, vms.private_ip, " +
-	"vms.time_created, vms.suspended, vms.plan_id, plans.name, plans.price, " +
-	"plans.ram, plans.cpu, plans.storage, plans.bandwidth " +
-	"FROM vms, plans " +
-	"WHERE vms.plan_id = plans.id"
+	"vms.time_created, vms.suspended, vms.plan_id, " +
+	"plans.name, plans.price, plans.ram, plans.cpu, plans.storage, plans.bandwidth, " +
+	"users.username, users.email " +
+	"FROM vms, plans, users " +
+	"WHERE vms.plan_id = plans.id AND vms.user_id = users.id"
 
 func vmListHelper(rows Rows) []*VirtualMachine {
 	vms := make([]*VirtualMachine, 0)
@@ -103,6 +102,8 @@ func vmListHelper(rows Rows) []*VirtualMachine {
 			&vm.Plan.Cpu,
 			&vm.Plan.Storage,
 			&vm.Plan.Bandwidth,
+			&vm.User.Username,
+			&vm.User.Email,
 		)
 		vms = append(vms, &vm)
 	}
@@ -115,6 +116,10 @@ func vmList(userId int) []*VirtualMachine {
 
 func vmListRegion(userId int, region string) []*VirtualMachine {
 	return vmListHelper(db.Query(VM_QUERY+" AND vms.user_id = ? AND region = ? ORDER BY id DESC", userId, region))
+}
+
+func vmListAll() []*VirtualMachine {
+	return vmListHelper(db.Query(VM_QUERY + " ORDER BY id DESC"))
 }
 
 func vmGet(vmId int) *VirtualMachine {
@@ -133,23 +138,6 @@ func vmGetUser(userId int, vmId int) *VirtualMachine {
 	} else {
 		return nil
 	}
-}
-
-func vmGetInterface(region string) VmInterface {
-	vmi, ok := regionInterfaces[region]
-	if !ok {
-		panic(errors.New("no interface registered for " + region))
-	}
-	return vmi
-}
-
-func regionList() []string {
-	var regions []string
-	for region := range regionInterfaces {
-		regions = append(regions, region)
-	}
-	sort.Sort(sort.StringSlice(regions))
-	return regions
 }
 
 func vmNameOk(name string) error {
@@ -193,6 +181,11 @@ func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 		return 0, L.Error("image_not_exist")
 	} else if image.Status != "active" {
 		return 0, L.Error("image_not_ready")
+	}
+
+	// verify region not disabled
+	if !regionEnabled(image.Region) {
+		return 0, L.Error("region_disabled")
 	}
 
 	// validate plan
@@ -551,6 +544,7 @@ func (vm *VirtualMachine) Suspend(auto bool) {
 
 func (vm *VirtualMachine) Unsuspend() error {
 	db.Exec("UPDATE vms SET suspended = 'no' WHERE id = ?", vm.Id)
+	vm.Suspended = "no"
 	return vm.Start()
 }
 

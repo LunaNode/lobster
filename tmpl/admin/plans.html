@@ -133,10 +133,34 @@
 			<td>{{ .Storage  }}</td>
 			<td>{{ .Bandwidth  }}</td>
 			<td>
-				<form method="POST" onsubmit="return window.confirm('{{ js (T "plan_delete_confirm_text") }}');" action="/admin/plan/{{ .Id }}/delete">
-					<input type="hidden" name="token" value="{{ $token }}" />
-					<button type="submit" class="btn btn-danger">{{ T "delete" }}</button>
-				</form>
+				{{ if .Enabled }}
+					<button
+						type="button"
+						class="btn btn-danger lobster-btn"
+						data-action="/admin/plan/{{ .Id }}/disable"
+						data-token="{{ $token }}"
+						>
+						{{ T "disable" }}
+					</button>
+				{{ else }}
+					<button
+						type="button"
+						class="btn btn-success lobster-btn"
+						data-action="/admin/plan/{{ .Id }}/enable"
+						data-token="{{ $token }}"
+						>
+						{{ T "enable" }}
+					</button>
+				{{ end }}
+				<button
+					type="button"
+					class="btn btn-danger lobster-btn"
+					data-action="/admin/plan/{{ .Id }}/delete"
+					data-token="{{ $token }}"
+					data-confirmation="{{ T "plan_delete_confirm_text" }}"
+					>
+					{{ T "delete" }}
+				</button>
 			</td>
 		</tr>
 		{{ end }}

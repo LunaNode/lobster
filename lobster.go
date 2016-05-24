@@ -236,13 +236,22 @@ func Setup(cfgPath string) {
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/credit", adminUserCredit, true)
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/password", adminUserPassword, true)
 	RegisterAdminHandler("/admin/user/{id:[0-9]+}/disable", adminUserDisable, true)
+	RegisterAdminHandler("/admin/user/{id:[0-9]+}/enable", adminUserEnable, true)
+	RegisterAdminHandler("/admin/vms", adminVirtualMachines, false)
+	RegisterAdminHandler("/admin/vm/{id:[0-9]+}/suspend", adminVMSuspend, true)
+	RegisterAdminHandler("/admin/vm/{id:[0-9]+}/unsuspend", adminVMUnsuspend, true)
 	RegisterAdminHandler("/admin/plans", adminPlans, false)
 	RegisterAdminHandler("/admin/plans/add", adminPlansAdd, true)
 	RegisterAdminHandler("/admin/plans/autopopulate", adminPlansAutopopulate, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}", adminPlan, false)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/delete", adminPlanDelete, true)
+	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/enable", adminPlanEnable, true)
+	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/disable", adminPlanDisable, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/associate", adminPlanAssociateRegion, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/deassociate/{region:[^/]+}", adminPlanDeassociateRegion, true)
+	RegisterAdminHandler("/admin/regions", adminRegions, false)
+	RegisterAdminHandler("/admin/region/{region:[^/]+}/enable", adminRegionEnable, true)
+	RegisterAdminHandler("/admin/region/{region:[^/]+}/disable", adminRegionDisable, true)
 	RegisterAdminHandler("/admin/images", adminImages, false)
 	RegisterAdminHandler("/admin/images/add", adminImagesAdd, true)
 	RegisterAdminHandler("/admin/image/{id:[0-9]+}/delete", adminImageDelete, true)
@@ -293,7 +302,7 @@ func cron() {
 		vmBilling(vmId, false)
 	}
 
-	userRows := db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+	userRows := db.Query("SELECT id FROM users WHERE last_billing_notify < DATE_SUB(NOW(), INTERVAL ? HOUR)", cfg.BillingNotifications.Frequency)
 	defer userRows.Close()
 	for userRows.Next() {
 		var userId int

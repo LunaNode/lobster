@@ -90,10 +90,10 @@
 			</div>
 		{{ template "modal_footer.html" $params }}
 		<div style="float:left; padding-left:5px;">
-			<form method="POST" action="/admin/user/{{ .User.Id }}/disable" onsubmit="return window.confirm('{{ js (T "account_disable_confirm_text") }}');">
+			<form method="POST" action="/admin/user/{{ .User.Id }}/{{ .StatusAction }}">
 				<div class="form-group">
 					<input type="hidden" name="token" value="{{ .Token }}" />
-					<button type="submit" class="btn btn-danger">{{ T "disable" }}</button>
+					<button type="submit" class="btn btn-danger">{{ T .StatusAction }}</button>
 				</div>
 			</form>
 		</div>
@@ -112,7 +112,9 @@
 			<th>{{ T "memory" }}</th>
 			<th>{{ T "storage" }}</th>
 			<th>{{ T "bandwidth" }}</th>
+			<th>{{ T "action" }}</th>
 		</tr>
+		{{ $token := .Token }}
 		{{ range .VirtualMachines }}
 		<tr>
 			<td>{{ .Name }}</td>
@@ -124,6 +126,19 @@
 			<td>{{ .Plan.Ram }} MB</td>
 			<td>{{ .Plan.Storage }} GB</td>
 			<td>{{ .Plan.Bandwidth }} GB</td>
+			<td>
+				{{ if eq .Suspended "no" }}
+					<form method="POST" action="/admin/vm/{{ .Id }}/suspend">
+						<input type="hidden" name="token" value="{{ $token }}" />
+						<button type="submit" class="btn btn-danger">{{ T "suspend" }}</button>
+					</form>
+				{{ else }}
+					<form method="POST" action="/admin/vm/{{ .Id }}/unsuspend">
+						<input type="hidden" name="token" value="{{ $token }}" />
+						<button type="submit" class="btn btn-danger">{{ T "unsuspend" }}</button>
+					</form>
+				{{ end }}
+			</td>
 		</tr>
 		{{ end }}
 		</table>

@@ -4,7 +4,6 @@ import "github.com/LunaNode/lobster/utils"
 
 import "github.com/gorilla/mux"
 
-import "errors"
 import "fmt"
 import "net/http"
 import "strconv"
@@ -179,20 +178,20 @@ func panelVM(w http.ResponseWriter, r *http.Request, session *Session, framePara
 }
 
 // virtual machine actions
-func panelVMProcess(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) (*VirtualMachine, error) {
+func panelVMProcess(r *http.Request, session *Session) (*VirtualMachine, error) {
 	vmId, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
-		return nil, errors.New("invalid VM ID")
+		return nil, fmt.Errorf("invalid VM ID")
 	}
 	vm := vmGetUser(session.UserId, vmId)
 	if vm == nil {
-		return nil, errors.New("VM does not exist")
+		return nil, fmt.Errorf("VM does not exist")
 	}
 	return vm, nil
 }
 
 func panelVMStart(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -205,7 +204,7 @@ func panelVMStart(w http.ResponseWriter, r *http.Request, session *Session, fram
 	}
 }
 func panelVMStop(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -218,7 +217,7 @@ func panelVMStop(w http.ResponseWriter, r *http.Request, session *Session, frame
 	}
 }
 func panelVMReboot(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -231,7 +230,7 @@ func panelVMReboot(w http.ResponseWriter, r *http.Request, session *Session, fra
 	}
 }
 func panelVMDelete(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -244,7 +243,7 @@ func panelVMDelete(w http.ResponseWriter, r *http.Request, session *Session, fra
 	}
 }
 func panelVMAction(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -260,7 +259,7 @@ func panelVMAction(w http.ResponseWriter, r *http.Request, session *Session, fra
 }
 
 func panelVMVnc(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -300,7 +299,7 @@ func panelVMReimage(w http.ResponseWriter, r *http.Request, session *Session, fr
 }
 
 func panelVMSnapshot(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -319,7 +318,7 @@ type VMResizeForm struct {
 }
 
 func panelVMResize(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
@@ -341,7 +340,7 @@ func panelVMResize(w http.ResponseWriter, r *http.Request, session *Session, fra
 }
 
 func panelVMRename(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
-	vm, err := panelVMProcess(w, r, session, frameParams)
+	vm, err := panelVMProcess(r, session)
 	if err != nil {
 		RedirectMessage(w, r, "/panel/vms", L.FormatError(err))
 	}
