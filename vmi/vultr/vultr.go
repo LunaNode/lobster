@@ -157,6 +157,17 @@ func (this *Vultr) VmReboot(vm *lobster.VirtualMachine) error {
 	return this.client.RebootServer(vm.Identification)
 }
 
+func (this *Vultr) VmVnc(vm *lobster.VirtualMachine) (string, error) {
+	server, err := this.client.GetServer(vm.Identification)
+	if err != nil {
+		return "", fmt.Errorf("failed to get server details: %v", err)
+	} else if server.KVMUrl == "" {
+		return "", fmt.Errorf("console is not ready yet")
+	} else {
+		return server.KVMUrl, nil
+	}
+}
+
 func (this *Vultr) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
 	return errors.New("operation not supported")
 }

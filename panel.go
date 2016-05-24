@@ -268,7 +268,7 @@ func panelVMVnc(w http.ResponseWriter, r *http.Request, session *Session, frameP
 	if err != nil {
 		RedirectMessage(w, r, fmt.Sprintf("/panel/vm/%d", vm.Id), L.FormatError(err))
 	} else {
-		RenderTemplate(w, "panel", "vnc", url)
+		http.Redirect(w, r, url, 303)
 	}
 }
 
