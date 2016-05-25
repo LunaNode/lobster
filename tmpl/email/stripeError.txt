@@ -1,0 +1,4 @@
+Stripe error encountered.
+
+Description: {{ .Params.Description }}
+{{ if .Params.Error }}Error: {{ .Params.Error }}{{ end }}

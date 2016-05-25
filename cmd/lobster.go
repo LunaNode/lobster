@@ -18,6 +18,7 @@ import "github.com/LunaNode/lobster/vmi/cloug"
 import "github.com/LunaNode/lobster/payment/coinbase"
 import payfake "github.com/LunaNode/lobster/payment/fake"
 import "github.com/LunaNode/lobster/payment/paypal"
+import "github.com/LunaNode/lobster/payment/stripe"
 
 import "encoding/json"
 import "io/ioutil"
@@ -75,6 +76,10 @@ type PaymentConfig struct {
 	// API options (used by coinbase)
 	ApiKey    string `json:"api_key"`
 	ApiSecret string `json:"api_secret"`
+
+	// stripe options
+	PrivateKey     string `json:"private_key"`
+	PublishableKey string `json:"publishable_key"`
 }
 
 type JSONConfig struct {
@@ -179,6 +184,8 @@ func main() {
 			pi = coinbase.MakeCoinbasePayment(payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
 		} else if payment.Type == "fake" {
 			pi = new(payfake.FakePayment)
+		} else if payment.Type == "stripe" {
+			pi = stripe.MakeStripePayment(payment.PrivateKey, payment.PublishableKey)
 		} else {
 			log.Fatalf("Encountered unrecognized payment interface type %s", payment.Type)
 		}

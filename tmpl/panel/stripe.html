@@ -1,0 +1,38 @@
+{{ template "header.html" .Frame }}
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Stripe Payment</h1>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ template "message.html" .Frame }}
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<p>Use the button below to proceed with credit card payment via Stripe.</p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<form action="/payment/stripe/submit" method="POST">
+			<input type="hidden" name="token" value="{{ .Token }}" />
+			<input type="hidden" name="amount" value="{{ .Cents }}" />
+			<input type="hidden" name="currency" value="{{ .Currency }}" />
+			<script
+				src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+				data-key="{{ .Key }}"
+				data-name="Lobster"
+				data-description="{{ T "currency_format" (.Amount | FormatFloat2) }}"
+				data-amount="{{ .Cents }}"
+				data-currency="{{ .Currency }}"
+				data-email="{{ .Email }}"
+				data-label="Add Funds via Credit Card"
+				data-billing-address="true"
+				data-zip-code="true">
+			</script>
+		</form>
+	</div>
+</div>
+{{ template "footer.html" .Frame }}

@@ -103,7 +103,8 @@
 			"pwreset_requested": "Your password reset request has been processed, and an e-mail has been sent with details on how to proceed.",
 			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password.",
 			"region_enabled": "Region enabled successfully.",
-			"region_disabled": "Region disabled successfully."
+			"region_disabled": "Region disabled successfully.",
+			"payment_made": "Payment made successfully."
 		}, "T": {
 			"account_settings": "Account Settings",
 			"username": "Username",
