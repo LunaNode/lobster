@@ -43,6 +43,12 @@
 			"callback_secret": "random",
 			"api_key": "123",
 			"api_secret": "abcdef"
+		},
+		{
+			"name": "Stripe",
+			"type": "stripe",
+			"publishable_key": "pk_live_abc",
+			"private_key": "sk_live_abc"
 		}
 	],
 	"module":
