@@ -5,8 +5,10 @@ import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/cloug/provider"
 import "github.com/LunaNode/cloug/service/compute"
 
+import "encoding/hex"
 import "encoding/json"
 import "fmt"
+import "net/url"
 import "strings"
 
 type Cloug struct {
@@ -100,7 +102,7 @@ func (cloug *Cloug) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) 
 		password = "unknown"
 	}
 
-	return &lobster.VmInfo{
+	info := &lobster.VmInfo{
 		Ip:                   instance.IP,
 		PrivateIp:            instance.PrivateIP,
 		Status:               strings.Title(string(instance.Status)),
@@ -114,7 +116,18 @@ func (cloug *Cloug) VmInfo(vm *lobster.VirtualMachine) (*lobster.VmInfo, error) 
 		CanResize:            cloug.resizeService != nil,
 		CanSnapshot:          cloug.imageService != nil,
 		CanAddresses:         cloug.addressService != nil,
-	}, nil
+	}
+
+	for _, action := range instance.Actions {
+		info.Actions = append(info.Actions, &lobster.VmActionDescriptor{
+			Action:      hex.EncodeToString([]byte(action.Label)),
+			Name:        action.Label,
+			Description: action.Description,
+			Options:     action.Options,
+		})
+	}
+
+	return info, nil
 }
 
 func (cloug *Cloug) VmStart(vm *lobster.VirtualMachine) error {
@@ -133,11 +146,47 @@ func (cloug *Cloug) VmVnc(vm *lobster.VirtualMachine) (string, error) {
 	if cloug.vncService == nil {
 		return "", fmt.Errorf("operation not supported")
 	}
-	return cloug.vncService.GetVNC(vm.Identification)
+	rawurl, err := cloug.vncService.GetVNC(vm.Identification)
+	if err != nil {
+		return "", err
+	}
+
+	// decode URL, depending on protocol we may want to start websockify/wssh
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse returned URL: %v", err)
+	}
+
+	if u.Scheme == "vnc" {
+		return lobster.HandleWebsockify(u.Host, u.Query().Get("password")), nil
+	} else if u.Scheme == "ssh" {
+		if u.User == nil {
+			return "", fmt.Errorf("got URL with ssh scheme, but user info not set")
+		}
+		username := u.User.Username()
+		password, isSet := u.User.Password()
+		if !isSet {
+			return "", fmt.Errorf("got URL with ssh scheme, but user info does not specify password")
+		}
+		return lobster.HandleWssh(u.Host, username, password), nil
+	} else {
+		return rawurl, nil
+	}
 }
 
-func (cloug *Cloug) VmAction(vm *lobster.VirtualMachine, action string, value string) error {
-	return fmt.Errorf("operation not supported")
+func (cloug *Cloug) VmAction(vm *lobster.VirtualMachine, actionStr string, value string) error {
+	instance, err := cloug.service.GetInstance(vm.Identification)
+	if err != nil {
+		return err
+	}
+
+	for _, action := range instance.Actions {
+		if hex.EncodeToString([]byte(action.Label)) == actionStr {
+			return action.Func(value)
+		}
+	}
+
+	return fmt.Errorf("unknown action %s", actionStr)
 }
 
 func (cloug *Cloug) VmRename(vm *lobster.VirtualMachine, name string) error {
