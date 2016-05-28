@@ -75,12 +75,21 @@ func (this *Client) VmList() ([]*VirtualMachine, error) {
 	}
 }
 
-func (this *Client) VmCreate(name string, planId int, imageId int) (int, error) {
+type VmCreateOptions struct {
+	KeyId int
+}
+
+func (this *Client) VmCreate(name string, planId int, imageId int, options *VmCreateOptions) (int, error) {
 	request := VMCreateRequest{
 		Name:    name,
 		PlanId:  planId,
 		ImageId: imageId,
 	}
+
+	if options != nil {
+		request.KeyId = options.KeyId
+	}
+
 	var response VMCreateResponse
 	err := this.request("POST", "vms", request, &response)
 	if err != nil {
@@ -230,4 +239,32 @@ func (this *Client) PlanList() ([]*Plan, error) {
 	} else {
 		return response.Plans, nil
 	}
+}
+
+func (this *Client) KeyList() ([]*Key, error) {
+	var response KeyListResponse
+	err := this.request("GET", "keys", nil, &response)
+	if err != nil {
+		return nil, err
+	} else {
+		return response.Keys, nil
+	}
+}
+
+func (this *Client) KeyAdd(name string, key string) (int, error) {
+	request := KeyAddRequest{
+		Name: name,
+		Key:  key,
+	}
+	var response KeyAddResponse
+	err := this.request("POST", "keys", request, &response)
+	if err != nil {
+		return 0, err
+	} else {
+		return response.Id, nil
+	}
+}
+
+func (this *Client) KeyRemove(keyId int) error {
+	return this.request("DELETE", fmt.Sprintf("keys/%d", keyId), nil, nil)
 }

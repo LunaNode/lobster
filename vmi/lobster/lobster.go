@@ -57,7 +57,18 @@ func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVm
 	}
 
 	imageId, _ := strconv.Atoi(options.ImageIdentification)
-	vmId, err := this.client.VmCreate(vm.Name, plan, imageId)
+
+	var clientOptions api.VmCreateOptions
+	if options.SSHKey.Key != "" {
+		keyId, err := this.client.KeyAdd("lobstertmp", options.SSHKey.Key)
+		if err != nil {
+			return "", fmt.Errorf("failed to add public key: %v", err)
+		}
+		defer this.client.KeyRemove(keyId)
+		clientOptions.KeyId = keyId
+	}
+
+	vmId, err := this.client.VmCreate(vm.Name, plan, imageId, &clientOptions)
 	return fmt.Sprintf("%d", vmId), err
 }
 

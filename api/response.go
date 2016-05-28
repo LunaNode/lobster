@@ -67,6 +67,12 @@ type Plan struct {
 	Bandwidth int    `json:"bandwidth"`
 }
 
+type Key struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
+
 // responses
 
 type VMListResponse struct {
@@ -109,4 +115,12 @@ type ImageInfoResponse struct {
 
 type PlanListResponse struct {
 	Plans []*Plan `json:"plans"`
+}
+
+type KeyListResponse struct {
+	Keys []*Key `json:"keys"`
+}
+
+type KeyAddResponse struct {
+	Id int `json:"id"`
 }

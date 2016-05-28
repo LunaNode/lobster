@@ -319,6 +319,12 @@ func copyPlan(src *Plan, dst *api.Plan) {
 	dst.Bandwidth = src.Bandwidth
 }
 
+func copyKey(src *SSHKey, dst *api.Key) {
+	dst.Id = src.ID
+	dst.Name = src.Name
+	dst.Key = src.Key
+}
+
 func apiVMList(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
 	var response api.VMListResponse
 	for _, vm := range vmList(userId) {
@@ -338,7 +344,9 @@ func apiVMCreate(w http.ResponseWriter, r *http.Request, userId int, requestByte
 		return
 	}
 
-	vmId, err := vmCreate(userId, request.Name, request.PlanId, request.ImageId, VmCreateOptions{})
+	vmId, err := vmCreate(userId, request.Name, request.PlanId, request.ImageId, VmCreateOptions{
+		KeyID: request.KeyId,
+	})
 	if err != nil {
 		http.Error(w, "Create failed: "+err.Error(), 400)
 		return
@@ -664,4 +672,47 @@ func apiPlanList(w http.ResponseWriter, r *http.Request, userId int, requestByte
 		response.Plans = append(response.Plans, planCopy)
 	}
 	apiResponse(w, 200, &response)
+}
+
+func apiKeyList(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
+	var response api.KeyListResponse
+	for _, key := range keyList(userId) {
+		keyCopy := new(api.Key)
+		copyKey(key, keyCopy)
+		response.Keys = append(response.Keys, keyCopy)
+	}
+	apiResponse(w, 200, &response)
+}
+
+func apiKeyAdd(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
+	var request api.KeyAddRequest
+
+	err := json.Unmarshal(requestBytes, &request)
+	if err != nil {
+		http.Error(w, "Invalid json: "+err.Error(), 400)
+		return
+	}
+
+	keyId, err := keyAdd(userId, request.Name, request.Key)
+	if err != nil {
+		http.Error(w, "Key add failed: "+err.Error(), 400)
+		return
+	} else {
+		apiResponse(w, 201, api.KeyAddResponse{Id: keyId})
+	}
+}
+
+func apiKeyRemove(w http.ResponseWriter, r *http.Request, userId int, requestBytes []byte) {
+	keyId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		http.Error(w, "Invalid key ID", 400)
+		return
+	}
+
+	err = keyRemove(userId, keyId)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+	} else {
+		apiResponse(w, 204, nil)
+	}
 }

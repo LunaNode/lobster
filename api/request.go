@@ -4,6 +4,7 @@ type VMCreateRequest struct {
 	Name    string `json:"name"`
 	PlanId  int    `json:"plan_id"`
 	ImageId int    `json:"image_id"`
+	KeyId   int    `json:"key_id"`
 }
 
 type VMActionRequest struct {
@@ -33,4 +34,9 @@ type ImageFetchRequest struct {
 	Name   string `json:"name"`
 	Url    string `json:"url"`
 	Format string `json:"format"`
+}
+
+type KeyAddRequest struct {
+	Name string `json:"name"`
+	Key  string `json:"key"`
 }

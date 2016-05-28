@@ -230,6 +230,9 @@ func Setup(cfgPath string) {
 	RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageInfo, "GET")
 	RegisterAPIHandler("/api/images/{id:[0-9]+}", apiImageDelete, "DELETE")
 	RegisterAPIHandler("/api/plans", apiPlanList, "GET")
+	RegisterAPIHandler("/api/keys", apiKeyList, "GET")
+	RegisterAPIHandler("/api/keys", apiKeyAdd, "POST")
+	RegisterAPIHandler("/api/keys/{id:[0-9]+}", apiKeyRemove, "DELETE")
 
 	// admin routes
 	RegisterAdminHandler("/admin/dashboard", adminDashboard, false)
