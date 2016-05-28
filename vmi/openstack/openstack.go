@@ -1,5 +1,8 @@
 package openstack
 
+// The OpenStack VMI is deprecated.
+// Please use the Cloug provider for OpenStack instead.
+
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/ipaddr"
 import "github.com/LunaNode/lobster/utils"

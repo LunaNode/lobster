@@ -1,5 +1,8 @@
 package cloudstack
 
+// The CloudStack VMI is deprecated.
+// Please use the Cloug provider for CloudStack instead.
+
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/ipaddr"
 

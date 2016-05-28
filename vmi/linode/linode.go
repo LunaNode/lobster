@@ -1,5 +1,8 @@
 package linode
 
+// The Linode VMI is deprecated.
+// Please use the Cloug provider for Linode instead.
+
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/utils"
 import "github.com/LunaNode/go-linode"

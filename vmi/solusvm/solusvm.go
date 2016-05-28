@@ -1,5 +1,8 @@
 package solusvm
 
+// The SolusVM VMI is deprecated.
+// Please use the Cloug provider for SolusVM instead.
+
 import "github.com/LunaNode/lobster"
 
 import "errors"

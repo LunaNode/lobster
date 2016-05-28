@@ -1,5 +1,8 @@
 package lunanode
 
+// The LunaNode VMI is deprecated.
+// Please use the Cloug provider for LunaNode instead.
+
 import "github.com/LunaNode/lobster"
 
 import "errors"

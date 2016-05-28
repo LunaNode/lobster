@@ -1,5 +1,8 @@
 package vultr
 
+// The Vultr VMI is deprecated.
+// Please use the Cloug provider for Vultr instead.
+
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/utils"
 import vultr "github.com/LunaNode/vultr/lib"

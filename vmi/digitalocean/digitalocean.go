@@ -1,5 +1,8 @@
 package digitalocean
 
+// The DigitalOcean VMI is deprecated.
+// Please use the Cloug provider for DigitalOcean instead.
+
 import "github.com/LunaNode/lobster"
 import "github.com/LunaNode/lobster/utils"
 import "github.com/digitalocean/godo"
