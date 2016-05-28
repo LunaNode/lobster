@@ -61,7 +61,7 @@ func (this *Vultr) findOSByName(name string) (int, error) {
 	return 0, fmt.Errorf("no OS found matching %s", name)
 }
 
-func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	var planId int
 	if vm.Plan.Identification != "" {
 		planId, _ = strconv.Atoi(vm.Plan.Identification)
@@ -78,7 +78,7 @@ func (this *Vultr) VmCreate(vm *lobster.VirtualMachine, imageIdentification stri
 		IPV6:              true,
 	}
 
-	imageParts := strings.SplitN(imageIdentification, ":", 2)
+	imageParts := strings.SplitN(options.ImageIdentification, ":", 2)
 	if len(imageParts) != 2 {
 		return "", errors.New("malformed image identification: missing colon")
 	}

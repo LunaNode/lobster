@@ -152,7 +152,11 @@ func vmNameOk(name string) error {
 	}
 }
 
-func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
+type VmCreateOptions struct {
+	KeyID int
+}
+
+func vmCreate(userId int, name string, planId int, imageId int, options VmCreateOptions) (int, error) {
 	// validate credit
 	user := UserDetails(userId)
 	if user == nil {
@@ -174,6 +178,8 @@ func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 		return 0, err
 	}
 
+	var vmiOptions VMIVmCreateOptions
+
 	// validate image ID
 	// the image also determines which region we provision in
 	image := imageGet(userId, imageId)
@@ -182,6 +188,7 @@ func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 	} else if image.Status != "active" {
 		return 0, L.Error("image_not_ready")
 	}
+	vmiOptions.ImageIdentification = image.Identification
 
 	// verify region not disabled
 	if !regionEnabled(image.Region) {
@@ -194,6 +201,15 @@ func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 		return 0, L.Error("no_such_plan")
 	}
 
+	// validate key
+	if options.KeyID != 0 {
+		key := keyGet(userId, options.KeyID)
+		if key == nil {
+			return 0, L.Error("sshkey_not_exist")
+		}
+		vmiOptions.SSHKey = *key
+	}
+
 	// create the virtual machine asynchronously
 	result := db.Exec("INSERT INTO vms (user_id, region, plan_id, name, status) VALUES (?, ?, ?, ?, ?)", userId, image.Region, planId, name, "provisioning")
 	vmId := result.LastInsertId()
@@ -202,7 +218,7 @@ func vmCreate(userId int, name string, planId int, imageId int) (int, error) {
 		defer errorHandler(nil, nil, true)
 		vm := vmGet(vmId)
 		vm.Plan = *plan // use plan from planGetRegion so that we have the region-specific identification
-		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vm, image.Identification)
+		vmIdentification, err := vmGetInterface(image.Region).VmCreate(vm, &vmiOptions)
 		if err != nil {
 			ReportError(
 				err,

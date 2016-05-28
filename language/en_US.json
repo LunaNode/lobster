@@ -6,6 +6,7 @@
 			"invalid_plan": "invalid plan ID",
 			"invalid_image": "invalid image ID",
 			"invalid_vm": "invalid VM ID",
+			"invalid_sshkey": "invalid SSH key ID",
 			"invalid_id": "invalid ID number",
 			"invalid_email": "invalid e-mail address",
 			"invalid_username_format": "provided username contains invalid characters",
@@ -34,6 +35,7 @@
 			"subject_message_empty": "subject and message cannot be empty",
 			"message_too_long": "message contents too long, please limit to %s characters",
 			"name_too_long": "name cannot exceed %d characters",
+			"key_empty": "key cannot be empty",
 
 			"username_length": "usernames must be between %d and %d characters long",
 			"password_length": "passwords must be between %d and %d characters long",
@@ -51,6 +53,7 @@
 			"image_not_ready": "specified image is not ready",
 			"vm_not_ready": "VM is not ready yet",
 			"no_such_plan": "no such plan",
+			"sshkey_not_exist": "specified SSH key does not exist",
 			"vm_suspended_auto": "VM is suspended due to negative credit, make a payment first",
 			"vm_suspended_manual": "VM is suspended, please see abuse ticket under Support tab",
 			"vm_suspended": "VM is suspended",
@@ -104,7 +107,9 @@
 			"pwreset_completed": "Your password reset request has been completed. You can now login with your username and the newly set password.",
 			"region_enabled": "Region enabled successfully.",
 			"region_disabled": "Region disabled successfully.",
-			"payment_made": "Payment made successfully."
+			"payment_made": "Payment made successfully.",
+			"sshkey_added": "SSH public key added successfully.",
+			"sshkey_removed": "SSH public key removed successfully."
 		}, "T": {
 			"account_settings": "Account Settings",
 			"username": "Username",
@@ -127,6 +132,7 @@
 			"last_nonce": "Last Nonce",
 			"action": "Action",
 			"delete": "Delete",
+			"remove": "Remove",
 			"no_api_keys": "You do not have any API keys.",
 			"billing": "Billing",
 			"make_payment": "Make Payment",
@@ -278,7 +284,16 @@
 			"suspend": "Suspend",
 			"unsuspend": "Unsuspend",
 			"regions": "Regions",
-			"credit_for_username": "Credit for %s"
+			"credit_for_username": "Credit for %s",
+			"sshkeys": "SSH Keys",
+			"sshkey": "SSH Key",
+			"add_sshkey": "Add an SSH Key",
+			"add_sshkey_text": "Add a publish key to the panel below. Once added, you can select the key when creating new VMs so that the machine is automatically configured to accept connections with your key.",
+			"add_sshkey_name_placeholder": "My key",
+			"public_key": "Public Key",
+			"public_key_placeholder": "ssh-rsa ...",
+			"manage_sshkeys": "Manage SSH Keys",
+			"no_sshkeys": "You do not have any SSH keys."
 		}
 	}, "payment_fake": {
 		"message": {

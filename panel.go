@@ -99,12 +99,14 @@ type PanelNewVMRegionParams struct {
 	PublicImages []*Image
 	UserImages   []*Image
 	Plans        []*Plan
+	Keys         []*SSHKey
 	Token        string
 }
 type NewVMRegionForm struct {
 	Name    string `schema:"name"`
 	PlanId  int    `schema:"plan_id"`
 	ImageId int    `schema:"image_id"`
+	KeyId   int    `schema:"key_id"`
 }
 
 func panelNewVMRegion(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
@@ -118,7 +120,7 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, session *Session, 
 			return
 		}
 
-		vmId, err := vmCreate(session.UserId, form.Name, form.PlanId, form.ImageId)
+		vmId, err := vmCreate(session.UserId, form.Name, form.PlanId, form.ImageId, VmCreateOptions{KeyID: form.KeyId})
 		if err != nil {
 			RedirectMessage(w, r, "/panel/newvm/"+region, L.FormatError(err))
 		} else {
@@ -132,6 +134,7 @@ func panelNewVMRegion(w http.ResponseWriter, r *http.Request, session *Session, 
 	params.Frame = frameParams
 	params.Region = region
 	params.Plans = planListRegion(region)
+	params.Keys = keyList(session.UserId)
 	params.Token = CSRFGenerate(session)
 
 	for _, image := range imageListRegion(session.UserId, region) {
@@ -575,4 +578,56 @@ func panelImageDetails(w http.ResponseWriter, r *http.Request, session *Session,
 
 func panelToken(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
 	w.Write([]byte(CSRFGenerate(session)))
+}
+
+type PanelKeysParams struct {
+	Frame FrameParams
+	Keys  []*SSHKey
+	Token string
+}
+
+func panelKeys(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	params := PanelKeysParams{}
+	params.Frame = frameParams
+	params.Keys = keyList(session.UserId)
+	params.Token = CSRFGenerate(session)
+	RenderTemplate(w, "panel", "keys", params)
+}
+
+type KeyAddForm struct {
+	Name string `schema:"name"`
+	Key  string `schema:"key"`
+}
+
+func panelKeyAdd(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	form := new(KeyAddForm)
+	err := decoder.Decode(form, r.PostForm)
+	if err != nil {
+		http.Redirect(w, r, "/panel/keys", 303)
+		return
+	}
+
+	_, err = keyAdd(session.UserId, form.Name, form.Key)
+	if err != nil {
+		RedirectMessage(w, r, "/panel/keys", L.FormatError(err))
+	} else {
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Add key", fmt.Sprintf("Name: %s", form.Name))
+		RedirectMessage(w, r, "/panel/keys", L.Success("sshkey_added"))
+	}
+}
+
+func panelKeyRemove(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	keyID, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/panel/keys", L.FormattedError("invalid_sshkey"))
+		return
+	}
+
+	err = keyRemove(session.UserId, keyID)
+	if err != nil {
+		RedirectMessage(w, r, "/panel/keys", L.FormatError(err))
+	} else {
+		LogAction(session.UserId, ExtractIP(r.RemoteAddr), "Remove key", fmt.Sprintf("ID: %d", keyID))
+		RedirectMessage(w, r, "/panel/keys", L.Success("sshkey_removed"))
+	}
 }

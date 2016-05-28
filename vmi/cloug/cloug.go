@@ -54,12 +54,12 @@ func MakeCloug(jsonData []byte, region string) (*Cloug, error) {
 	return cloug, nil
 }
 
-func (cloug *Cloug) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
-	instance, err := cloug.service.CreateInstance(&compute.Instance{
+func (cloug *Cloug) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
+	tmpl := compute.Instance{
 		Name:      vm.Name,
 		Region:    cloug.config.Region,
 		NetworkID: cloug.config.NetworkID,
-		Image:     compute.Image{ID: imageIdentification},
+		Image:     compute.Image{ID: options.ImageIdentification},
 		Flavor: compute.Flavor{
 			ID:         vm.Plan.Identification,
 			NumCores:   vm.Plan.Cpu,
@@ -67,7 +67,15 @@ func (cloug *Cloug) VmCreate(vm *lobster.VirtualMachine, imageIdentification str
 			MemoryMB:   vm.Plan.Ram,
 			TransferGB: vm.Plan.Bandwidth,
 		},
-	})
+	}
+
+	if options.SSHKey.Key != "" {
+		tmpl.PublicKey = compute.PublicKey{
+			Key: []byte(options.SSHKey.Key),
+		}
+	}
+
+	instance, err := cloug.service.CreateInstance(&tmpl)
 
 	if err != nil {
 		return "", err

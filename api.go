@@ -338,7 +338,7 @@ func apiVMCreate(w http.ResponseWriter, r *http.Request, userId int, requestByte
 		return
 	}
 
-	vmId, err := vmCreate(userId, request.Name, request.PlanId, request.ImageId)
+	vmId, err := vmCreate(userId, request.Name, request.PlanId, request.ImageId, VmCreateOptions{})
 	if err != nil {
 		http.Error(w, "Create failed: "+err.Error(), 400)
 		return

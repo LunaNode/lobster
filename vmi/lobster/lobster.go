@@ -42,7 +42,7 @@ func (this *Lobster) findMatchingPlan(ram int, storage int, cpu int) (*api.Plan,
 	return nil, nil
 }
 
-func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	var plan int
 	if vm.Plan.Identification != "" {
 		plan, _ = strconv.Atoi(vm.Plan.Identification)
@@ -56,7 +56,7 @@ func (this *Lobster) VmCreate(vm *lobster.VirtualMachine, imageIdentification st
 		plan = matchPlan.Id
 	}
 
-	imageId, _ := strconv.Atoi(imageIdentification)
+	imageId, _ := strconv.Atoi(options.ImageIdentification)
 	vmId, err := this.client.VmCreate(vm.Name, plan, imageId)
 	return fmt.Sprintf("%d", vmId), err
 }

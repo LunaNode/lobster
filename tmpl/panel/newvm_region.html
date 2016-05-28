@@ -69,6 +69,20 @@ label.plan {
 				</div>
 			</div>
 		</div>
+		{{ if .Keys }}
+			<div class="form-group" id="div-image">
+				<h3>{{ T "sshkey" }}</h3>
+				<div data-toggle="buttons">
+					<div class="btn-group btn-group-vertical" style="vertical-align: top;">
+						{{ range .Keys }}
+							<label class="btn btn-primary">
+								<input class="input-key" type="radio" name="key_id" value="{{ .ID }}"> {{ .Name }}
+							</label>
+						{{ end }}
+					</div>
+				</div>
+			</div>
+		{{ end }}
 		<button type="submit" class="btn btn-success btn-lg">{{ T "create_vm" }}</button>
 		</form>
 	</div>

@@ -208,6 +208,9 @@ func Setup(cfgPath string) {
 	RegisterPanelHandler("/panel/images/add", panelImageAdd, true)
 	RegisterPanelHandler("/panel/image/{id:[0-9]+}", panelImageDetails, false)
 	RegisterPanelHandler("/panel/image/{id:[0-9]+}/remove", panelImageRemove, true)
+	RegisterPanelHandler("/panel/keys", panelKeys, false)
+	RegisterPanelHandler("/panel/keys/add", panelKeyAdd, true)
+	RegisterPanelHandler("/panel/key/{id:[0-9]+}/remove", panelKeyRemove, true)
 	RegisterPanelHandler("/panel/csrftoken", panelToken, false)
 
 	// api routes

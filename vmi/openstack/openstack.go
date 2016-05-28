@@ -49,7 +49,7 @@ func MakeOpenStack(identityEndpoint string, username string, password string, te
 	return this
 }
 
-func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	flavorID := vm.Plan.Identification
 	if flavorID == "" {
 		flavorOpts := flavors.ListOpts{
@@ -83,7 +83,7 @@ func (this *OpenStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification 
 	password := utils.Uid(16)
 	opts := servers.CreateOpts{
 		Name:      vm.Name,
-		ImageRef:  imageIdentification,
+		ImageRef:  options.ImageIdentification,
 		FlavorRef: flavorID,
 		Networks:  []servers.Network{{UUID: this.networkId}},
 		AdminPass: password,

@@ -19,7 +19,7 @@ type Fake struct {
 	CountVnc    int
 }
 
-func (this *Fake) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *Fake) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	this.CountCreate++
 	vm.SetMetadata("addresses", "127.0.0.1:")
 	return "fake", nil

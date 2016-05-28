@@ -64,9 +64,9 @@ func (this *DigitalOcean) processAction(vmIdentification int, actionId int) erro
 	return nil
 }
 
-func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *DigitalOcean) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	password := utils.Uid(16)
-	image, err := this.findImage(imageIdentification)
+	image, err := this.findImage(options.ImageIdentification)
 	if err != nil {
 		return "", err
 	}

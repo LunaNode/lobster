@@ -17,13 +17,13 @@ type SolusVM struct {
 	setupConsolePage bool
 }
 
-func (this *SolusVM) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *SolusVM) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	name := vm.Name
 	if len(name) < 4 {
 		name += ".example.com"
 	}
 
-	vmId, password, err := this.Api.VmCreate(this.VirtType, this.NodeGroup, name, imageIdentification, vm.Plan.Ram, vm.Plan.Storage, vm.Plan.Cpu)
+	vmId, password, err := this.Api.VmCreate(this.VirtType, this.NodeGroup, name, options.ImageIdentification, vm.Plan.Ram, vm.Plan.Storage, vm.Plan.Cpu)
 	vm.SetMetadata("password", password)
 	return fmt.Sprintf("%d", vmId), err
 }

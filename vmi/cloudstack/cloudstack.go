@@ -50,7 +50,7 @@ func (cs *CloudStack) findDiskOffering(size int) (string, error) {
 	return "", fmt.Errorf("no disk offering with %d GB space", size)
 }
 
-func (cs *CloudStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (cs *CloudStack) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	var serviceOfferingID, diskOfferingID string
 	var err error
 
@@ -72,7 +72,7 @@ func (cs *CloudStack) VmCreate(vm *lobster.VirtualMachine, imageIdentification s
 		diskOfferingID = parts[1]
 	}
 
-	id, jobid, err := cs.client.DeployVirtualMachine(serviceOfferingID, diskOfferingID, imageIdentification)
+	id, jobid, err := cs.client.DeployVirtualMachine(serviceOfferingID, diskOfferingID, options.ImageIdentification)
 	if err != nil {
 		return "", err
 	}

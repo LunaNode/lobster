@@ -4,7 +4,7 @@ type VmInterface interface {
 	// Creates a virtual machine with the given name and plan (specified in vm object), and image.
 	// Returns vmIdentification string and optional error.
 	// Should return vmIdentification != "" only if err == nil.
-	VmCreate(vm *VirtualMachine, imageIdentification string) (string, error)
+	VmCreate(vm *VirtualMachine, options *VMIVmCreateOptions) (string, error)
 
 	// Deletes the specified virtual machine.
 	VmDelete(vm *VirtualMachine) error
@@ -21,6 +21,11 @@ type VmInterface interface {
 	// returns the number of bytes transferred by the given VM since the last call
 	// if this is the first call, then BandwidthAccounting must return zero
 	BandwidthAccounting(vm *VirtualMachine) int64
+}
+
+type VMIVmCreateOptions struct {
+	ImageIdentification string
+	SSHKey              SSHKey
 }
 
 type VMIVnc interface {

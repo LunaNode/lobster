@@ -49,7 +49,7 @@ func (this *Linode) findKernel() (int, error) {
 	return 0, errors.New("no kernel found")
 }
 
-func (this *Linode) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *Linode) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	var planID int
 	if vm.Plan.Identification != "" {
 		planID, _ = strconv.Atoi(vm.Plan.Identification)
@@ -78,7 +78,7 @@ func (this *Linode) VmCreate(vm *lobster.VirtualMachine, imageIdentification str
 	diskSize := totalDiskMB - swapSize
 
 	var diskID int
-	imageParts := strings.SplitN(imageIdentification, ":", 2)
+	imageParts := strings.SplitN(options.ImageIdentification, ":", 2)
 	if len(imageParts) != 2 {
 		return "", errors.New("malformed image identification: missing colon")
 	}

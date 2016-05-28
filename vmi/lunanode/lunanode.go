@@ -25,7 +25,7 @@ func MakeLunaNode(region string, apiId string, apiKey string) *LunaNode {
 	return this
 }
 
-func (this *LunaNode) VmCreate(vm *lobster.VirtualMachine, imageIdentification string) (string, error) {
+func (this *LunaNode) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmCreateOptions) (string, error) {
 	var planIdentification int
 	if vm.Plan.Identification != "" {
 		planIdentification, _ = strconv.Atoi(vm.Plan.Identification)
@@ -53,7 +53,7 @@ func (this *LunaNode) VmCreate(vm *lobster.VirtualMachine, imageIdentification s
 		planIdentification, _ = strconv.Atoi(matchPlan.Id)
 	}
 
-	imageIdentificationInt, _ := strconv.Atoi(imageIdentification)
+	imageIdentificationInt, _ := strconv.Atoi(options.ImageIdentification)
 	vmId, err := this.api.VmCreateImage(this.region, vm.Name, planIdentification, imageIdentificationInt)
 	return fmt.Sprintf("%d", vmId), err
 }
