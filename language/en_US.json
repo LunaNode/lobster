@@ -82,6 +82,7 @@
 			"image_autopopulate_success": "Image autopopulation succeeded.",
 			"image_downloading": "Image download is in progress (the image will be available once the status becomes active in the list below).",
 			"plan_created": "Plan created successfully.",
+			"plan_updated": "Plan updated successfully.",
 			"plan_autopopulate_success": "Plan autopopulation succeeded.",
 			"image_deleted": "Image deleted.",
 			"plan_deleted": "Plan deleted successfully.",
@@ -293,7 +294,13 @@
 			"public_key": "Public Key",
 			"public_key_placeholder": "ssh-rsa ...",
 			"manage_sshkeys": "Manage SSH Keys",
-			"no_sshkeys": "You do not have any SSH keys."
+			"no_sshkeys": "You do not have any SSH keys.",
+			"plan_metadata": "Plan Metadata",
+			"key": "Key",
+			"value": "Value",
+			"set": "Set",
+			"unset": "Unset",
+			"no_plan_metadata": "This plan does not currently have any associated metadata."
 		}
 	}, "payment_fake": {
 		"message": {

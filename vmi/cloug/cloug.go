@@ -75,6 +75,11 @@ func (cloug *Cloug) VmCreate(vm *lobster.VirtualMachine, options *lobster.VMIVmC
 		}
 	}
 
+	tmpl.Details = make(map[string]string)
+	for k, v := range vm.Plan.Metadata {
+		tmpl.Details[k] = v
+	}
+
 	instance, err := cloug.service.CreateInstance(&tmpl)
 
 	if err != nil {

@@ -200,6 +200,7 @@ func vmCreate(userId int, name string, planId int, imageId int, options VmCreate
 	if plan == nil {
 		return 0, L.Error("no_such_plan")
 	}
+	plan.LoadMetadata()
 
 	// validate key
 	if options.KeyID != 0 {

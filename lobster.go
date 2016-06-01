@@ -255,6 +255,8 @@ func Setup(cfgPath string) {
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/disable", adminPlanDisable, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/associate", adminPlanAssociateRegion, true)
 	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/deassociate/{region:[^/]+}", adminPlanDeassociateRegion, true)
+	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/set", adminPlanSetMetadata, true)
+	RegisterAdminHandler("/admin/plan/{id:[0-9]+}/unset", adminPlanUnsetMetadata, true)
 	RegisterAdminHandler("/admin/regions", adminRegions, false)
 	RegisterAdminHandler("/admin/region/{region:[^/]+}/enable", adminRegionEnable, true)
 	RegisterAdminHandler("/admin/region/{region:[^/]+}/disable", adminRegionDisable, true)

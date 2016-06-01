@@ -274,6 +274,7 @@ func adminPlan(w http.ResponseWriter, r *http.Request, session *Session, framePa
 		return
 	}
 	plan.LoadRegionPlans()
+	plan.LoadMetadata()
 	params := AdminPlanParams{}
 	params.Frame = frameParams
 	params.Plan = plan
@@ -334,6 +335,26 @@ func adminPlanDeassociateRegion(w http.ResponseWriter, r *http.Request, session 
 	}
 	planDeassociateRegion(planId, mux.Vars(r)["region"])
 	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_region_deassociated"))
+}
+
+func adminPlanSetMetadata(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planSetMetadata(planId, r.PostFormValue("k"), r.PostFormValue("v"))
+	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_updated"))
+}
+
+func adminPlanUnsetMetadata(w http.ResponseWriter, r *http.Request, session *Session, frameParams FrameParams) {
+	planId, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		RedirectMessage(w, r, "/admin/plans", L.FormattedError("invalid_plan"))
+		return
+	}
+	planUnsetMetadata(planId, r.PostFormValue("k"))
+	RedirectMessage(w, r, fmt.Sprintf("/admin/plan/%d", planId), L.Success("plan_updated"))
 }
 
 type AdminRegionsParams struct {

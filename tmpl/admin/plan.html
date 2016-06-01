@@ -113,4 +113,65 @@
 	</div>
 </div>
 {{ end }}
+<div class="row">
+	<div class="col-lg-12">
+		<h3>{{ T "plan_metadata" }}</h3>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<form method="POST" action="/admin/plan/{{ .Plan.Id }}/set">
+		<input type="hidden" name="token" value="{{ .Token }}" />
+		<table class="table table-striped">
+			<tr>
+				<td>{{ T "key" }}</td>
+				<td>
+					<div class="form-group">
+						<input class="form-control" type="text" name="k" />
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ T "value" }}</td>
+				<td>
+					<div class="form-group">
+						<input class="form-control" type="text" name="v" />
+					</div>
+				</td>
+			</tr>
+		</table>
+		<button type="submit" class="btn btn-primary">{{ T "set" }}</button>
+		</form>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		{{ if .Plan.Metadata }}
+			<table class="table table-striped">
+				<tr>
+					<th>{{ T "key" }}</th>
+					<th>{{ T "value" }}</th>
+					<th>{{ T "action" }}</th>
+				</tr>
+				{{ $token := .Token }}
+				{{ $planId := .Plan.Id }}
+				{{ range $key, $value := .Plan.Metadata }}
+					<tr>
+						<td>{{ $key }}</td>
+						<td>{{ $value }}</td>
+						<td>
+							<form method="POST" action="/admin/plan/{{ $planId }}/unset">
+								<input type="hidden" name="token" value="{{ $token }}" />
+								<input type="hidden" name="k" value="{{ $key }}" />
+								<button type="submit" class="btn btn-danger">{{ T "unset" }}</button>
+							</form>
+						</td>
+					</tr>
+				{{ end }}
+			</table>
+		{{ else }}
+			<p>{{ T "no_plan_metadata" }}</p>
+		{{ end }}
+	</div>
+</div>
 {{ template "footer.html" .Frame }}

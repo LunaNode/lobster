@@ -19,6 +19,9 @@ type Plan struct {
 	// loadable region bindings, if not global
 	// maps from region to identification
 	RegionPlans map[string]string
+
+	// loadable metadata (key-value pairs)
+	Metadata map[string]string
 }
 
 func (plan *Plan) LoadRegionPlans() {
@@ -31,6 +34,16 @@ func (plan *Plan) LoadRegionPlans() {
 		var region, identification string
 		rows.Scan(&region, &identification)
 		plan.RegionPlans[region] = identification
+	}
+}
+
+func (plan *Plan) LoadMetadata() {
+	rows := db.Query("SELECT k, v FROM plan_metadata WHERE plan_id = ?", plan.Id)
+	plan.Metadata = make(map[string]string)
+	for rows.Next() {
+		var k, v string
+		rows.Scan(&k, &v)
+		plan.Metadata[k] = v
 	}
 }
 
@@ -179,4 +192,18 @@ func planAutopopulate(region string) error {
 	}
 
 	return nil
+}
+
+func planSetMetadata(planId int, k string, v string) {
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM plan_metadata WHERE plan_id = ? AND k = ?", planId, k).Scan(&count)
+	if count == 1 {
+		db.Exec("UPDATE plan_metadata SET v = ? WHERE plan_id = ? AND k = ?", v, planId, k)
+	} else {
+		db.Exec("INSERT INTO plan_metadata (plan_id, k, v) VALUES (?, ?, ?)", planId, k, v)
+	}
+}
+
+func planUnsetMetadata(planId int, k string) {
+	db.Exec("DELETE FROM plan_metadata WHERE plan_id = ? AND k = ?", planId, k)
 }

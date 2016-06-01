@@ -1,0 +1,7 @@
+CREATE TABLE plan_metadata (
+	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+	plan_id INT NOT NULL,
+	k VARCHAR(64) NOT NULL,
+	v VARCHAR(256) NOT NULL,
+	KEY (plan_id)
+);
