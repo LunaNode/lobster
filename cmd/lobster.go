@@ -67,8 +67,9 @@ type PaymentConfig struct {
 	Type string `json:"type"`
 
 	// paypal options
-	Business  string `json:"business"`
-	ReturnUrl string `json:"return_url"`
+	Business        string `json:"business"`
+	ReturnUrl       string `json:"return_url"`
+	RequireShipping bool   `json:"require_shipping"`
 
 	// coinbase options
 	CallbackSecret string `json:"callback_secret"`
@@ -179,7 +180,7 @@ func main() {
 	for _, payment := range jsonConfig.Payment {
 		var pi lobster.PaymentInterface
 		if payment.Type == "paypal" {
-			pi = paypal.MakePaypalPayment(payment.Business, payment.ReturnUrl)
+			pi = paypal.MakePaypalPayment(payment.Business, payment.ReturnUrl, payment.RequireShipping)
 		} else if payment.Type == "coinbase" {
 			pi = coinbase.MakeCoinbasePayment(payment.CallbackSecret, payment.ApiKey, payment.ApiSecret)
 		} else if payment.Type == "fake" {

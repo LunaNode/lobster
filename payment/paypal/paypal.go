@@ -15,24 +15,27 @@ const PAYPAL_URL = "https://www.paypal.com/cgi-bin/webscr"
 const PAYPAL_CALLBACK = "/paypal_notify"
 
 type PaypalTemplateParams struct {
-	Frame     lobster.FrameParams
-	Business  string
-	Amount    float64
-	UserId    int
-	NotifyUrl string
-	ReturnUrl string
-	Currency  string
+	Frame           lobster.FrameParams
+	Business        string
+	Amount          float64
+	UserId          int
+	NotifyUrl       string
+	ReturnUrl       string
+	Currency        string
+	RequireShipping bool
 }
 
 type PaypalPayment struct {
-	business  string
-	returnUrl string
+	business        string
+	returnUrl       string
+	requireShipping bool
 }
 
-func MakePaypalPayment(business string, returnUrl string) *PaypalPayment {
+func MakePaypalPayment(business string, returnUrl string, requireShipping bool) *PaypalPayment {
 	this := new(PaypalPayment)
 	this.business = business
 	this.returnUrl = returnUrl
+	this.requireShipping = requireShipping
 	lobster.RegisterHttpHandler(PAYPAL_CALLBACK, this.Callback, true)
 	return this
 }
@@ -41,13 +44,14 @@ func (this *PaypalPayment) Payment(w http.ResponseWriter, r *http.Request, frame
 	cfg := lobster.GetConfig()
 	frameParams.Scripts = append(frameParams.Scripts, "paypal")
 	params := &PaypalTemplateParams{
-		Frame:     frameParams,
-		Business:  this.business,
-		Amount:    amount,
-		UserId:    userId,
-		NotifyUrl: cfg.Default.UrlBase + PAYPAL_CALLBACK,
-		ReturnUrl: this.returnUrl,
-		Currency:  cfg.Billing.Currency,
+		Frame:           frameParams,
+		Business:        this.business,
+		Amount:          amount,
+		UserId:          userId,
+		NotifyUrl:       cfg.Default.UrlBase + PAYPAL_CALLBACK,
+		ReturnUrl:       this.returnUrl,
+		Currency:        cfg.Billing.Currency,
+		RequireShipping: this.requireShipping,
 	}
 	lobster.RenderTemplate(w, "panel", "paypal", params)
 }
