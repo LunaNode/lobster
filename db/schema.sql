@@ -1,6 +1,7 @@
 CREATE TABLE schema_migrations (
 	version INT NOT NULL PRIMARY KEY
-)
+);
+
 INSERT INTO schema_migrations (version) VALUES (1);
 INSERT INTO schema_migrations (version) VALUES (2);
 
